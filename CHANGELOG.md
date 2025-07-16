@@ -1,5 +1,15 @@
 # Changelog
 
+## 6.0.5
+
+### Patch Changes
+
+- [#18](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/18) [`d0e3d2a`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/d0e3d2a6cb52e3cb58b3a726ede03b3d07825df6) Thanks [@himanshu31shr](https://github.com/himanshu31shr)! - Fix PDF display showing incorrect date when date selection changes
+
+  Resolved issue where the TodaysFilesWidget was hardcoded to show current date files instead of respecting the selected date. PDF files now display consistently with the selected date in the Today's Orders page.
+
+  This fix ensures users see the correct PDF files when they select different dates, eliminating confusion between order data and file display.
+
 ## 6.0.4
 
 ### Patch Changes
