@@ -47,34 +47,39 @@ const formatRelativeTime = (date: Date): string => {
 interface TodaysFilesWidgetProps {
   /** Optional callback when refresh button is clicked */
   onRefresh?: () => void;
+  /** Optional date to show files for, defaults to today */
+  selectedDate?: Date;
 }
 
-export const TodaysFilesWidget: React.FC<TodaysFilesWidgetProps> = ({ onRefresh }) => {
+export const TodaysFilesWidget: React.FC<TodaysFilesWidgetProps> = ({ 
+  onRefresh, 
+  selectedDate = new Date() 
+}) => {
   const theme = useTheme();
   
   // State management
-  const [todaysFiles, setTodaysFiles] = useState<FileInfo[]>([]);
+  const [files, setFiles] = useState<FileInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [todaysDate, setTodaysDate] = useState<string>('');
+  const [dateString, setDateString] = useState<string>('');
 
-  // Load today's files
-  const loadTodaysFiles = async () => {
+  // Load files for the selected date
+  const loadFiles = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Get today's date string
-      const dateString = pdfStorageService.getTodaysDateString();
-      setTodaysDate(dateString);
+      // Get date string for display
+      const displayDateString = pdfStorageService.getDateString(selectedDate);
+      setDateString(displayDateString);
       
-      // Load today's files
-      const files = await pdfStorageService.listTodaysFiles();
-      setTodaysFiles(files);
+      // Load files for the selected date
+      const loadedFiles = await pdfStorageService.listFilesForDate(selectedDate);
+      setFiles(loadedFiles);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load today&apos;s files';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load files';
       setError(errorMessage);
-      console.error('Error loading today&apos;s files:', err);
+      console.error('Error loading files for date:', selectedDate, err);
     } finally {
       setLoading(false);
     }
@@ -87,14 +92,18 @@ export const TodaysFilesWidget: React.FC<TodaysFilesWidgetProps> = ({ onRefresh 
 
   // Handle refresh
   const handleRefresh = () => {
-    loadTodaysFiles();
+    loadFiles();
     onRefresh?.();
   };
 
-  // Initialize on component mount
+  // Initialize on component mount and when selectedDate changes
   useEffect(() => {
-    loadTodaysFiles();
-  }, []);
+    loadFiles();
+  }, [selectedDate]);
+
+  // Check if the selected date is today
+  const isToday = selectedDate.toDateString() === new Date().toDateString();
+  const widgetTitle = isToday ? "Today's Files" : `Files for ${dateString}`;
 
   return (
     <Card 
@@ -111,10 +120,10 @@ export const TodaysFilesWidget: React.FC<TodaysFilesWidgetProps> = ({ onRefresh 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CalendarIcon color="primary" />
             <Typography variant="h6" component="h2">
-              Today&apos;s Files
+              {widgetTitle}
             </Typography>
             <Chip 
-              label={todaysDate} 
+              label={dateString} 
               size="small" 
               color="primary" 
               variant="outlined" 
@@ -140,21 +149,21 @@ export const TodaysFilesWidget: React.FC<TodaysFilesWidgetProps> = ({ onRefresh 
         )}
 
         {/* No files state */}
-        {!loading && !error && todaysFiles.length === 0 && (
+        {!loading && !error && files.length === 0 && (
           <Alert severity="info">
-            No files available for download today ({todaysDate}). Upload some PDFs to see them here!
+            No files available for download on {dateString}. Upload some PDFs to see them here!
           </Alert>
         )}
 
         {/* Files grid */}
-        {!loading && !error && todaysFiles.length > 0 && (
+        {!loading && !error && files.length > 0 && (
           <>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {todaysFiles.length} file{todaysFiles.length !== 1 ? 's' : ''} available for download
+              {files.length} file{files.length !== 1 ? 's' : ''} available for download
             </Typography>
             
             <Grid container spacing={2}>
-              {todaysFiles.map((file) => (
+              {files.map((file) => (
                 <Grid item xs={12} sm={6} md={4} key={file.path}>
                   <Card 
                     variant="outlined" 

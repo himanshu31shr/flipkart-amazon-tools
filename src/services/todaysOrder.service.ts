@@ -100,6 +100,26 @@ export class TodaysOrder extends FirebaseService {
     return activeOrder;
   }
 
+  /**
+   * Get orders for a specific date
+   * @param date Date string in yyyy-MM-dd format
+   * @returns ActiveOrderSchema for the specified date or undefined if no orders exist
+   */
+  async getOrdersForDate(date: string): Promise<ActiveOrderSchema | undefined> {
+    await this.mapProductsToActiveOrder();
+    const activeOrder = await this.getDocument<ActiveOrderSchema>(
+      this.COLLECTION_NAME,
+      date
+    );
+    if (activeOrder) {
+      activeOrder.orders.forEach((order) => {
+        this.mapProductToOrder(order);
+      });
+    }
+
+    return activeOrder;
+  }
+
   async getLastThirtyDaysOrders(): Promise<ActiveOrderSchema[]> {
     await this.mapProductsToActiveOrder();
     const orders: ActiveOrderSchema[] = [];
@@ -248,5 +268,53 @@ export class TodaysOrder extends FirebaseService {
     await this.reduceInventoryForOrders(order.orders);
 
     return await this.getTodaysOrders();
+  }
+
+  /**
+   * Update orders for a specific date
+   * @param order ActiveOrderSchema with order data
+   * @param targetDate Date string in yyyy-MM-dd format
+   * @returns ActiveOrderSchema for the specified date after update
+   */
+  async updateOrdersForDate(
+    order: ActiveOrderSchema,
+    targetDate: string
+  ): Promise<ActiveOrderSchema | undefined> {
+    const existingOrder = await this.getOrdersForDate(targetDate);
+
+    // Process the order
+    if (existingOrder) {
+      await this.updateDocument<ActiveOrderSchema>(
+        this.COLLECTION_NAME,
+        existingOrder.id,
+        {
+          ...order,
+          id: targetDate,
+          date: targetDate,
+          orders: [
+            ...this.cleanOrders(existingOrder.orders),
+            ...this.cleanOrders(order.orders),
+          ],
+        }
+      );
+    } else {
+      const cleanOrderData = {
+        ...order,
+        id: targetDate,
+        date: targetDate,
+        orders: this.cleanOrders(order.orders),
+      };
+      await this.batchOperation<ActiveOrderSchema>(
+        [cleanOrderData],
+        this.COLLECTION_NAME,
+        "create",
+        (item) => item.id
+      );
+    }
+
+    // Reduce inventory after the order is successfully processed
+    await this.reduceInventoryForOrders(order.orders);
+
+    return await this.getOrdersForDate(targetDate);
   }
 }

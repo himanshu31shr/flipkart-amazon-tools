@@ -25,11 +25,13 @@ export class PDFMergerService {
   public async mergePdfs({
     amzon,
     flp,
-    sortConfig
+    sortConfig,
+    selectedDate
   }: {
     amzon: Uint8Array[];
     flp: Uint8Array[];
     sortConfig?: CategorySortConfig;
+    selectedDate?: Date;
   }): Promise<PDFDocument | undefined> {
     await this.initialize();
 
@@ -47,11 +49,22 @@ export class PDFMergerService {
       await this.processFlipkartFile(flipkartFile, sortConfig);
     }
 
-    await new TodaysOrder().updateTodaysOrder({
+    // Use selectedDate if provided, otherwise use current date
+    const targetDate = selectedDate || new Date();
+    const dateString = format(targetDate, "yyyy-MM-dd");
+    
+    const orderData = {
       orders: this.summaryText,
-      date: format(new Date(), "yyyy-MM-dd"),
-      id: format(new Date(), "yyyy-MM-dd"),
-    });
+      date: dateString,
+      id: dateString,
+    };
+
+    // Use date-specific method if selectedDate is provided, otherwise use current method for backward compatibility
+    if (selectedDate) {
+      await new TodaysOrder().updateOrdersForDate(orderData, dateString);
+    } else {
+      await new TodaysOrder().updateTodaysOrder(orderData);
+    }
 
     return this.outpdf;
   }
