@@ -37,6 +37,14 @@ export const fetchOrders = createAsyncThunk(
   }
 );
 
+export const fetchOrdersForDate = createAsyncThunk(
+  'orders/fetchOrdersForDate',
+  async (date: string) => {
+    const response = await orderService.getOrdersForDate(date);
+    return response?.orders || [];
+  }
+);
+
 export const fetchAllOrders = createAsyncThunk(
   'orders/fetchAllOrders',
   async (_, { getState }) => {
@@ -111,6 +119,19 @@ const ordersSlice = createSlice({
       .addCase(fetchOrders.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to fetch orders';
+      })
+      .addCase(fetchOrdersForDate.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchOrdersForDate.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload;
+        state.lastFetched = Date.now();
+      })
+      .addCase(fetchOrdersForDate.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch orders for date';
       })
       .addCase(updateOrders.fulfilled, (state, action) => {
         const { date } = action.payload;

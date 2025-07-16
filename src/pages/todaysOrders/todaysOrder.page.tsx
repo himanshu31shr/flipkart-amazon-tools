@@ -10,7 +10,14 @@ import {
   ButtonGroup,
   Button,
   Stack,
+  IconButton,
+  Card,
+  CardContent,
 } from "@mui/material";
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { format } from 'date-fns';
 import React, { useEffect, useState, useMemo } from "react";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
@@ -19,8 +26,11 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import ViewListIcon from "@mui/icons-material/ViewList";
 import CategoryIcon from "@mui/icons-material/Category";
 import SummarizeIcon from "@mui/icons-material/Summarize";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { fetchOrders } from "../../store/slices/ordersSlice";
+import { fetchOrders, fetchOrdersForDate } from "../../store/slices/ordersSlice";
 import { SummaryTable } from "../home/components/SummaryTable";
 import { CategoryGroupedTable } from "./components/CategoryGroupedTable";
 import { groupOrdersByCategory } from "./utils/groupingUtils";
@@ -33,10 +43,40 @@ export const TodaysOrderPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { items: orders, loading } = useAppSelector(state => state.orders);
   const [viewMode, setViewMode] = useState<ViewMode>('individual');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
   useEffect(() => {
-    dispatch(fetchOrders());
-  }, [dispatch]);
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
+    const today = format(new Date(), 'yyyy-MM-dd');
+    
+    if (dateString === today) {
+      dispatch(fetchOrders());
+    } else {
+      dispatch(fetchOrdersForDate(dateString));
+    }
+  }, [dispatch, selectedDate]);
+
+  const handleDateChange = (date: Date | null) => {
+    if (date) {
+      setSelectedDate(date);
+    }
+  };
+
+  const handlePreviousDay = () => {
+    const previousDay = new Date(selectedDate);
+    previousDay.setDate(previousDay.getDate() - 1);
+    setSelectedDate(previousDay);
+  };
+
+  const handleNextDay = () => {
+    const nextDay = new Date(selectedDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    setSelectedDate(nextDay);
+  };
+
+  const handleTodayButton = () => {
+    setSelectedDate(new Date());
+  };
 
   // Memoized grouped data for performance
   const groupedData = useMemo(() => {
@@ -69,7 +109,7 @@ export const TodaysOrderPage: React.FC = () => {
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <ShoppingCartIcon sx={{ fontSize: 32, mr: 2, color: 'primary.main' }} />
           <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
-            Today&apos;s Orders
+            {format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "Today's Orders" : "Orders"}
           </Typography>
           <Chip 
             label={`${orders.length} Orders`} 
@@ -78,6 +118,50 @@ export const TodaysOrderPage: React.FC = () => {
             sx={{ ml: 2 }}
           />
         </Box>
+
+        {/* Date Navigation */}
+        <Card sx={{ mb: 3, borderRadius: 2, border: "1px solid", borderColor: "primary.light" }}>
+          <CardContent sx={{ p: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+              <CalendarTodayIcon sx={{ color: 'primary.main' }} />
+              <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
+                Date Navigation
+              </Typography>
+              
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
+                <IconButton onClick={handlePreviousDay} color="primary">
+                  <ArrowBackIcon />
+                </IconButton>
+                
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    label="Select Date"
+                    value={selectedDate}
+                    onChange={handleDateChange}
+                    sx={{ minWidth: 200 }}
+                  />
+                </LocalizationProvider>
+                
+                <IconButton onClick={handleNextDay} color="primary">
+                  <ArrowForwardIcon />
+                </IconButton>
+                
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  onClick={handleTodayButton}
+                  sx={{ ml: 1 }}
+                >
+                  Today
+                </Button>
+              </Box>
+            </Box>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Showing orders for {format(selectedDate, 'EEEE, MMMM dd, yyyy')}
+            </Typography>
+          </CardContent>
+        </Card>
 
         <Divider sx={{ mb: 3 }} />
 
@@ -185,7 +269,7 @@ export const TodaysOrderPage: React.FC = () => {
         </Grid>
 
         {/* Today's Files - Quick Access */}
-        <TodaysFilesWidget />
+        <TodaysFilesWidget selectedDate={selectedDate} />
 
         <Box sx={{ mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.dark', mb: 2 }}>

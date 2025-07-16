@@ -11,6 +11,7 @@ export interface PdfMergerState {
   summary: ProductSummary[];
   loading: boolean;
   error: string | null;
+  selectedDate: Date;
 }
 
 const initialState: PdfMergerState = {
@@ -20,12 +21,14 @@ const initialState: PdfMergerState = {
   summary: [],
   loading: false,
   error: null,
+  selectedDate: new Date(),
 };
 
 interface MergePDFsParams {
   amazonFiles: File[];
   flipkartFiles: File[];
   sortConfig?: CategorySortConfig;
+  selectedDate?: Date;
 }
 
 // Helper function to read file contents
@@ -47,10 +50,22 @@ const readFileFromInput = (file: File): Promise<Uint8Array> => {
 export const mergePDFs = createAsyncThunk(
   'pdfMerger/mergePDFs',
   async (params: MergePDFsParams) => {
-    const { amazonFiles, flipkartFiles, sortConfig } = params;
+    const { amazonFiles, flipkartFiles, sortConfig, selectedDate } = params;
 
     if (amazonFiles.length === 0 && flipkartFiles.length === 0) {
       throw new Error('No files provided');
+    }
+
+    // Validate selectedDate is present or future
+    if (selectedDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const targetDate = new Date(selectedDate);
+      targetDate.setHours(0, 0, 0, 0);
+      
+      if (targetDate < today) {
+        throw new Error('Selected date cannot be in the past');
+      }
     }
 
     const products = store.getState().products.items;
@@ -68,11 +83,12 @@ export const mergePDFs = createAsyncThunk(
       flipkartFiles.map(file => readFileFromInput(file))
     );
     
-    // Pass the sort config if provided
+    // Pass the sort config and selectedDate to the merge service
     const pdf = await mergePdfs.mergePdfs({
       amzon: amazonFileContents,
       flp: flipkartFileContents,
-      sortConfig: sortConfig // Pass the sortConfig to use in merging
+      sortConfig: sortConfig,
+      selectedDate: selectedDate
     });
 
     if (!pdf) {
@@ -112,11 +128,23 @@ const pdfMergerSlice = createSlice({
     clearFlipkartFiles: (state) => {
       state.flipkartFiles = [];
     },
+    setSelectedDate: (state, action: PayloadAction<Date>) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const targetDate = new Date(action.payload);
+      targetDate.setHours(0, 0, 0, 0);
+      
+      // Only allow present or future dates
+      if (targetDate >= today) {
+        state.selectedDate = action.payload;
+      }
+    },
     clearFiles: (state) => {
       state.amazonFiles = [];
       state.flipkartFiles = [];
       state.finalPdf = null;
       state.summary = [];
+      state.selectedDate = new Date();
     }
   },
   extraReducers: (builder) => {
@@ -144,6 +172,7 @@ export const {
   removeFlipkartFile,
   clearAmazonFiles,
   clearFlipkartFiles,
+  setSelectedDate,
   clearFiles
 } = pdfMergerSlice.actions;
 export const pdfMergerReducer = pdfMergerSlice.reducer; 

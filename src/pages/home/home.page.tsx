@@ -2,7 +2,8 @@ import {
   HomeOutlined,
   MergeOutlined,
   PictureAsPdf,
-  CloudUpload
+  CloudUpload,
+  CalendarToday
 } from "@mui/icons-material";
 import {
   Box,
@@ -21,6 +22,10 @@ import {
   useMediaQuery,
   Snackbar
 } from "@mui/material";
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { format } from 'date-fns';
 import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
@@ -30,7 +35,8 @@ import {
   removeAmazonFile,
   removeFlipkartFile,
   clearAmazonFiles,
-  clearFlipkartFiles
+  clearFlipkartFiles,
+  setSelectedDate
 } from "../../store/slices/pdfMergerSlice";
 import { DownloadButtons } from "./components/DownloadButtons";
 
@@ -52,7 +58,7 @@ export const HomePage: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   const dispatch = useAppDispatch();
-  const { amazonFiles, flipkartFiles, finalPdf, summary, loading, error } =
+  const { amazonFiles, flipkartFiles, finalPdf, summary, loading, error, selectedDate } =
     useAppSelector((state) => state.pdfMerger);
   const { categories, items: products } = useAppSelector(
     (state) => state.products
@@ -114,10 +120,11 @@ export const HomePage: React.FC = () => {
           description: `Auto-saved PDF with ${summary.length} products across ${categories.filter(c => !!c.name).length} categories`
         };
         
-        // Upload to Firebase Storage
-        const result = await pdfStorageService.uploadPdf(
+        // Upload to Firebase Storage using selected date
+        const result = await pdfStorageService.uploadPdfForDate(
           pdfBlob,
           filename,
+          selectedDate,
           {
             categoryCount: categories.length,
             productCount: summary.length,
@@ -157,7 +164,7 @@ export const HomePage: React.FC = () => {
     autoSavePdf().finally(() => {
       setIsUploading(false);
     });
-  }, [finalPdf, isUploading, uploadResult, summary.length, categories, isAuthenticated, processedPdfUrl]);
+  }, [finalPdf, isUploading, uploadResult, summary.length, categories, isAuthenticated, processedPdfUrl, selectedDate]);
 
   const handleSubmit = async () => {
     if (amazonFiles.length === 0 && flipkartFiles.length === 0) return;
@@ -172,7 +179,8 @@ export const HomePage: React.FC = () => {
       await dispatch(mergePDFs({ 
         amazonFiles, 
         flipkartFiles,
-        sortConfig: defaultSortConfig
+        sortConfig: defaultSortConfig,
+        selectedDate
       })).unwrap();
       
       // Auto-save is handled by the useEffect
@@ -238,10 +246,11 @@ export const HomePage: React.FC = () => {
       const timestamp = new Date().toISOString().replace(/[:.-]/g, '_');
       const filename = `sorted_labels_${timestamp}.pdf`;
       
-      // Upload to Firebase Storage
-      const result = await pdfStorageService.uploadPdf(
+      // Upload to Firebase Storage using selected date
+      const result = await pdfStorageService.uploadPdfForDate(
         pdfBlob,
         filename,
+        selectedDate,
         {
           categoryCount: categories.length,
           productCount: summary.length,
@@ -325,6 +334,46 @@ export const HomePage: React.FC = () => {
         </Box>
 
         <Divider sx={{ mb: 3 }} />
+
+        {/* Date Selection Section */}
+        <Card
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            border: "1px solid",
+            borderColor: "secondary.light",
+            overflow: 'visible',
+            boxShadow: theme.shadows[2]
+          }}
+        >
+          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+            <Typography variant={isMobile ? "h6" : "h5"} gutterBottom>
+              <CalendarToday sx={{ mr: 1, verticalAlign: 'middle' }} />
+              Select Processing Date
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              Choose the date for which you want to process the PDF files. Orders will be saved to this date.
+            </Typography>
+            
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                label="Processing Date"
+                value={selectedDate}
+                onChange={(date) => {
+                  if (date) {
+                    dispatch(setSelectedDate(date));
+                  }
+                }}
+                minDate={new Date()}
+                sx={{ width: '100%', maxWidth: 300 }}
+              />
+            </LocalizationProvider>
+            
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Orders will be saved to {format(selectedDate, 'MMMM dd, yyyy')}
+            </Typography>
+          </CardContent>
+        </Card>
 
         {/* File Upload Section */}
         <Card

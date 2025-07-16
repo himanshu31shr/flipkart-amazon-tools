@@ -76,6 +76,8 @@ export interface PdfMetadata {
   };
   /** User-provided description */
   description?: string;
+  /** Date when the file was uploaded (YYYY-MM-DD) */
+  selectedDate?: string;
 }
 
 /**
@@ -147,13 +149,14 @@ class PdfStorageService {
    * Generate a date-based folder name
    * 
    * @param userId - User ID for the file owner
+   * @param selectedDate - Optional date to use for folder naming, defaults to current date
    * @returns Path string in format "pdfs/userId/dd-mm-yyyy"
    */
-  private generateDateBasedPath(userId: string): string {
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year = now.getFullYear();
+  private generateDateBasedPath(userId: string, selectedDate?: Date): string {
+    const targetDate = selectedDate || new Date();
+    const day = String(targetDate.getDate()).padStart(2, '0');
+    const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+    const year = targetDate.getFullYear();
     
     // Format as dd-mm-yyyy
     const dateFolder = `${day}-${month}-${year}`;
@@ -192,6 +195,37 @@ class PdfStorageService {
   }
 
   /**
+   * Get date string in the folder name format for a specific date
+   * 
+   * @param date - The date to format
+   * @returns Date string in dd-mm-yyyy format
+   */
+  getDateString(date: Date): string {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${day}-${month}-${year}`;
+  }
+
+  /**
+   * Get folder path for a specific date for the current user
+   * 
+   * @param date - The date to get folder path for
+   * @returns Path string for the date's folder or null if not authenticated
+   */
+  getFolderPathForDate(date: Date): string | null {
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    
+    if (!currentUser) {
+      return null;
+    }
+    
+    return this.generateDateBasedPath(currentUser.uid, date);
+  }
+
+  /**
    * List files available for download from today's folder
    * 
    * @returns Promise with array of files from today's folder
@@ -210,6 +244,33 @@ class PdfStorageService {
       return todaysFiles;
     } catch (error) {
       // If folder doesn't exist for today, return empty array
+      if (error instanceof Error && error.message.includes('folder does not exist')) {
+        return [];
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * List files available for download from a specific date's folder
+   * 
+   * @param date - The date to list files for
+   * @returns Promise with array of files from the specified date's folder
+   */
+  async listFilesForDate(date: Date): Promise<FileInfo[]> {
+    try {
+      const folderPath = this.getFolderPathForDate(date);
+      
+      if (!folderPath) {
+        throw new Error('User must be authenticated to access files');
+      }
+      
+      // Check if the date's folder exists and get its contents
+      const dateFiles = await this.listFolderContents(folderPath);
+      
+      return dateFiles;
+    } catch (error) {
+      // If folder doesn't exist for the date, return empty array
       if (error instanceof Error && error.message.includes('folder does not exist')) {
         return [];
       }
@@ -389,6 +450,180 @@ class PdfStorageService {
   }
 
   /**
+   * Upload a PDF file to Firebase Storage for a specific date
+   * 
+   * @param file - PDF file to upload (as Blob)
+   * @param fileName - Name to use for the file
+   * @param selectedDate - Date to use for folder organization
+   * @param stats - Optional statistics about the PDF
+   * @param config - Storage configuration options
+   * @returns Promise with the upload result
+   */
+  async uploadPdfForDate(
+    file: Blob,
+    fileName: string,
+    selectedDate: Date,
+    stats: {
+      categoryCount?: number;
+      productCount?: number;
+      sortConfig?: CategorySortConfig;
+      description?: string;
+    },
+    config: StorageConfig = defaultStorageConfig
+  ): Promise<UploadResult> {
+    try {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      
+      if (!currentUser) {
+        console.error('Authentication error: No user is currently signed in');
+        return {
+          success: false,
+          error: 'User must be authenticated to upload files',
+          fileId: '',
+          downloadUrl: '',
+          expiresAt: 0,
+          isShared: false,
+          restrictAccess: true,
+          metadata: {
+            userId: '',
+            uploadedAt: 0,
+            expiresAt: 0,
+            originalFileName: fileName,
+            fileSize: 0,
+            restrictAccess: true,
+            isShared: false,
+            visibility: 'private',
+            description: ''
+          }
+        };
+      }
+
+      console.log('Starting PDF upload for date:', selectedDate.toISOString().split('T')[0], 'with auth user:', currentUser.uid);
+
+      // Generate a unique file path with selected date-based folder structure
+      const timestamp = Date.now();
+      const userId = currentUser.uid;
+      
+      // Create date-based folder structure using selected date
+      const dateBasedPath = this.generateDateBasedPath(userId, selectedDate);
+      
+      // Ensure we have a valid file name
+      const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const timePrefix = new Date().toISOString().replace(/[:.]/g, '-').substring(11, 19); // HH-MM-SS format
+      const filePath = `${dateBasedPath}/${timePrefix}_${sanitizedFileName}`;
+      
+      console.log('Generated file path:', filePath);
+      
+      // Calculate expiry date
+      const expiryDays = Math.max(1, Math.min(90, config.expiryDays)); // 1-90 days
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + expiryDays);
+      const expiresAt = expiryDate.getTime();
+      
+      // Prepare metadata for storage
+      const customMetadata = {
+        userId,
+        fileId: '',  // Will be updated after Firestore document is created
+        expiresAt: expiresAt.toString(),
+        visibility: config.visibility || 'private',
+        description: stats.description || config.description || '',
+        selectedDate: selectedDate.toISOString().split('T')[0] // Store the selected date
+      };
+      
+      console.log('Uploading file with metadata:', customMetadata);
+      
+      // Create storage reference directly
+      const storageRef = ref(storage, filePath);
+      
+      // Upload the file with metadata
+      const uploadTask = await uploadBytesResumable(storageRef, file, {
+        contentType: 'application/pdf',
+        customMetadata
+      });
+      
+      console.log('File uploaded successfully, getting download URL');
+      
+      // Get the download URL
+      const downloadUrl = await getDownloadURL(uploadTask.ref);
+      
+      // Create metadata
+      const metadata: PdfMetadata = {
+        userId,
+        uploadedAt: timestamp,
+        expiresAt,
+        originalFileName: fileName,
+        fileSize: file.size,
+        restrictAccess: config.restrictAccess,
+        isShared: config.isShared,
+        visibility: config.visibility || 'private',
+        storagePath: filePath,
+        stats: {
+          categoryCount: stats.categoryCount,
+          productCount: stats.productCount,
+          sortConfig: stats.sortConfig
+        },
+        description: stats.description || config.description,
+        selectedDate: selectedDate.toISOString().split('T')[0] // Store selected date in metadata
+      };
+      
+      console.log('Storing metadata in Firestore');
+      
+      // Store metadata in Firestore
+      const db = getFirestore();
+      const docRef = await addDoc(collection(db, this.COLLECTION_NAME), {
+        userId,
+        uploadedAt: Timestamp.fromMillis(timestamp),
+        expiresAt: Timestamp.fromMillis(expiresAt),
+        originalFileName: fileName,
+        fileSize: file.size,
+        restrictAccess: config.restrictAccess,
+        isShared: config.isShared,
+        visibility: config.visibility || 'private',
+        downloadUrl,
+        storagePath: filePath,
+        stats: metadata.stats,
+        description: metadata.description,
+        selectedDate: selectedDate.toISOString().split('T')[0]
+      });
+      
+      console.log('Metadata stored successfully with ID:', docRef.id);
+      
+      return {
+        fileId: docRef.id,
+        downloadUrl,
+        expiresAt,
+        isShared: config.isShared,
+        restrictAccess: config.restrictAccess,
+        metadata,
+        success: true
+      };
+    } catch (error) {
+      console.error('Error uploading PDF for date:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error during upload',
+        fileId: '',
+        downloadUrl: '',
+        expiresAt: 0,
+        isShared: false,
+        restrictAccess: true,
+        metadata: {
+          userId: '',
+          uploadedAt: 0,
+          expiresAt: 0,
+          originalFileName: fileName,
+          fileSize: 0,
+          restrictAccess: true,
+          isShared: false,
+          visibility: 'private',
+          description: ''
+        }
+      };
+    }
+  }
+
+  /**
    * Get details about a stored PDF
    * 
    * @param fileId - ID of the file to retrieve
@@ -429,7 +664,8 @@ class PdfStorageService {
         visibility: data.visibility,
         storagePath: data.storagePath,
         stats: data.stats,
-        description: data.description
+        description: data.description,
+        selectedDate: data.selectedDate
       };
       
       return {
@@ -597,7 +833,8 @@ class PdfStorageService {
             visibility: data.visibility,
             storagePath: data.storagePath,
             stats: data.stats,
-            description: data.description
+            description: data.description,
+            selectedDate: data.selectedDate
           },
           success: true
         });
@@ -805,7 +1042,8 @@ class PdfStorageService {
               visibility: firestoreData.visibility,
               storagePath: firestoreData.storagePath,
               stats: firestoreData.stats,
-              description: firestoreData.description
+              description: firestoreData.description,
+              selectedDate: firestoreData.selectedDate
             } : undefined
           } as FileInfo;
         } catch (error) {
