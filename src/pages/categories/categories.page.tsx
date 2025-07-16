@@ -14,6 +14,8 @@ import {
 import InventoryIcon from '@mui/icons-material/Inventory';
 import WarningIcon from '@mui/icons-material/Warning';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { 
   fetchCategoriesWithInventory, 
@@ -23,6 +25,8 @@ import {
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import CategoryLowStockAlert from '../inventory/components/CategoryLowStockAlert';
 import UnifiedCategoryTable from './UnifiedCategoryTable';
+import { CategoryDataService } from '../../services/categoryData.service';
+import CategoryImportModal from './components/CategoryImportSection';
 
 export const CategoriesPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -32,6 +36,10 @@ export const CategoriesPage: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
   const [snackbarSeverity, setSnackbarSeverity] = React.useState<'success' | 'error'>('success');
+  const [importModalOpen, setImportModalOpen] = React.useState(false);
+  const [isExporting, setIsExporting] = React.useState(false);
+
+  const categoryDataService = new CategoryDataService();
 
   useEffect(() => {
     // Only fetch data if authenticated
@@ -59,6 +67,28 @@ export const CategoriesPage: React.FC = () => {
     }
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const result = await categoryDataService.exportCategories();
+      if (result.success) {
+        setSnackbarMessage('Category data exported successfully');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
+      } else {
+        setSnackbarMessage('Export failed: ' + result.errors.join(', '));
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+      }
+    } catch (error) {
+      setSnackbarMessage('Export failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
   };
@@ -80,6 +110,27 @@ export const CategoriesPage: React.FC = () => {
             />
           )}
           <Box sx={{ flexGrow: 1 }} />
+          
+          {/* Data Management Actions */}
+          <Button 
+            variant="outlined" 
+            onClick={handleExport}
+            disabled={isExporting}
+            startIcon={isExporting ? <CircularProgress size={20} /> : <DownloadIcon />}
+            sx={{ mr: 2, fontWeight: 'medium' }}
+          >
+            {isExporting ? 'Exporting...' : 'Export Data'}
+          </Button>
+          
+          <Button 
+            variant="outlined" 
+            onClick={() => setImportModalOpen(true)}
+            startIcon={<UploadIcon />}
+            sx={{ mr: 2, fontWeight: 'medium' }}
+          >
+            Import Data
+          </Button>
+          
           <Button 
             variant="contained" 
             onClick={handleRefresh}
@@ -103,6 +154,12 @@ export const CategoriesPage: React.FC = () => {
         {/* Unified Category Table */}
         <UnifiedCategoryTable />
       </Paper>
+
+      {/* Import Modal */}
+      <CategoryImportModal 
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+      />
 
       <Snackbar 
         open={snackbarOpen} 
