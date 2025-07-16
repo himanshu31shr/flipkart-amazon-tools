@@ -499,7 +499,7 @@ class PdfStorageService {
         };
       }
 
-      logger.debug('Starting PDF upload for date:', selectedDate.toISOString().split('T')[0], 'with auth user:', currentUser.uid);
+      console.debug('Starting PDF upload for date:', selectedDate.toISOString().split('T')[0], 'with auth user:', currentUser.uid);
 
       // Generate a unique file path with selected date-based folder structure
       const timestamp = Date.now();
