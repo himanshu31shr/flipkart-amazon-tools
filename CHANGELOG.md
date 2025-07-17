@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.0.6
+
+### Patch Changes
+
+- [#20](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/20) [`a2d8a8e`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/a2d8a8e4e8bd30fd1cc376c792fc825f2ba5a528) Thanks [@himanshu31shr](https://github.com/himanshu31shr)! - Added comprehensive category data export/import functionality with CSV support, real-time validation, batch processing, and automatic UI refresh. Enables complete category backup and migration while preserving all data relationships and providing seamless user experience.
+
 ## 6.0.5
 
 ### Patch Changes
