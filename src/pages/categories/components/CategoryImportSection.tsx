@@ -33,9 +33,10 @@ import {
 interface CategoryImportModalProps {
   open: boolean;
   onClose: () => void;
+  onImportSuccess?: () => void;
 }
 
-export const CategoryImportModal: React.FC<CategoryImportModalProps> = ({ open, onClose }) => {
+export const CategoryImportModal: React.FC<CategoryImportModalProps> = ({ open, onClose, onImportSuccess }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [validationReport, setValidationReport] = useState<ImportValidationReport | null>(null);
@@ -139,6 +140,11 @@ export const CategoryImportModal: React.FC<CategoryImportModalProps> = ({ open, 
         }
       );
       setImportResult(result);
+      
+      // Notify parent component of successful import
+      if (result.success && onImportSuccess) {
+        onImportSuccess();
+      }
     } catch (error) {
       console.error('Import failed:', error);
       setImportResult({

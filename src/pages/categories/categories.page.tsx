@@ -22,6 +22,7 @@ import {
   fetchLowStockCategories, 
   updateCategoryInventory 
 } from '../../store/slices/categoryInventorySlice';
+import { fetchProducts } from '../../store/slices/productsSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import CategoryLowStockAlert from '../inventory/components/CategoryLowStockAlert';
 import UnifiedCategoryTable from './UnifiedCategoryTable';
@@ -93,6 +94,28 @@ export const CategoriesPage: React.FC = () => {
     setSnackbarOpen(false);
   };
 
+  const refreshAllData = async () => {
+    if (isAuthenticated) {
+      try {
+        await Promise.all([
+          dispatch(fetchCategoriesWithInventory()),
+          dispatch(fetchLowStockCategories()),
+          dispatch(fetchProducts({})) // Refresh products data as well
+        ]);
+      } catch (error) {
+        console.error('Failed to refresh data:', error);
+      }
+    }
+  };
+
+  const handleImportSuccess = () => {
+    // Refresh data after successful import
+    refreshAllData();
+    setSnackbarMessage('Categories imported successfully');
+    setSnackbarSeverity('success');
+    setSnackbarOpen(true);
+  };
+
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
       <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
@@ -156,9 +179,10 @@ export const CategoriesPage: React.FC = () => {
       </Paper>
 
       {/* Import Modal */}
-      <CategoryImportModal 
+            <CategoryImportModal
         open={importModalOpen}
         onClose={() => setImportModalOpen(false)}
+        onImportSuccess={handleImportSuccess}
       />
 
       <Snackbar 

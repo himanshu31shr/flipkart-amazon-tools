@@ -285,7 +285,7 @@ export class CategoryDataService {
       progress = { ...progress, message: 'Transforming data structure...' };
       this.reportProgress(progress, serviceOptions?.onProgress);
 
-      const categoryData = await this.transformer.transformFromCSV(csvRows, configuration);
+      const categoryData = await this.transformer.transformFromCSV(csvRows);
 
       progress.current = 50;
       progress.percentage = 50;

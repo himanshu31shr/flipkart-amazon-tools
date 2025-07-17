@@ -57,19 +57,15 @@ const CategoryExportSection: React.FC<CategoryExportSectionProps> = ({
       
       onExportStart?.();
 
-      const exportResult = await categoryDataService.exportCategories({
-        onProgress: (progressData) => {
-          setProgress(progressData);
-        },
-        onError: (exportError) => {
-          const errorMessage = exportError.message || 'Export failed';
-          setError(errorMessage);
-          onExportError?.(exportError);
-        },
-        onComplete: () => {
-          // Will be handled in the success path
+      const exportResult = await categoryDataService.exportCategories(
+        undefined, // Use default aggregation options
+        undefined, // Use default transformation options
+        {
+          onProgress: (progressData: OperationProgress) => {
+            setProgress(progressData);
+          }
         }
-      });
+      );
 
       if (exportResult.success) {
         setResult(exportResult);
