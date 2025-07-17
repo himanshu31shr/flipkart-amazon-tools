@@ -63,7 +63,7 @@ export const TodaysFilesWidget: React.FC<TodaysFilesWidgetProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [dateString, setDateString] = useState<string>('');
 
-  // Load files for the selected date
+  // Load files for the selected date from all users (universal access)
   const loadFiles = async () => {
     try {
       setLoading(true);
@@ -73,7 +73,7 @@ export const TodaysFilesWidget: React.FC<TodaysFilesWidgetProps> = ({
       const displayDateString = pdfStorageService.getDateString(selectedDate);
       setDateString(displayDateString);
       
-      // Load files for the selected date
+      // Load files for the selected date from all users
       const loadedFiles = await pdfStorageService.listFilesForDate(selectedDate);
       setFiles(loadedFiles);
     } catch (err) {
@@ -103,7 +103,7 @@ export const TodaysFilesWidget: React.FC<TodaysFilesWidgetProps> = ({
 
   // Check if the selected date is today
   const isToday = selectedDate.toDateString() === new Date().toDateString();
-  const widgetTitle = isToday ? "Today's Files" : `Files for ${dateString}`;
+  const widgetTitle = isToday ? "Today's Files (All Users)" : `Files for ${dateString} (All Users)`;
 
   return (
     <Card 
@@ -151,7 +151,7 @@ export const TodaysFilesWidget: React.FC<TodaysFilesWidgetProps> = ({
         {/* No files state */}
         {!loading && !error && files.length === 0 && (
           <Alert severity="info">
-            No files available for download on {dateString}. Upload some PDFs to see them here!
+            No files available for download on {dateString}. Files from all users are shown when available.
           </Alert>
         )}
 
@@ -159,7 +159,7 @@ export const TodaysFilesWidget: React.FC<TodaysFilesWidgetProps> = ({
         {!loading && !error && files.length > 0 && (
           <>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {files.length} file{files.length !== 1 ? 's' : ''} available for download
+              {files.length} file{files.length !== 1 ? 's' : ''} available for download from all users
             </Typography>
             
             <Grid container spacing={2}>
@@ -202,6 +202,12 @@ export const TodaysFilesWidget: React.FC<TodaysFilesWidgetProps> = ({
                           variant="outlined"
                           sx={{ width: 'fit-content' }}
                         />
+                        {/* Show owner information for clarity in universal access mode */}
+                        {file.metadata?.userId && (
+                          <Typography variant="caption" color="text.secondary">
+                            Owner: {file.metadata.userId.substring(0, 8)}...
+                          </Typography>
+                        )}
                         <Typography variant="caption" color="text.secondary">
                           {formatRelativeTime(file.lastModified)}
                         </Typography>
