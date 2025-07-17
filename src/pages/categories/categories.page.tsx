@@ -184,7 +184,10 @@ export const CategoriesPage: React.FC = () => {
         )}
 
         {/* Unified Category Table */}
-        <UnifiedCategoryTable refreshTrigger={refreshTrigger} />
+        <UnifiedCategoryTable 
+          refreshTrigger={refreshTrigger} 
+          onDataChange={() => setRefreshTrigger(prev => prev + 1)}
+        />
       </Paper>
 
       {/* Import Modal */}

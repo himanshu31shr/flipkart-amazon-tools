@@ -69,9 +69,10 @@ interface SnackbarState {
 
 interface UnifiedCategoryTableProps {
   refreshTrigger?: number;
+  onDataChange?: () => void;
 }
 
-export const UnifiedCategoryTable: React.FC<UnifiedCategoryTableProps> = ({ refreshTrigger }) => {
+export const UnifiedCategoryTable: React.FC<UnifiedCategoryTableProps> = ({ refreshTrigger, onDataChange }) => {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const costPriceService = useMemo(() => new CostPriceResolutionService(), []);
@@ -216,6 +217,8 @@ export const UnifiedCategoryTable: React.FC<UnifiedCategoryTableProps> = ({ refr
 
       // Refresh the data in the background
       dispatch(fetchCategoriesWithInventory());
+      // Trigger local data refresh
+      onDataChange?.();
     } catch (error) {
       console.error('Failed to update cost price:', error);
       setSnackbar({
@@ -266,6 +269,8 @@ export const UnifiedCategoryTable: React.FC<UnifiedCategoryTableProps> = ({ refr
       setIsFormOpen(false);
       setEditingCategory(null);
       dispatch(fetchCategoriesWithInventory());
+      // Trigger local data refresh
+      onDataChange?.();
     } catch {
       setSnackbar({
         open: true,
@@ -308,6 +313,8 @@ export const UnifiedCategoryTable: React.FC<UnifiedCategoryTableProps> = ({ refr
         message: 'Inventory updated successfully',
         severity: 'success',
       });
+      // Trigger local data refresh
+      onDataChange?.();
     } catch {
       setSnackbar({
         open: true,
@@ -331,6 +338,8 @@ export const UnifiedCategoryTable: React.FC<UnifiedCategoryTableProps> = ({ refr
       setDeleteDialogOpen(false);
       setCategoryToDelete(null);
       dispatch(fetchCategoriesWithInventory());
+      // Trigger local data refresh
+      onDataChange?.();
     } catch {
       setSnackbar({
         open: true,
@@ -381,6 +390,8 @@ export const UnifiedCategoryTable: React.FC<UnifiedCategoryTableProps> = ({ refr
       setTagToApply('');
       setSelectedCategoryIds([]);
       dispatch(fetchCategoriesWithInventory());
+      // Trigger local data refresh
+      onDataChange?.();
     } catch {
       setSnackbar({
         open: true,
