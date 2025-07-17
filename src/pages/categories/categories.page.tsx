@@ -14,15 +14,20 @@ import {
 import InventoryIcon from '@mui/icons-material/Inventory';
 import WarningIcon from '@mui/icons-material/Warning';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import DownloadIcon from '@mui/icons-material/Download';
+import UploadIcon from '@mui/icons-material/Upload';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { 
   fetchCategoriesWithInventory, 
   fetchLowStockCategories, 
   updateCategoryInventory 
 } from '../../store/slices/categoryInventorySlice';
+import { fetchProducts } from '../../store/slices/productsSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import CategoryLowStockAlert from '../inventory/components/CategoryLowStockAlert';
 import UnifiedCategoryTable from './UnifiedCategoryTable';
+import { CategoryDataService } from '../../services/categoryData.service';
+import CategoryImportModal from './components/CategoryImportSection';
 
 export const CategoriesPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -32,6 +37,11 @@ export const CategoriesPage: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
   const [snackbarSeverity, setSnackbarSeverity] = React.useState<'success' | 'error'>('success');
+  const [importModalOpen, setImportModalOpen] = React.useState(false);
+  const [isExporting, setIsExporting] = React.useState(false);
+  const [refreshTrigger, setRefreshTrigger] = React.useState(0);
+
+  const categoryDataService = new CategoryDataService();
 
   useEffect(() => {
     // Only fetch data if authenticated
@@ -44,6 +54,8 @@ export const CategoriesPage: React.FC = () => {
   const handleRefresh = () => {
     dispatch(fetchCategoriesWithInventory());
     dispatch(fetchLowStockCategories());
+    // Also trigger refresh of UnifiedCategoryTable
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const handleUpdateInventory = async (categoryId: string, quantity: number) => {
@@ -59,8 +71,58 @@ export const CategoriesPage: React.FC = () => {
     }
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const result = await categoryDataService.exportCategories();
+      if (result.success) {
+        setSnackbarMessage('Category data exported successfully');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
+      } else {
+        setSnackbarMessage('Export failed: ' + result.errors.join(', '));
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+      }
+    } catch (error) {
+      setSnackbarMessage('Export failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
+  };
+
+  const refreshAllData = async () => {
+    if (isAuthenticated) {
+      try {
+        await Promise.all([
+          dispatch(fetchCategoriesWithInventory()),
+          dispatch(fetchLowStockCategories()),
+          dispatch(fetchProducts({})) // Refresh products data as well
+        ]);
+      } catch (error) {
+        console.error('Failed to refresh data:', error);
+      }
+    }
+  };
+
+  const handleImportSuccess = async () => {
+    // Refresh data after successful import
+    setSnackbarMessage('Categories imported successfully');
+    setSnackbarSeverity('success');
+    setSnackbarOpen(true);
+    
+    // Small delay to ensure database operations are committed
+    setTimeout(() => {
+      refreshAllData();
+      // Trigger refresh of UnifiedCategoryTable
+      setRefreshTrigger(prev => prev + 1);
+    }, 500);
   };
 
   return (
@@ -80,6 +142,27 @@ export const CategoriesPage: React.FC = () => {
             />
           )}
           <Box sx={{ flexGrow: 1 }} />
+          
+          {/* Data Management Actions */}
+          <Button 
+            variant="outlined" 
+            onClick={handleExport}
+            disabled={isExporting}
+            startIcon={isExporting ? <CircularProgress size={20} /> : <DownloadIcon />}
+            sx={{ mr: 2, fontWeight: 'medium' }}
+          >
+            {isExporting ? 'Exporting...' : 'Export Data'}
+          </Button>
+          
+          <Button 
+            variant="outlined" 
+            onClick={() => setImportModalOpen(true)}
+            startIcon={<UploadIcon />}
+            sx={{ mr: 2, fontWeight: 'medium' }}
+          >
+            Import Data
+          </Button>
+          
           <Button 
             variant="contained" 
             onClick={handleRefresh}
@@ -101,8 +184,18 @@ export const CategoriesPage: React.FC = () => {
         )}
 
         {/* Unified Category Table */}
-        <UnifiedCategoryTable />
+        <UnifiedCategoryTable 
+          refreshTrigger={refreshTrigger} 
+          onDataChange={() => setRefreshTrigger(prev => prev + 1)}
+        />
       </Paper>
+
+      {/* Import Modal */}
+            <CategoryImportModal
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImportSuccess={handleImportSuccess}
+      />
 
       <Snackbar 
         open={snackbarOpen} 

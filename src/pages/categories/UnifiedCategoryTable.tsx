@@ -67,7 +67,12 @@ interface SnackbarState {
   severity: 'success' | 'error' | 'info' | 'warning';
 }
 
-export const UnifiedCategoryTable: React.FC = () => {
+interface UnifiedCategoryTableProps {
+  refreshTrigger?: number;
+  onDataChange?: () => void;
+}
+
+export const UnifiedCategoryTable: React.FC<UnifiedCategoryTableProps> = ({ refreshTrigger, onDataChange }) => {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const costPriceService = useMemo(() => new CostPriceResolutionService(), []);
@@ -181,7 +186,7 @@ export const UnifiedCategoryTable: React.FC = () => {
       }
     };
     loadCategories();
-  }, [isAuthenticated, costPriceService]);
+  }, [isAuthenticated, costPriceService, refreshTrigger]);
 
   // Cost price handlers
   const handleCostPriceUpdate = async (newPrice: number | null) => {
@@ -212,6 +217,8 @@ export const UnifiedCategoryTable: React.FC = () => {
 
       // Refresh the data in the background
       dispatch(fetchCategoriesWithInventory());
+      // Trigger local data refresh
+      onDataChange?.();
     } catch (error) {
       console.error('Failed to update cost price:', error);
       setSnackbar({
@@ -262,6 +269,8 @@ export const UnifiedCategoryTable: React.FC = () => {
       setIsFormOpen(false);
       setEditingCategory(null);
       dispatch(fetchCategoriesWithInventory());
+      // Trigger local data refresh
+      onDataChange?.();
     } catch {
       setSnackbar({
         open: true,
@@ -304,6 +313,8 @@ export const UnifiedCategoryTable: React.FC = () => {
         message: 'Inventory updated successfully',
         severity: 'success',
       });
+      // Trigger local data refresh
+      onDataChange?.();
     } catch {
       setSnackbar({
         open: true,
@@ -327,6 +338,8 @@ export const UnifiedCategoryTable: React.FC = () => {
       setDeleteDialogOpen(false);
       setCategoryToDelete(null);
       dispatch(fetchCategoriesWithInventory());
+      // Trigger local data refresh
+      onDataChange?.();
     } catch {
       setSnackbar({
         open: true,
@@ -377,6 +390,8 @@ export const UnifiedCategoryTable: React.FC = () => {
       setTagToApply('');
       setSelectedCategoryIds([]);
       dispatch(fetchCategoriesWithInventory());
+      // Trigger local data refresh
+      onDataChange?.();
     } catch {
       setSnackbar({
         open: true,
