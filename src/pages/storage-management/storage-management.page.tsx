@@ -81,9 +81,9 @@ export const StorageManagementPage: React.FC = () => {
       setError(null);
       
       if (currentPath === '') {
-        // Load user's root folders
-        const userFolders = await pdfStorageService.listUserFolders();
-        setFolders(userFolders);
+        // Load all folders from all users using universal access
+        const allFolders = await pdfStorageService.listAllFolders();
+        setFolders(allFolders);
         setFiles([]);
       } else {
         // Load contents of specific folder
@@ -194,7 +194,7 @@ export const StorageManagementPage: React.FC = () => {
           Storage Management
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Manage your uploaded PDF files and folders
+          Manage PDF files and folders from all users (universal access enabled)
         </Typography>
       </Box>
 
@@ -221,7 +221,7 @@ export const StorageManagementPage: React.FC = () => {
             }}
           >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-            My Files
+            All Files
           </Link>
           {breadcrumbs.map((crumb) => (
             <Link
@@ -357,6 +357,12 @@ export const StorageManagementPage: React.FC = () => {
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     {formatFileSize(file.size)}
                   </Typography>
+                  {/* Show owner information for clarity in universal access mode */}
+                  {file.metadata?.userId && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Owner: {file.metadata.userId.substring(0, 8)}...
+                    </Typography>
+                  )}
                   <Chip
                     label={formatRelativeTime(file.lastModified)}
                     size="small"
@@ -399,7 +405,7 @@ export const StorageManagementPage: React.FC = () => {
                   No files or folders found
                 </Typography>
                 <Typography variant="body2">
-                  Upload some PDF files to get started with storage management.
+                  No PDF files have been uploaded yet. Upload some files to get started with storage management.
                 </Typography>
               </Box>
             </Grid>

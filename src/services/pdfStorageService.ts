@@ -146,11 +146,11 @@ class PdfStorageService {
   private readonly COLLECTION_NAME = 'pdfs';
   
   /**
-   * Generate a date-based folder name
+   * Generate a date-based path for file storage
    * 
-   * @param userId - User ID for the file owner
-   * @param selectedDate - Optional date to use for folder naming, defaults to current date
-   * @returns Path string in format "pdfs/userId/dd-mm-yyyy"
+   * @param userId - User ID (kept for backward compatibility but not used in path)
+   * @param selectedDate - Optional date for the folder (defaults to today)
+   * @returns Storage path for the given date
    */
   private generateDateBasedPath(userId: string, selectedDate?: Date): string {
     const targetDate = selectedDate || new Date();
@@ -161,7 +161,8 @@ class PdfStorageService {
     // Format as dd-mm-yyyy
     const dateFolder = `${day}-${month}-${year}`;
     
-    return `${this.STORAGE_PATH}/${userId}/${dateFolder}`;
+    // Store PDFs directly in date folders instead of user/date hierarchy
+    return `${this.STORAGE_PATH}/${dateFolder}`;
   }
 
   /**
@@ -226,22 +227,21 @@ class PdfStorageService {
   }
 
   /**
-   * List files available for download from today's folder
+   * List files available for download from today's folder across all users
    * 
    * @returns Promise with array of files from today's folder
    */
   async listTodaysFiles(): Promise<FileInfo[]> {
     try {
-      const todaysFolderPath = this.getTodaysFolderPath();
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
       
-      if (!todaysFolderPath) {
+      if (!currentUser) {
         throw new Error('User must be authenticated to access files');
       }
       
-      // Check if today's folder exists and get its contents
-      const todaysFiles = await this.listFolderContents(todaysFolderPath);
-      
-      return todaysFiles;
+      // List all files from all users for today's date
+      return await this.listFilesForDate(new Date());
     } catch (error) {
       // If folder doesn't exist for today, return empty array
       if (error instanceof Error && error.message.includes('folder does not exist')) {
@@ -252,23 +252,37 @@ class PdfStorageService {
   }
 
   /**
-   * List files available for download from a specific date's folder
+   * List files available for download from a specific date's folder across all users
    * 
    * @param date - The date to list files for
    * @returns Promise with array of files from the specified date's folder
    */
   async listFilesForDate(date: Date): Promise<FileInfo[]> {
     try {
-      const folderPath = this.getFolderPathForDate(date);
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
       
-      if (!folderPath) {
+      if (!currentUser) {
         throw new Error('User must be authenticated to access files');
       }
       
-      // Check if the date's folder exists and get its contents
-      const dateFiles = await this.listFolderContents(folderPath);
+      // Get the date string
+      const dateString = this.getDateString(date);
       
-      return dateFiles;
+      // Access the date folder directly in the new structure
+      const dateFolderPath = `${this.STORAGE_PATH}/${dateString}`;
+      const allFiles: FileInfo[] = [];
+      
+      try {
+        // List files directly from the date folder
+        const dateFiles = await this.listFolderContents(dateFolderPath);
+        allFiles.push(...dateFiles);
+       } catch {
+         // If no folders exist at all, return empty array
+         return [];
+       }
+      
+      return allFiles;
     } catch (error) {
       // If folder doesn't exist for the date, return empty array
       if (error instanceof Error && error.message.includes('folder does not exist')) {
@@ -624,7 +638,7 @@ class PdfStorageService {
   }
 
   /**
-   * Get details about a stored PDF
+   * Get details about a stored PDF (now accessible to all authenticated users)
    * 
    * @param fileId - ID of the file to retrieve
    * @returns Promise with the file details
@@ -648,10 +662,8 @@ class PdfStorageService {
       
       const data = docSnap.data();
       
-      // Check if user has access
-      if (data.userId !== currentUser.uid && data.visibility === 'private') {
-        throw new Error('You do not have access to this file');
-      }
+      // Universal access - no longer check user ownership
+      // All authenticated users can access any PDF details
       
       const metadata: PdfMetadata = {
         userId: data.userId,
@@ -684,7 +696,7 @@ class PdfStorageService {
   }
 
   /**
-   * Delete a stored PDF file
+   * Delete a stored PDF file (now accessible to all authenticated users)
    * 
    * @param fileId - ID of the file to delete
    * @returns Promise that resolves when the file is deleted
@@ -708,10 +720,8 @@ class PdfStorageService {
       
       const data = docSnap.data();
       
-      // Check if user has permission to delete
-      if (data.userId !== currentUser.uid) {
-        throw new Error('You do not have permission to delete this file');
-      }
+      // Universal access - removed user ownership check
+      // All authenticated users can delete any PDF
       
       // Delete from storage
       await storageService.deleteFile(data.storagePath);
@@ -725,7 +735,7 @@ class PdfStorageService {
   }
 
   /**
-   * Update the expiry date for a stored PDF
+   * Update the expiry date for a stored PDF (now accessible to all authenticated users)
    * 
    * @param fileId - ID of the file to update
    * @param expiryDays - New number of days until expiry (1-90)
@@ -758,10 +768,8 @@ class PdfStorageService {
       
       const data = docSnap.data();
       
-      // Check if user has permission to update
-      if (data.userId !== currentUser.uid) {
-        throw new Error('You do not have permission to update this file');
-      }
+      // Universal access - removed user ownership check
+      // All authenticated users can update any PDF expiry
       
       // Update Firestore
       await updateDoc(docRef, {
@@ -779,11 +787,11 @@ class PdfStorageService {
   }
 
   /**
-   * List all PDFs for the current user
+   * List all PDFs from all users (renamed from listUserPdfs for universal access)
    * 
-   * @returns Promise with an array of PDF details
+   * @returns Promise with an array of PDF details from all users
    */
-  async listUserPdfs(): Promise<UploadResult[]> {
+  async listAllPdfs(): Promise<UploadResult[]> {
     try {
       const auth = getAuth();
       const currentUser = auth.currentUser;
@@ -793,10 +801,8 @@ class PdfStorageService {
       }
 
       const db = getFirestore();
-      const q = query(
-        collection(db, this.COLLECTION_NAME),
-        where('userId', '==', currentUser.uid)
-      );
+      // Remove user filter to get all PDFs
+      const q = query(collection(db, this.COLLECTION_NAME));
       
       const snapshot = await getDocs(q);
       
@@ -849,7 +855,15 @@ class PdfStorageService {
   }
 
   /**
-   * Check for expired files and delete them
+   * Backward compatibility - alias for listAllPdfs
+   * @deprecated Use listAllPdfs() instead
+   */
+  async listUserPdfs(): Promise<UploadResult[]> {
+    return this.listAllPdfs();
+  }
+
+  /**
+   * Check for expired files and delete them (now works on all users' files)
    * 
    * @returns Promise with the number of files deleted
    */
@@ -865,10 +879,9 @@ class PdfStorageService {
       const now = Date.now();
       const db = getFirestore();
       
-      // Find expired files for current user
+      // Find expired files from all users (not just current user)
       const q = query(
         collection(db, this.COLLECTION_NAME),
-        where('userId', '==', currentUser.uid),
         where('expiresAt', '<=', Timestamp.fromMillis(now))
       );
       
@@ -906,11 +919,11 @@ class PdfStorageService {
   // ===== FOLDER MANAGEMENT METHODS =====
 
   /**
-   * List all folders for the current user
+   * List all folders from all users (renamed from listUserFolders for universal access)
    * 
-   * @returns Promise with an array of folder information
+   * @returns Promise with an array of folder information from all users
    */
-  async listUserFolders(): Promise<FolderInfo[]> {
+  async listAllFolders(): Promise<FolderInfo[]> {
     try {
       const auth = getAuth();
       const currentUser = auth.currentUser;
@@ -919,62 +932,82 @@ class PdfStorageService {
         throw new Error('User must be authenticated to list folders');
       }
 
-      const userId = currentUser.uid;
-      const userPath = `${this.STORAGE_PATH}/${userId}`;
-      const userRef = ref(storage, userPath);
+      // List all date folders directly under the storage path
+      const baseRef = ref(storage, this.STORAGE_PATH);
+      const allFolders: FolderInfo[] = [];
       
-      // List all items under user's path
-      const listResult = await listAll(userRef);
+      // List all date folders
+      const listResult = await listAll(baseRef);
       
-      // Process prefixes (which represent folders in Firebase Storage)
-      const folderPromises = listResult.prefixes.map(async (folderRef) => {
-        const folderPath = folderRef.fullPath;
-        const folderName = folderRef.name;
+      // Process each date folder
+      const dateFolderPromises = listResult.prefixes.map(async (dateFolderRef) => {
+        const folderPath = dateFolderRef.fullPath;
+        const folderName = dateFolderRef.name;
         
-        // Get folder contents to calculate size and file count
-        const folderContents = await listAll(folderRef);
-        let totalSize = 0;
-        let lastModified = new Date(0);
-        
-        // Get metadata for each file in the folder
-        const filePromises = folderContents.items.map(async (fileRef) => {
-          try {
-            const metadata = await getMetadata(fileRef);
-            const fileSize = metadata.size || 0;
-            const modifiedTime = new Date(metadata.updated);
-            
-            totalSize += fileSize;
-            if (modifiedTime > lastModified) {
-              lastModified = modifiedTime;
+        try {
+          // Get folder contents to calculate size and file count
+          const folderContents = await listAll(dateFolderRef);
+          let totalSize = 0;
+          let lastModified = new Date(0);
+          
+          // Get metadata for each file in the folder
+          const filePromises = folderContents.items.map(async (fileRef) => {
+            try {
+              const metadata = await getMetadata(fileRef);
+              const fileSize = metadata.size || 0;
+              const modifiedTime = new Date(metadata.updated);
+              
+              totalSize += fileSize;
+              if (modifiedTime > lastModified) {
+                lastModified = modifiedTime;
+              }
+            } catch (error) {
+              console.warn(`Failed to get metadata for ${fileRef.fullPath}:`, error);
             }
-          } catch (error) {
-            console.warn(`Failed to get metadata for ${fileRef.fullPath}:`, error);
-          }
-        });
-        
-        await Promise.all(filePromises);
-        
-        return {
-          path: folderPath,
-          name: folderName,
-          fileCount: folderContents.items.length,
-          totalSize,
-          lastModified: lastModified.getTime() === 0 ? new Date() : lastModified
-        } as FolderInfo;
+          });
+          
+          await Promise.all(filePromises);
+          
+          return {
+            path: folderPath,
+            name: folderName,
+            fileCount: folderContents.items.length,
+            totalSize,
+            lastModified: lastModified.getTime() === 0 ? new Date() : lastModified
+          } as FolderInfo;
+        } catch (error) {
+          console.warn(`Failed to process date folder ${folderName}:`, error);
+          return null;
+        }
       });
       
-      const folders = await Promise.all(folderPromises);
+      const dateFolders = await Promise.all(dateFolderPromises);
       
-      // Sort folders by name
-      return folders.sort((a, b) => a.name.localeCompare(b.name));
+      // Filter out null results and add to allFolders
+      dateFolders.forEach(folder => {
+        if (folder) {
+          allFolders.push(folder);
+        }
+      });
+      
+      // Sort folders by name (date)
+      return allFolders.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
-      console.error('Error listing user folders:', error);
+      console.error('Error listing all folders:', error);
       throw error;
     }
   }
 
   /**
-   * List contents of a specific folder
+   * Backward compatibility - alias for listAllFolders
+   * @deprecated Use listAllFolders() instead
+   */
+  async listUserFolders(): Promise<FolderInfo[]> {
+    return this.listAllFolders();
+  }
+
+  /**
+   * List contents of a specific folder (now accessible to all authenticated users)
    * 
    * @param folderPath - Full path to the folder
    * @returns Promise with an array of file information
@@ -988,8 +1021,7 @@ class PdfStorageService {
         throw new Error('User must be authenticated to list folder contents');
       }
 
-      // Validate user access to the folder
-      await this.validateUserAccess(folderPath);
+      // Universal access - removed user access validation
       
       const folderRef = ref(storage, folderPath);
       const listResult = await listAll(folderRef);
@@ -1010,8 +1042,7 @@ class PdfStorageService {
           try {
             const q = query(
               collection(db, this.COLLECTION_NAME),
-              where('storagePath', '==', fileRef.fullPath),
-              where('userId', '==', currentUser.uid)
+              where('storagePath', '==', fileRef.fullPath)
             );
             const snapshot = await getDocs(q);
             
@@ -1063,7 +1094,7 @@ class PdfStorageService {
   }
 
   /**
-   * Get the total size of a folder
+   * Get the total size of a folder (now accessible to all authenticated users)
    * 
    * @param folderPath - Full path to the folder
    * @returns Promise with the total size in bytes
@@ -1077,8 +1108,7 @@ class PdfStorageService {
         throw new Error('User must be authenticated to get folder size');
       }
 
-      // Validate user access to the folder
-      await this.validateUserAccess(folderPath);
+      // Universal access - removed user access validation
       
       const folderRef = ref(storage, folderPath);
       const listResult = await listAll(folderRef);
@@ -1107,7 +1137,7 @@ class PdfStorageService {
   }
 
   /**
-   * Delete a folder and all its contents recursively
+   * Delete a folder and all its contents recursively (now accessible to all authenticated users)
    * 
    * @param folderPath - Full path to the folder to delete
    * @returns Promise that resolves when deletion is complete
@@ -1121,8 +1151,7 @@ class PdfStorageService {
         throw new Error('User must be authenticated to delete folders');
       }
 
-      // Validate user access to the folder
-      await this.validateUserAccess(folderPath);
+      // Universal access - removed user access validation
       
       const folderRef = ref(storage, folderPath);
       const listResult = await listAll(folderRef);
@@ -1134,8 +1163,7 @@ class PdfStorageService {
           const db = getFirestore();
           const q = query(
             collection(db, this.COLLECTION_NAME),
-            where('storagePath', '==', fileRef.fullPath),
-            where('userId', '==', currentUser.uid)
+            where('storagePath', '==', fileRef.fullPath)
           );
           const snapshot = await getDocs(q);
           
@@ -1167,7 +1195,7 @@ class PdfStorageService {
   }
 
   /**
-   * Delete a single file
+   * Delete a single file (now accessible to all authenticated users)
    * 
    * @param filePath - Full path to the file to delete
    * @returns Promise that resolves when deletion is complete
@@ -1181,15 +1209,13 @@ class PdfStorageService {
         throw new Error('User must be authenticated to delete files');
       }
 
-      // Validate user access to the file
-      await this.validateUserAccess(filePath);
+      // Universal access - removed user access validation
       
       // Try to find and delete corresponding Firestore document
       const db = getFirestore();
       const q = query(
         collection(db, this.COLLECTION_NAME),
-        where('storagePath', '==', filePath),
-        where('userId', '==', currentUser.uid)
+        where('storagePath', '==', filePath)
       );
       const snapshot = await getDocs(q);
       
@@ -1208,7 +1234,7 @@ class PdfStorageService {
   }
 
   /**
-   * Delete multiple files at once
+   * Delete multiple files at once (now accessible to all authenticated users)
    * 
    * @param filePaths - Array of file paths to delete
    * @returns Promise that resolves when all deletions are complete
@@ -1222,9 +1248,7 @@ class PdfStorageService {
         throw new Error('User must be authenticated to delete files');
       }
 
-      // Validate user access to all files
-      const validationPromises = filePaths.map(path => this.validateUserAccess(path));
-      await Promise.all(validationPromises);
+      // Universal access - removed user access validation
       
       // Delete all files
       const deletionPromises = filePaths.map(filePath => this.deleteFile(filePath));
@@ -1239,8 +1263,9 @@ class PdfStorageService {
 
   /**
    * Validate that the current user has access to a given path
+   * @deprecated No longer needed with universal access - kept for backward compatibility
    * 
-   * @param path - Storage path to validate
+   * @param path - Storage path to validate (ignored in universal access mode)
    * @returns Promise that resolves if access is valid, rejects otherwise
    */
   async validateUserAccess(path: string): Promise<boolean> {
@@ -1252,14 +1277,10 @@ class PdfStorageService {
         throw new Error('User must be authenticated to access files');
       }
 
-      const userId = currentUser.uid;
-      const userPath = `${this.STORAGE_PATH}/${userId}`;
-      
-      // Check if the path starts with the user's folder
-      if (!path.startsWith(userPath)) {
-        throw new Error('You do not have permission to access this path');
-      }
-      
+      // Universal access - all authenticated users can access any path
+      // This method is kept for backward compatibility but no longer enforces user restrictions
+      // Path parameter is ignored but preserved for API compatibility
+      void path; // Explicitly mark as unused
       return true;
     } catch (error) {
       console.error('Error validating user access:', error);

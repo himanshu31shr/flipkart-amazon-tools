@@ -7,27 +7,24 @@ service firebase.storage {
       allow read, write: if false;
     }
     
-    // Allow users to access their own root folder for listing
-    match /pdfs/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+    // Allow all authenticated users to access the pdfs root folder for listing
+    match /pdfs {
+      allow read: if request.auth != null;
     }
     
-    // Allow users to access their own date-based folders for listing
-    match /pdfs/{userId}/{dateFolder} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+    // Allow all authenticated users to access date-based folders for listing
+    match /pdfs/{dateFolder} {
+      allow read: if request.auth != null;
     }
     
-    // PDF files storage rules with date-based folder structure
-    match /pdfs/{userId}/{dateFolder}/{fileName} {
-      // Allow authenticated users to read and write their own files
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // PDF files storage rules with universal access for authenticated users
+    // New simplified structure: pdfs/{dateFolder}/{fileName}
+    match /pdfs/{dateFolder}/{fileName} {
+      // Allow all authenticated users to read and write any PDF file
+      allow read, write: if request.auth != null;
       
-      // Allow reading shared files with specific visibility settings
-      allow read: if 
-        // Public files can be read by anyone
-        resource.metadata.visibility == 'public' ||
-        // Organization files can be read by authenticated users
-        (request.auth != null && resource.metadata.visibility == 'organization');
+      // Note: Universal access enabled for all authenticated users
+      // Users can upload, view, and delete any PDF in any date folder
     }
     
     // Allow admins to access all files
