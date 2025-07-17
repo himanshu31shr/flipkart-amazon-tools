@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.1.0
+
+### Minor Changes
+
+- [#22](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/22) [`5aa96c8`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/5aa96c8a4b0d3eca2df879dc3cd122f3d3b36027) Thanks [@himanshu31shr](https://github.com/himanshu31shr)! - Updated generated pdf files to be visible to all the users
+
 ## 6.0.6
 
 ### Patch Changes
