@@ -67,7 +67,11 @@ interface SnackbarState {
   severity: 'success' | 'error' | 'info' | 'warning';
 }
 
-export const UnifiedCategoryTable: React.FC = () => {
+interface UnifiedCategoryTableProps {
+  refreshTrigger?: number;
+}
+
+export const UnifiedCategoryTable: React.FC<UnifiedCategoryTableProps> = ({ refreshTrigger }) => {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const costPriceService = useMemo(() => new CostPriceResolutionService(), []);
@@ -181,7 +185,7 @@ export const UnifiedCategoryTable: React.FC = () => {
       }
     };
     loadCategories();
-  }, [isAuthenticated, costPriceService]);
+  }, [isAuthenticated, costPriceService, refreshTrigger]);
 
   // Cost price handlers
   const handleCostPriceUpdate = async (newPrice: number | null) => {

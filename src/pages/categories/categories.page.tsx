@@ -39,6 +39,7 @@ export const CategoriesPage: React.FC = () => {
   const [snackbarSeverity, setSnackbarSeverity] = React.useState<'success' | 'error'>('success');
   const [importModalOpen, setImportModalOpen] = React.useState(false);
   const [isExporting, setIsExporting] = React.useState(false);
+  const [refreshTrigger, setRefreshTrigger] = React.useState(0);
 
   const categoryDataService = new CategoryDataService();
 
@@ -53,6 +54,8 @@ export const CategoriesPage: React.FC = () => {
   const handleRefresh = () => {
     dispatch(fetchCategoriesWithInventory());
     dispatch(fetchLowStockCategories());
+    // Also trigger refresh of UnifiedCategoryTable
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const handleUpdateInventory = async (categoryId: string, quantity: number) => {
@@ -108,12 +111,18 @@ export const CategoriesPage: React.FC = () => {
     }
   };
 
-  const handleImportSuccess = () => {
+  const handleImportSuccess = async () => {
     // Refresh data after successful import
-    refreshAllData();
     setSnackbarMessage('Categories imported successfully');
     setSnackbarSeverity('success');
     setSnackbarOpen(true);
+    
+    // Small delay to ensure database operations are committed
+    setTimeout(() => {
+      refreshAllData();
+      // Trigger refresh of UnifiedCategoryTable
+      setRefreshTrigger(prev => prev + 1);
+    }, 500);
   };
 
   return (
@@ -175,7 +184,7 @@ export const CategoriesPage: React.FC = () => {
         )}
 
         {/* Unified Category Table */}
-        <UnifiedCategoryTable />
+        <UnifiedCategoryTable refreshTrigger={refreshTrigger} />
       </Paper>
 
       {/* Import Modal */}
