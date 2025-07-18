@@ -1,5 +1,11 @@
 # Changelog
 
+## 6.1.1
+
+### Patch Changes
+
+- [#24](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/24) [`abfbf85`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/abfbf85ed26e886cc8cb924e83daa08861f6d425) Thanks [@himanshu31shr](https://github.com/himanshu31shr)! - Fixed stotage management not able to show files
+
 ## 6.1.0
 
 ### Minor Changes
