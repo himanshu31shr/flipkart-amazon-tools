@@ -9,13 +9,21 @@ import {
   getDocs,
   query, 
   where, 
-  Timestamp 
+  Timestamp,
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { CategorySortConfig } from '../utils/pdfSorting';
+import { storage } from './firebase.config';
 import { storageService } from './storage.service';
 import { ref, uploadBytesResumable, getDownloadURL, updateMetadata, listAll, getMetadata } from 'firebase/storage';
-import { storage } from './firebase.config';
+import { roleAccessService } from './role-access.service';
+import { 
+  UserDetails, 
+  PaginationOptions, 
+  PaginatedPdfResult 
+} from '../types/auth.types';
 
 /**
  * Configuration for PDF storage
@@ -1284,6 +1292,138 @@ class PdfStorageService {
       return true;
     } catch (error) {
       console.error('Error validating user access:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * List PDFs across all users (admin/superuser functionality)
+   * @param options - Optional filtering and pagination options
+   * @returns Promise with paginated PDF results
+   */
+  async listAllUserPdfs(options: PaginationOptions = {}): Promise<PaginatedPdfResult> {
+    try {
+      // Check admin access
+      const hasAdminAccess = await roleAccessService.hasAdminAccess();
+      if (!hasAdminAccess) {
+        throw new Error('Insufficient permissions to view all PDFs');
+      }
+
+      const db = getFirestore();
+      const pdfsRef = collection(db, this.COLLECTION_NAME);
+
+      // Build query with optional filters
+      let baseQuery = query(pdfsRef);
+
+      // Apply date filter if provided
+      if (options.filterByDate) {
+        const startOfDay = new Date(options.filterByDate);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(options.filterByDate);
+        endOfDay.setHours(23, 59, 59, 999);
+
+        baseQuery = query(
+          baseQuery, 
+          where('uploadedAt', '>=', Timestamp.fromDate(startOfDay)),
+          where('uploadedAt', '<=', Timestamp.fromDate(endOfDay))
+        );
+      }
+
+      // Apply search term if provided
+      if (options.searchTerm) {
+        baseQuery = query(
+          baseQuery,
+          where('originalFileName', '>=', options.searchTerm),
+          where('originalFileName', '<=', options.searchTerm + '\uf8ff')
+        );
+      }
+
+      // Apply sorting
+      const sortField = options.sortBy || 'uploadedAt';
+      const sortDirection = options.sortOrder || 'desc';
+      baseQuery = query(baseQuery, orderBy(sortField, sortDirection));
+
+      // Apply pagination
+      const pageSize = options.pageSize || 50;
+      const pageQuery = query(baseQuery, limit(pageSize));
+
+      // Execute query
+      const snapshot = await getDocs(pageQuery);
+
+      // Convert documents to UploadResult
+      const pdfs: UploadResult[] = snapshot.docs.map(doc => ({
+        fileId: doc.id,
+        downloadUrl: doc.data().downloadUrl,
+        expiresAt: doc.data().expiresAt.toMillis(),
+        isShared: doc.data().isShared,
+        restrictAccess: doc.data().restrictAccess,
+        metadata: {
+          userId: doc.data().userId,
+          uploadedAt: doc.data().uploadedAt.toMillis(),
+          expiresAt: doc.data().expiresAt.toMillis(),
+          originalFileName: doc.data().originalFileName,
+          fileSize: doc.data().fileSize,
+          restrictAccess: doc.data().restrictAccess,
+          isShared: doc.data().isShared,
+          visibility: doc.data().visibility,
+          storagePath: doc.data().storagePath,
+          stats: doc.data().stats,
+          description: doc.data().description,
+          selectedDate: doc.data().selectedDate
+        },
+        success: true
+      }));
+
+      // Get total count for pagination
+      const countSnapshot = await getDocs(baseQuery);
+      const totalCount = countSnapshot.size;
+
+      return {
+        pdfs,
+        totalCount,
+        page: options.page || 1,
+        pageSize
+      };
+    } catch (error) {
+      console.error('Error listing all user PDFs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user details for PDF owners
+   * @param fileIds - Array of file IDs to get user information for
+   * @returns Promise with user information
+   */
+  async getUserDetailsForPdfs(fileIds: string[]): Promise<Record<string, UserDetails>> {
+    try {
+      // Check admin access
+      const hasAdminAccess = await roleAccessService.hasAdminAccess();
+      if (!hasAdminAccess) {
+        throw new Error('Insufficient permissions to retrieve user details');
+      }
+
+      // Get unique user IDs from PDF metadata
+      const db = getFirestore();
+      const userIds: string[] = [];
+
+      // Fetch user IDs for the given file IDs
+      for (const fileId of fileIds) {
+        const docRef = doc(db, this.COLLECTION_NAME, fileId);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          const userId = docSnap.data().userId;
+          if (userId && !userIds.includes(userId)) {
+            userIds.push(userId);
+          }
+        }
+      }
+
+      // Get user details for these IDs
+      return await roleAccessService.getUserDetailsMap(userIds);
+    } catch (error) {
+      console.error('Error getting user details for PDFs:', error);
       throw error;
     }
   }

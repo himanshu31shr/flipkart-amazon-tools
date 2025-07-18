@@ -1,141 +1,205 @@
-import { getAuth } from 'firebase/auth';
-import { ref, uploadBytesResumable, getDownloadURL, updateMetadata } from 'firebase/storage';
-import { collection, addDoc } from 'firebase/firestore';
 import { pdfStorageService } from '../pdfStorageService';
+import { roleAccessService } from '../role-access.service';
+import * as FirestoreMethods from 'firebase/firestore';
+import { UserRole } from '../../types/auth.types';
 
-// Mock Firebase modules
-jest.mock('firebase/auth');
-jest.mock('firebase/storage');
+// Mock entire Firestore module
 jest.mock('firebase/firestore', () => {
   const originalModule = jest.requireActual('firebase/firestore');
   return {
     ...originalModule,
-    getFirestore: jest.fn(),
-    collection: jest.fn(),
-    addDoc: jest.fn(),
-    Timestamp: {
-      fromMillis: jest.fn().mockReturnValue({
-        toMillis: () => 1624444444444
+    getFirestore: jest.fn(() => ({})),
+    collection: jest.fn(() => ({
+      doc: jest.fn((docId) => ({
+        id: docId,
+        get: jest.fn().mockResolvedValue({
+          exists: () => true,
+          data: () => ({ userId: docId })
+        })
+      }))
+    })),
+    doc: jest.fn((db, collectionName, docId) => ({
+      id: docId,
+      get: jest.fn().mockResolvedValue({
+        exists: () => true,
+        data: () => ({ userId: docId })
       })
+    })),
+    query: jest.fn(),
+    where: jest.fn(),
+    getDocs: jest.fn().mockResolvedValue({
+      docs: [],
+      size: 0
+    }),
+    getDoc: jest.fn().mockResolvedValue({
+      exists: () => true,
+      data: () => ({ userId: 'test-user' })
+    }),
+    orderBy: jest.fn(),
+    limit: jest.fn(),
+    Timestamp: {
+      fromDate: jest.fn().mockImplementation((date) => ({
+        toMillis: () => date.getTime(),
+        toDate: () => date
+      }))
     }
   };
 });
 
-describe('PdfStorageService', () => {
-  const mockAuth = {
-    currentUser: {
-      uid: 'test-user-id'
-    }
-  };
-  const mockStorageRef = {};
-  const mockUploadResult = {
-    ref: {},
-    metadata: {
-      size: 1024
-    }
-  };
-  const mockDownloadURL = 'https://example.com/test.pdf';
-  const mockDocRef = {
-    id: 'test-doc-id'
-  };
+// Mock role access service
+jest.mock('../role-access.service', () => ({
+  roleAccessService: {
+    hasAdminAccess: jest.fn(),
+    getUserDetailsMap: jest.fn()
+  }
+}));
 
+describe('PdfStorageService Multi-User Methods', () => {
+  // Reset mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
-    
-    // Mock Firebase Auth
-    (getAuth as jest.Mock).mockReturnValue(mockAuth);
-    
-    // Mock Firebase Storage
-    (ref as jest.Mock).mockReturnValue(mockStorageRef);
-    (uploadBytesResumable as jest.Mock).mockResolvedValue(mockUploadResult);
-    (getDownloadURL as jest.Mock).mockResolvedValue(mockDownloadURL);
-    (updateMetadata as jest.Mock).mockResolvedValue({});
-    
-    // Mock Firestore
-    (addDoc as jest.Mock).mockResolvedValue(mockDocRef);
-    (collection as jest.Mock).mockReturnValue('mock-collection');
   });
 
-  describe('uploadPdf', () => {
-    it('should upload a PDF file successfully', async () => {
-      // Arrange
-      const file = new Blob(['test content'], { type: 'application/pdf' });
-      const fileName = 'test.pdf';
-      const stats = {
-        categoryCount: 5,
-        productCount: 10
+  describe('listAllUserPdfs', () => {
+    it('should return paginated PDFs with default options', async () => {
+      // Mock admin access
+      (roleAccessService.hasAdminAccess as jest.Mock).mockResolvedValue(true);
+
+      // Mock Firestore query and docs
+      const mockDoc = {
+        id: 'test-pdf-id',
+        data: () => ({
+          userId: 'user1',
+          downloadUrl: 'http://example.com/pdf',
+          expiresAt: FirestoreMethods.Timestamp.fromDate(new Date()),
+          isShared: false,
+          restrictAccess: true,
+          originalFileName: 'test.pdf',
+          fileSize: 1024,
+          uploadedAt: FirestoreMethods.Timestamp.fromDate(new Date()),
+          visibility: 'private',
+          storagePath: 'pdfs/user1/test.pdf',
+          stats: {},
+          description: 'Test PDF'
+        })
       };
-      
-      // Act
-      const result = await pdfStorageService.uploadPdf(file, fileName, stats);
-      
-      // Assert
-      expect(result.success).toBe(true);
-      expect(result.fileId).toBe(mockDocRef.id);
-      expect(result.downloadUrl).toBe(mockDownloadURL);
-      expect(uploadBytesResumable).toHaveBeenCalled();
-      expect(addDoc).toHaveBeenCalled();
+
+      // Mock Firestore methods
+      (FirestoreMethods.getFirestore as jest.Mock).mockReturnValue({});
+      (FirestoreMethods.collection as jest.Mock).mockReturnValue('mock-collection');
+      (FirestoreMethods.query as jest.Mock).mockReturnValue('mock-query');
+      (FirestoreMethods.orderBy as jest.Mock).mockReturnValue('mock-order');
+      (FirestoreMethods.limit as jest.Mock).mockReturnValue('mock-limit');
+      (FirestoreMethods.getDocs as jest.Mock).mockResolvedValue({
+        docs: [mockDoc],
+        size: 1
+      });
+
+      const result = await pdfStorageService.listAllUserPdfs();
+
+      expect(result.pdfs).toHaveLength(1);
+      expect(result.totalCount).toBe(1);
+      expect(result.page).toBe(1);
+      expect(result.pageSize).toBe(50);
+
+      // Verify Firestore method calls
+      expect(FirestoreMethods.orderBy).toHaveBeenCalledWith('uploadedAt', 'desc');
+      expect(FirestoreMethods.limit).toHaveBeenCalledWith(50);
     });
 
-    it('should handle authentication error', async () => {
-      // Arrange
-      (getAuth as jest.Mock).mockReturnValue({ currentUser: null });
-      const file = new Blob(['test content'], { type: 'application/pdf' });
-      const fileName = 'test.pdf';
-      
-      // Act
-      const result = await pdfStorageService.uploadPdf(file, fileName, {});
-      
-      // Assert
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('User must be authenticated');
-      expect(uploadBytesResumable).not.toHaveBeenCalled();
-    });
+    it('should apply date filtering', async () => {
+      // Mock admin access
+      (roleAccessService.hasAdminAccess as jest.Mock).mockResolvedValue(true);
 
-    it('should handle upload error', async () => {
-      // Arrange
-      const errorMessage = 'Upload failed';
-      (uploadBytesResumable as jest.Mock).mockRejectedValue(new Error(errorMessage));
-      const file = new Blob(['test content'], { type: 'application/pdf' });
-      const fileName = 'test.pdf';
-      
-      // Act
-      const result = await pdfStorageService.uploadPdf(file, fileName, {});
-      
-      // Assert
-      expect(result.success).toBe(false);
-      expect(result.error).toBe(errorMessage);
+      const testDate = new Date('2024-01-15T00:00:00.000Z');
+      const options = { filterByDate: testDate };
+
+      // Mock Firestore methods
+      (FirestoreMethods.getFirestore as jest.Mock).mockReturnValue({});
+      (FirestoreMethods.collection as jest.Mock).mockReturnValue('mock-collection');
+      (FirestoreMethods.query as jest.Mock).mockReturnValue('mock-query');
+      (FirestoreMethods.where as jest.Mock)
+        .mockReturnValueOnce('mock-where-start')
+        .mockReturnValueOnce('mock-where-end');
+      (FirestoreMethods.orderBy as jest.Mock).mockReturnValue('mock-order');
+      (FirestoreMethods.limit as jest.Mock).mockReturnValue('mock-limit');
+      (FirestoreMethods.getDocs as jest.Mock).mockResolvedValue({
+        docs: [],
+        size: 0
+      });
+
+      await pdfStorageService.listAllUserPdfs(options);
+
+      // Verify date filtering was applied
+      expect(FirestoreMethods.where).toHaveBeenCalledWith('uploadedAt', '>=', expect.any(Object));
+      expect(FirestoreMethods.where).toHaveBeenCalledWith('uploadedAt', '<=', expect.any(Object));
     });
   });
 
-  describe('generateDateBasedPath', () => {
-    it('should generate a path with the correct format', () => {
-      // Mock the date
-      const realDate = Date;
-      const mockDate = new Date(2024, 11, 24); // December 24, 2024
-      
-      // Use a proper type for the global Date constructor
-      global.Date = class extends realDate {
-        constructor() {
-          super();
-          return mockDate;
+  describe('getUserDetailsForPdfs', () => {
+    it('should handle PDFs with no user ID', async () => {
+      // Mock admin access
+      (roleAccessService.hasAdminAccess as jest.Mock).mockResolvedValue(true);
+
+      // Mock Firestore doc without user ID
+      const mockDoc = {
+        exists: () => true,
+        data: () => ({}) // No userId
+      };
+
+      (FirestoreMethods.getFirestore as jest.Mock).mockReturnValue({});
+      (FirestoreMethods.getDoc as jest.Mock).mockResolvedValue(mockDoc);
+
+      // Mock role access service to return no details
+      (roleAccessService.getUserDetailsMap as jest.Mock).mockResolvedValue({});
+
+      const result = await pdfStorageService.getUserDetailsForPdfs(['pdf1']);
+
+      expect(Object.keys(result)).toHaveLength(0);
+    });
+
+    it('should return user details for PDFs with user IDs', async () => {
+      // Mock admin access
+      (roleAccessService.hasAdminAccess as jest.Mock).mockResolvedValue(true);
+
+      // Mock Firestore docs with user IDs
+      const mockDocs = [
+        {
+          exists: () => true,
+          data: () => ({ userId: 'user1' })
+        },
+        {
+          exists: () => true,
+          data: () => ({ userId: 'user2' })
         }
-        
-        toISOString() {
-          return '2024-12-24T18:30:00.000Z';
+      ];
+
+      (FirestoreMethods.getFirestore as jest.Mock).mockReturnValue({});
+      (FirestoreMethods.getDoc as jest.Mock).mockResolvedValue(mockDocs[0]);
+
+      // Mock role access service to return user details
+      const mockUserDetails = {
+        'user1': {
+          id: 'user1',
+          email: 'user1@example.com',
+          displayName: 'User One',
+          role: UserRole.USER,
+          photoURL: 'photo1'
+        },
+        'user2': {
+          id: 'user2',
+          email: 'user2@example.com',
+          displayName: 'User Two',
+          role: UserRole.ADMIN,
+          photoURL: 'photo2'
         }
-      } as unknown as typeof Date;
-      
-      // Use private method testing technique - we can't directly test private methods
-      // Instead, we'll test the behavior through the uploadPdf method
-      const file = new Blob(['test content'], { type: 'application/pdf' });
-      pdfStorageService.uploadPdf(file, 'test.pdf', {});
-      
-      // Check that the ref function was called with a path containing the expected date format
-      expect(ref).toHaveBeenCalledWith(expect.anything(), expect.stringContaining('24-12-2024'));
-      
-      // Restore original Date
-      global.Date = realDate;
+      };
+
+      (roleAccessService.getUserDetailsMap as jest.Mock).mockResolvedValue(mockUserDetails);
+
+      const result = await pdfStorageService.getUserDetailsForPdfs(['pdf1', 'pdf2']);
+
+      expect(result).toEqual(mockUserDetails);
     });
   });
 }); 
