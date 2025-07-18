@@ -118,7 +118,7 @@ describe('StorageManagementPage Multi-User View', () => {
     (pdfStorageService.getUserDetailsForPdfs as jest.Mock).mockResolvedValue(mockUserDetails);
 
     // Mock personal view folders
-    (pdfStorageService.listUserFolders as jest.Mock).mockResolvedValue(mockFolders);
+    (pdfStorageService.listAllFolders as jest.Mock).mockResolvedValue(mockFolders);
     (pdfStorageService.listFolderContents as jest.Mock).mockResolvedValue([]);
 
     // Mock admin access
@@ -199,9 +199,11 @@ describe('StorageManagementPage Multi-User View', () => {
 
     // Wait for error to be displayed
     await waitFor(() => {
-      const errorAlert = screen.getByRole('alert');
-      expect(errorAlert).toBeInTheDocument();
-      expect(errorAlert.textContent).toMatch(/Load failed/i);
+      const errorAlerts = screen.getAllByRole('alert');
+      const loadFailedAlert = errorAlerts.find(alert => 
+        alert.textContent?.match(/Load failed/i)
+      );
+      expect(loadFailedAlert).toBeTruthy();
     });
   });
 
