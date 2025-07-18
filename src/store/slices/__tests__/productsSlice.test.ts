@@ -16,18 +16,29 @@ import { Timestamp } from 'firebase/firestore';
 import { PayloadAction } from '@reduxjs/toolkit';
 
 // Mock Firebase Timestamp
-const mockTimestamp = {
-  seconds: 1234567890,
-  nanoseconds: 0,
-  toDate: jest.fn(),
-  toMillis: jest.fn(),
-  isEqual: jest.fn(),
-  toJSON: jest.fn(),
-  valueOf: () => 'timestamp',
-} as unknown as Timestamp;
+const createMockTimestamp = (input: Date | number) => {
+  const seconds = input instanceof Date 
+    ? Math.floor(input.getTime() / 1000) 
+    : Math.floor(input / 1000);
+  
+  return {
+    seconds,
+    nanoseconds: 0,
+    toDate: () => new Date(seconds * 1000),
+    toMillis: () => seconds * 1000,
+    isEqual: () => false,
+    toJSON: () => ({ seconds, nanoseconds: 0 }),
+    valueOf: () => seconds * 1000,
+  } as unknown as Timestamp;
+};
+
+const mockTimestamp = createMockTimestamp(1234567890 * 1000);
 
 jest.mock('firebase/firestore', () => ({
-  Timestamp: jest.fn(() => mockTimestamp)
+  Timestamp: {
+    fromDate: jest.fn((date: Date) => createMockTimestamp(date)),
+    fromMillis: jest.fn((millis: number) => createMockTimestamp(millis)),
+  }
 }));
 
 // Mock the services

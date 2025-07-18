@@ -14,7 +14,10 @@ import {
   Alert,
   CircularProgress,
   Snackbar,
-  useTheme
+  useTheme,
+  ToggleButtonGroup,
+  ToggleButton,
+  Avatar
 } from '@mui/material';
 import {
   Folder as FolderIcon,
@@ -23,9 +26,12 @@ import {
   Download as DownloadIcon,
   Home as HomeIcon,
   NavigateNext as NavigateNextIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
-import { FolderInfo, FileInfo, pdfStorageService } from '../../services/pdfStorageService';
+import { FolderInfo, FileInfo, pdfStorageService, UploadResult } from '../../services/pdfStorageService';
+import { roleAccessService } from '../../services/role-access.service';
+import { UserDetails, PaginationOptions } from '../../types/auth.types';
 import { DeleteConfirmDialog } from './components/DeleteConfirmDialog';
 import { StorageStats } from './components/StorageStats';
 
@@ -65,6 +71,12 @@ export const StorageManagementPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Multi-user view states
+  const [isAdminView, setIsAdminView] = useState(false);
+  const [allUserPdfs, setAllUserPdfs] = useState<UploadResult[]>([]);
+  const [userDetailsMap, setUserDetailsMap] = useState<Record<string, UserDetails>>({});
+  const [hasAdminAccess, setHasAdminAccess] = useState(false);
+  
   // Dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ type: 'folder' | 'file'; item: FolderInfo | FileInfo } | null>(null);
@@ -73,6 +85,21 @@ export const StorageManagementPage: React.FC = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
+
+  // Check admin access on component mount
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      try {
+        const adminAccess = await roleAccessService.hasAdminAccess();
+        setHasAdminAccess(adminAccess);
+      } catch (err) {
+        console.error('Error checking admin access:', err);
+        setHasAdminAccess(false);
+      }
+    };
+
+    checkAdminAccess();
+  }, []);
 
   // Load folders and files for current path
   const loadCurrentPath = async () => {
@@ -126,11 +153,43 @@ export const StorageManagementPage: React.FC = () => {
   // Navigate to a specific path
   const navigateToPath = (path: string) => {
     setCurrentPath(path);
+    updateBreadcrumbs();
   };
 
   // Handle folder double-click/tap
   const handleFolderOpen = (folder: FolderInfo) => {
     navigateToPath(folder.path);
+  };
+
+  // Load all user PDFs for admin view
+  const loadAllUserPdfs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const paginationOptions: PaginationOptions = {
+        page: 1,
+        pageSize: 50,
+        sortBy: 'uploadDate',  // Changed from 'uploadedAt' to 'uploadDate'
+        sortOrder: 'desc'
+      };
+
+      const result = await pdfStorageService.listAllUserPdfs(paginationOptions);
+
+      setAllUserPdfs(result.pdfs);
+
+      // Get user details for these PDFs
+      const userDetailsMap = await pdfStorageService.getUserDetailsForPdfs(
+        result.pdfs.map(pdf => pdf.fileId)
+      );
+      setUserDetailsMap(userDetailsMap);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load PDFs';
+      setError(errorMessage);
+      console.error('Error loading all user PDFs:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle delete button click
@@ -177,25 +236,237 @@ export const StorageManagementPage: React.FC = () => {
     window.open(file.downloadUrl, '_blank');
   };
 
+  // Toggle between personal and admin view
+  const handleViewToggle = async (newValue: boolean) => {
+    try {
+      setIsAdminView(newValue);
+      setLoading(true);
+      
+      if (newValue) {
+        await loadAllUserPdfs();
+      } else {
+        await loadCurrentPath();
+      }
+    } catch (err) {
+      console.error('Error toggling view:', err);
+    }
+  };
+
   // Effects
   useEffect(() => {
     loadCurrentPath();
   }, [currentPath]);
 
-  useEffect(() => {
-    updateBreadcrumbs();
-  }, [currentPath]);
+  // Render method for admin view
+  const renderAdminView = () => (
+    <Grid container spacing={2}>
+      {allUserPdfs.map((pdf) => {
+        const userDetails = userDetailsMap[pdf.metadata.userId] || {};
+        
+        return (
+          <Grid item xs={12} sm={6} md={4} lg={3} key={pdf.fileId}>
+            <Card>
+              <CardContent>
+                {/* User Info */}
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <Avatar 
+                    src={userDetails.photoURL} 
+                    sx={{ mr: 2, width: 40, height: 40 }}
+                  >
+                    {userDetails.displayName ? userDetails.displayName[0] : <PersonIcon />}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="subtitle1">
+                      {userDetails.displayName || 'Unknown User'}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {userDetails.email}
+                    </Typography>
+                  </Box>
+                </Box>
+
+                {/* PDF Details */}
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <PdfIcon color="error" sx={{ mr: 1 }} />
+                  <Typography variant="subtitle2" noWrap>
+                    {pdf.metadata.originalFileName}
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Chip 
+                    label={formatFileSize(pdf.metadata.fileSize)} 
+                    size="small" 
+                    variant="outlined" 
+                  />
+                  <Chip 
+                    label={formatRelativeTime(new Date(pdf.metadata.uploadedAt))} 
+                    size="small" 
+                    variant="outlined" 
+                  />
+                </Box>
+              </CardContent>
+              <CardActions>
+                <IconButton 
+                  color="primary" 
+                  onClick={() => window.open(pdf.downloadUrl, '_blank')}
+                >
+                  <DownloadIcon />
+                </IconButton>
+              </CardActions>
+            </Card>
+          </Grid>
+        );
+      })}
+    </Grid>
+  );
+
+  // Render method for personal view
+  const renderPersonalView = () => (
+    <Grid container spacing={2}>
+      {/* Folders */}
+      {folders.map((folder) => (
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={4}
+          lg={3}
+          key={folder.path}
+        >
+          <Card
+            sx={{
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: theme.shadows[4]
+              }
+            }}
+          >
+            <CardContent
+              onClick={() => handleFolderOpen(folder)}
+              sx={{ pb: 1 }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <FolderIcon color="primary" sx={{ mr: 1, fontSize: 32 }} />
+                <Typography variant="h6" component="div" noWrap>
+                  {folder.name}
+                </Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {folder.fileCount} file{folder.fileCount !== 1 ? 's' : ''}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {formatFileSize(folder.totalSize)}
+              </Typography>
+              <Chip
+                label={formatRelativeTime(folder.lastModified)}
+                size="small"
+                sx={{ mt: 1 }}
+              />
+            </CardContent>
+            <CardActions sx={{ pt: 0 }}>
+              <IconButton
+                size="small"
+                color="error"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteClick('folder', folder);
+                }}
+                aria-label="delete folder"
+              >
+                <DeleteIcon />
+              </IconButton>
+            </CardActions>
+          </Card>
+        </Grid>
+      ))}
+
+      {/* Files */}
+      {files.map((file) => (
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          md={4}
+          lg={3}
+          key={file.path}
+        >
+          <Card
+            sx={{
+              transition: 'all 0.2s',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: theme.shadows[4]
+              }
+            }}
+          >
+            <CardContent sx={{ pb: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <PdfIcon color="error" sx={{ mr: 1, fontSize: 32 }} />
+                <Typography variant="h6" component="div" noWrap title={file.name}>
+                  {file.name}
+                </Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                {formatFileSize(file.size)}
+              </Typography>
+              <Chip
+                label={formatRelativeTime(file.lastModified)}
+                size="small"
+                sx={{ mt: 1 }}
+              />
+            </CardContent>
+            <CardActions sx={{ pt: 0, justifyContent: 'space-between' }}>
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => handleFileDownload(file)}
+                aria-label="download file"
+              >
+                <DownloadIcon />
+              </IconButton>
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => handleDeleteClick('file', file)}
+                aria-label="delete file"
+              >
+                <DeleteIcon />
+              </IconButton>
+            </CardActions>
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
+  );
 
   return (
     <Container maxWidth="lg" sx={{ py: 3 }}>
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Storage Management
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Manage PDF files and folders from all users (universal access enabled)
-        </Typography>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Storage Management
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            {isAdminView ? 'All Users\' Files' : 'Manage your uploaded PDF files and folders'}
+          </Typography>
+        </Box>
+
+        {/* Admin View Toggle */}
+        {hasAdminAccess && (
+          <ToggleButtonGroup
+            value={isAdminView}
+            exclusive
+            onChange={(e, newValue) => newValue !== null && handleViewToggle(newValue)}
+            color="primary"
+          >
+            <ToggleButton value={false}>My Files</ToggleButton>
+            <ToggleButton value={true}>All Users</ToggleButton>
+          </ToggleButtonGroup>
+        )}
       </Box>
 
       {/* Storage Stats */}
@@ -266,151 +537,9 @@ export const StorageManagementPage: React.FC = () => {
         </Box>
       )}
 
-      {/* Content Grid */}
+      {/* Content Rendering */}
       {!loading && (
-        <Grid container spacing={2}>
-          {/* Folders */}
-          {folders.map((folder) => (
-            <Grid
-              item
-              xs={12}
-              sm={6}
-              md={4}
-              lg={3}
-              key={folder.path}
-            >
-              <Card
-                sx={{
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: theme.shadows[4]
-                  }
-                }}
-              >
-                <CardContent
-                  onClick={() => handleFolderOpen(folder)}
-                  sx={{ pb: 1 }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <FolderIcon color="primary" sx={{ mr: 1, fontSize: 32 }} />
-                    <Typography variant="h6" component="div" noWrap>
-                      {folder.name}
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    {folder.fileCount} file{folder.fileCount !== 1 ? 's' : ''}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {formatFileSize(folder.totalSize)}
-                  </Typography>
-                  <Chip
-                    label={formatRelativeTime(folder.lastModified)}
-                    size="small"
-                    sx={{ mt: 1 }}
-                  />
-                </CardContent>
-                <CardActions sx={{ pt: 0 }}>
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteClick('folder', folder);
-                    }}
-                    aria-label="delete folder"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-
-          {/* Files */}
-          {files.map((file) => (
-            <Grid
-              item
-              xs={12}
-              sm={6}
-              md={4}
-              lg={3}
-              key={file.path}
-            >
-              <Card
-                sx={{
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: theme.shadows[4]
-                  }
-                }}
-              >
-                <CardContent sx={{ pb: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <PdfIcon color="error" sx={{ mr: 1, fontSize: 32 }} />
-                    <Typography variant="h6" component="div" noWrap title={file.name}>
-                      {file.name}
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    {formatFileSize(file.size)}
-                  </Typography>
-                  {/* Show owner information for clarity in universal access mode */}
-                  {file.metadata?.userId && (
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      Owner: {file.metadata.userId.substring(0, 8)}...
-                    </Typography>
-                  )}
-                  <Chip
-                    label={formatRelativeTime(file.lastModified)}
-                    size="small"
-                    sx={{ mt: 1 }}
-                  />
-                </CardContent>
-                <CardActions sx={{ pt: 0, justifyContent: 'space-between' }}>
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    onClick={() => handleFileDownload(file)}
-                    aria-label="download file"
-                  >
-                    <DownloadIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    color="error"
-                    onClick={() => handleDeleteClick('file', file)}
-                    aria-label="delete file"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </CardActions>
-              </Card>
-            </Grid>
-          ))}
-
-          {/* Empty State */}
-          {!loading && folders.length === 0 && files.length === 0 && (
-            <Grid item xs={12}>
-              <Box
-                sx={{
-                  textAlign: 'center',
-                  py: 8,
-                  color: 'text.secondary'
-                }}
-              >
-                <Typography variant="h6" gutterBottom>
-                  No files or folders found
-                </Typography>
-                <Typography variant="body2">
-                  No PDF files have been uploaded yet. Upload some files to get started with storage management.
-                </Typography>
-              </Box>
-            </Grid>
-          )}
-        </Grid>
+        isAdminView ? renderAdminView() : renderPersonalView()
       )}
 
       {/* Delete Confirmation Dialog */}
