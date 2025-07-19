@@ -64,7 +64,7 @@
     "jspdf": "^3.0.1",
     "papaparse": "^5.4.1",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^2.16.105",
+    "pdfjs-dist": "^5.3.31",
     "react": "latest",
     "react-dom": "latest",
     "react-hook-form": "^7.56.4",
