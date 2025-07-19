@@ -1,5 +1,15 @@
 # Changelog
 
+## 8.0.0
+
+### Major Changes
+
+- [#28](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/28) [`86ff9ed`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/86ff9edc1a1563fd05d1e1135e8d5dfc7d651cdf) Thanks [@himanshu31shr](https://github.com/himanshu31shr)! - Added order analytics page to have historical data
+
+### Patch Changes
+
+- [#28](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/28) [`86ff9ed`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/86ff9edc1a1563fd05d1e1135e8d5dfc7d651cdf) Thanks [@himanshu31shr](https://github.com/himanshu31shr)! - Updated to use least network calls
+
 ## 7.0.0
 
 ### Major Changes
