@@ -11,7 +11,6 @@ interface OrderAnalyticsState {
   metrics: null;
   categoryData: [];
   skuData: [];
-  topProducts: [];
   loading: boolean;
   error: string | null;
 }
@@ -20,7 +19,6 @@ const initialState: OrderAnalyticsState = {
   metrics: null,
   categoryData: [],
   skuData: [],
-  topProducts: [],
   loading: false,
   error: null,
 };

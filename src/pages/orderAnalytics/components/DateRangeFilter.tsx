@@ -28,17 +28,27 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
     }
   };
 
-  const handlePresetDateChange = (preset: 'monthToDate' | 'last30Days' | 'lastMonth' | 'last3Months') => {
+  const handlePresetDateChange = (preset: 'today' | 'yesterday' | 'monthToDate' | 'last30Days' | 'lastMonth' | 'last3Months') => {
     const today = new Date();
     let startDate: Date;
-    let endDate: Date = endOfDay(today);
+    let endDate: Date;
 
     switch (preset) {
+      case 'today':
+        startDate = startOfDay(today);
+        endDate = endOfDay(today);
+        break;
+      case 'yesterday':
+        startDate = startOfDay(subDays(today, 1));
+        endDate = endOfDay(subDays(today, 1));
+        break;
       case 'monthToDate':
         startDate = startOfMonth(today);
+        endDate = endOfDay(today);
         break;
       case 'last30Days':
         startDate = startOfDay(subDays(today, 29));
+        endDate = endOfDay(today);
         break;
       case 'lastMonth':
         startDate = startOfMonth(subMonths(today, 1));
@@ -46,6 +56,7 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
         break;
       case 'last3Months':
         startDate = startOfMonth(subMonths(today, 3));
+        endDate = endOfDay(today);
         break;
       default:
         return;
@@ -86,8 +97,18 @@ const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
           </Grid>
           <Grid item xs={12}>
             <ButtonGroup variant="outlined" fullWidth>
+              <Button onClick={() => handlePresetDateChange('today')}>Today</Button>
+              <Button onClick={() => handlePresetDateChange('yesterday')}>Yesterday</Button>
+            </ButtonGroup>
+          </Grid>
+          <Grid item xs={12}>
+            <ButtonGroup variant="outlined" fullWidth>
               <Button onClick={() => handlePresetDateChange('monthToDate')}>Month to Date</Button>
               <Button onClick={() => handlePresetDateChange('last30Days')}>Last 30 Days</Button>
+            </ButtonGroup>
+          </Grid>
+          <Grid item xs={12}>
+            <ButtonGroup variant="outlined" fullWidth>
               <Button onClick={() => handlePresetDateChange('lastMonth')}>Last Month</Button>
               <Button onClick={() => handlePresetDateChange('last3Months')}>Last 3 Months</Button>
             </ButtonGroup>

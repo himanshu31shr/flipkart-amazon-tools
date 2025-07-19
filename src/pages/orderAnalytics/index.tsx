@@ -2,10 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
-  Grid,
-  Paper,
   Typography,
-  CircularProgress,
   IconButton,
   Badge,
   Button,
@@ -20,14 +17,12 @@ import { fetchProducts } from "../../store/slices/productsSlice";
 import { fetchCategories } from "../../store/slices/categoriesSlice";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import CategoryDistributionTable from "./components/CategoryDistributionTable";
-import CategoryOrdersChart from "./components/CategoryOrdersChart";
-import OrderMetrics from "./components/OrderMetrics";
-import SkuOrdersChart from "./components/SkuOrdersChart";
-import TopProductsTable from "./components/TopProductsTable";
 import DateRangeFilter from "./components/DateRangeFilter";
 import FilterPopover from "./components/FilterPopover";
 import { useOrderFilters } from "./hooks/useOrderFilters";
+import HistoricalDataTab from "./components/HistoricalDataTab";
+import OverviewTab from "./components/OverviewTab";
+import OrderMetrics from "./components/OrderMetrics";
 
 const OrderAnalytics: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -182,73 +177,37 @@ const OrderAnalytics: React.FC = () => {
           onClearFilters={clearFilters}
         />
 
-        {isLoading ? (
-          <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            minHeight="400px"
-          >
-            <CircularProgress />
-          </Box>
-        ) : (
-          <>
-            <OrderMetrics
-              orders={filteredOrders}
-              products={products}
-              categories={categories}
-            />
-            <Paper sx={{ p: 2 }}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={7}>
-                  <Typography variant="h6" gutterBottom>
-                    Category Distribution Details
-                  </Typography>
-                  <CategoryDistributionTable
-                    orders={filteredOrders}
-                    categories={categories}
-                  />
-                </Grid>
-                <Grid item xs={12} md={5}>
-                  <Typography variant="h6" gutterBottom>
-                    Orders by Category
-                  </Typography>
-                  <CategoryOrdersChart
-                    orders={filteredOrders}
-                    categories={categories}
-                  />
-                </Grid>
-              </Grid>
-            </Paper>
-            <Paper sx={{ p: 2, mt:4, height: "100%" }}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={7}>
-                  <Typography variant="h6" gutterBottom>
-                    Top Products
-                  </Typography>
-                  <TopProductsTable
-                    orders={filteredOrders}
-                    categories={categories}
-                  />
-                </Grid>
-                <Grid item xs={12} md={5}>
-                  <Typography variant="h6" gutterBottom>
-                    Orders by SKU
-                  </Typography>
-                  <SkuOrdersChart
-                    orders={filteredOrders}
-                    categories={categories}
-                  />
-                </Grid>
-              </Grid>
-            </Paper>
-          </>
-        )}
+        {/* Order Metrics Section - Moved to top */}
+        <OrderMetrics
+          orders={filteredOrders}
+          products={products}
+          categories={categories}
+        />
+
+        {/* Category Analytics Section - Top 10 Categories */}
+        <HistoricalDataTab
+          orders={filteredOrders}
+          products={products}
+          categories={categories}
+          filterState={filterState}
+          onFilterUpdate={updateFilter}
+          isLoading={isLoading}
+        />
+        
+        {/* Overview Section */}
+        <Box mt={4}>
+          <OverviewTab
+            orders={filteredOrders}
+            products={products}
+            categories={categories}
+            filterState={filterState}
+            onFilterUpdate={updateFilter}
+            isLoading={isLoading}
+          />
+        </Box>
       </Container>
     </LocalizationProvider>
   );
 };
 
 export default OrderAnalytics;
-
-/* TODO: Create the CategoryDistributionChart component */
