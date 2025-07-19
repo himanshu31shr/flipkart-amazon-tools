@@ -1,5 +1,11 @@
 # Changelog
 
+## 7.0.0
+
+### Major Changes
+
+- [#26](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/26) [`0b089c1`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/0b089c1f458e9d388866101a00dd15a302e1608e) Thanks [@himanshu31shr](https://github.com/himanshu31shr)! - Added order analytics page to have historical data
+
 ## 6.1.1
 
 ### Patch Changes
