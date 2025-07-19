@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import {
   Box,
   CircularProgress,
@@ -19,7 +19,6 @@ import { HistoricalCategoryData } from '../hooks/useHistoricalData';
 import ComparisonIndicator from './ComparisonIndicator';
 import { Category } from '../../../services/category.service';
 import { ProductSummary } from '../../home/services/base.transformer';
-import { CostPriceResolutionService } from '../../../services/costPrice.service';
 import { FormattedCurrency } from '../../../components/FormattedCurrency';
 import CategoryProductsList from './CategoryProductsList';
 
@@ -48,14 +47,13 @@ const MergedCategoryTable: React.FC<MergedCategoryTableProps> = ({
   orders, 
   categories 
 }) => {
-  const costPriceService = useMemo(() => new CostPriceResolutionService(), []);
   const [loading, setLoading] = useState(true);
   const [mergedData, setMergedData] = useState<MergedCategoryRow[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
-  // Map categoryId to category name
+  // Memoized category mapping
   const categoryIdToName = useMemo(() => {
     const map: Record<string, string> = {};
     categories.forEach(cat => {
@@ -66,119 +64,119 @@ const MergedCategoryTable: React.FC<MergedCategoryTableProps> = ({
     return map;
   }, [categories]);
 
-  // Get products for selected category
-  const getProductsForCategory = (categoryName: string): ProductSummary[] => {
-    return orders.filter(order => {
+  // Memoized products for category mapping
+  const productsForCategory = useMemo(() => {
+    const map: Record<string, ProductSummary[]> = {};
+    orders.forEach(order => {
       const categoryId = order.product?.categoryId;
       const category = categoryId ? (categoryIdToName[categoryId] || 'Uncategorized') : 'Uncategorized';
-      return category === categoryName;
+      if (!map[category]) {
+        map[category] = [];
+      }
+      map[category].push(order);
     });
-  };
+    return map;
+  }, [orders, categoryIdToName]);
+
+  // Get products for selected category (memoized)
+  const getProductsForCategory = useCallback((categoryName: string): ProductSummary[] => {
+    return productsForCategory[categoryName] || [];
+  }, [productsForCategory]);
 
   // Handle row click to expand/collapse
-  const handleRowClick = (categoryName: string) => {
-    const newExpandedRows = new Set(expandedRows);
-    if (newExpandedRows.has(categoryName)) {
-      newExpandedRows.delete(categoryName);
-    } else {
-      newExpandedRows.add(categoryName);
-    }
-    setExpandedRows(newExpandedRows);
-  };
+  const handleRowClick = useCallback((categoryName: string) => {
+    setExpandedRows(prev => {
+      const newExpandedRows = new Set(prev);
+      if (newExpandedRows.has(categoryName)) {
+        newExpandedRows.delete(categoryName);
+      } else {
+        newExpandedRows.add(categoryName);
+      }
+      return newExpandedRows;
+    });
+  }, []);
 
   // Handle pagination
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = useCallback((event: unknown, newPage: number) => {
     setPage(newPage);
-  };
+  }, []);
 
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeRowsPerPage = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
-  };
+  }, []);
 
-  useEffect(() => {
-    const mergeData = async () => {
-      setLoading(true);
+  // Memoized financial data calculation
+  const financialData = useMemo(() => {
+    const data: Record<string, { revenue: number; cost: number; profit: number }> = {};
+    
+    // Group orders by category for batch processing
+    const ordersByCategory: Record<string, ProductSummary[]> = {};
+    orders.forEach(order => {
+      const categoryId = order.product?.categoryId;
+      const categoryName = categoryId ? (categoryIdToName[categoryId] || 'Uncategorized') : 'Uncategorized';
       
-      // Create a map of historical data by categoryId
-      const historicalMap = new Map<string, HistoricalCategoryData>();
-      historicalData.forEach(item => {
-        historicalMap.set(item.categoryId, item);
-      });
-
-      // Calculate financial data for each category
-      const financialData: Record<string, { revenue: number; cost: number; profit: number }> = {};
-      
-      for (const order of orders) {
-        const categoryId = order.product?.categoryId;
-        const categoryName = categoryId ? (categoryIdToName[categoryId] || 'Uncategorized') : 'Uncategorized';
-        
-        if (!financialData[categoryName]) {
-          financialData[categoryName] = { revenue: 0, cost: 0, profit: 0 };
-        }
-
-        if (order.product?.sku) {
-          const resolution = await costPriceService.getProductCostPrice(order.product.sku);
-          const costPrice = resolution.value;
-          const quantity = parseInt(order.quantity) || 1;
-          const sellingPrice = order.product.sellingPrice || 0;
-
-          financialData[categoryName].revenue += sellingPrice * quantity;
-          financialData[categoryName].cost += costPrice * quantity;
-          financialData[categoryName].profit = financialData[categoryName].revenue - financialData[categoryName].cost;
-        }
+      if (!ordersByCategory[categoryName]) {
+        ordersByCategory[categoryName] = [];
       }
+      ordersByCategory[categoryName].push(order);
+    });
 
-      // Merge historical and financial data
-      const merged: MergedCategoryRow[] = [];
+    // Calculate financial data for each category
+    Object.entries(ordersByCategory).forEach(([categoryName, categoryOrders]) => {
+      data[categoryName] = { revenue: 0, cost: 0, profit: 0 };
       
-      // Add all categories from historical data
-      historicalData.forEach(historical => {
-        const financial = financialData[historical.categoryName] || { revenue: 0, cost: 0, profit: 0 };
-        const profitMargin = financial.revenue > 0 ? (financial.profit / financial.revenue) * 100 : 0;
+      categoryOrders.forEach(order => {
+        const quantity = parseInt(order.quantity) || 1;
+        const sellingPrice = order.product?.sellingPrice || 0;
         
-        merged.push({
-          categoryId: historical.categoryId,
-          categoryName: historical.categoryName,
-          totalOrders: historical.totalOrders,
-          todayOrders: historical.todayOrders,
-          yesterdayOrders: historical.yesterdayOrders,
-          orderChange: historical.orderChange,
-          orderChangePercent: historical.orderChangePercent,
-          totalRevenue: financial.revenue,
-          totalCost: financial.cost,
-          profit: financial.profit,
-          profitMargin,
-        });
+        // Use default cost price if not available (avoid API calls)
+        const costPrice = order.product?.customCostPrice || 0;
+        
+        data[categoryName].revenue += sellingPrice * quantity;
+        data[categoryName].cost += costPrice * quantity;
       });
+      
+      data[categoryName].profit = data[categoryName].revenue - data[categoryName].cost;
+    });
 
-      // Add categories that only exist in financial data (if any)
-      Object.entries(financialData).forEach(([categoryName, financial]) => {
-        const exists = merged.some(item => item.categoryName === categoryName);
-        if (!exists) {
-          const profitMargin = financial.revenue > 0 ? (financial.profit / financial.revenue) * 100 : 0;
-          merged.push({
-            categoryId: `financial-${categoryName}`,
-            categoryName,
-            totalOrders: 0,
-            todayOrders: 0,
-            yesterdayOrders: 0,
-            orderChange: 0,
-            orderChangePercent: 0,
-            totalRevenue: financial.revenue,
-            totalCost: financial.cost,
-            profit: financial.profit,
-            profitMargin,
-          });
-        }
+    return data;
+  }, [orders, categoryIdToName]);
+
+  // Memoized merged data calculation
+  const calculateMergedData = useMemo(() => {
+    if (!historicalData.length) return [];
+
+    const merged: MergedCategoryRow[] = [];
+    
+    // Add all categories from historical data
+    historicalData.forEach(historical => {
+      const financial = financialData[historical.categoryName] || { revenue: 0, cost: 0, profit: 0 };
+      const profitMargin = financial.revenue > 0 ? (financial.profit / financial.revenue) * 100 : 0;
+      
+      merged.push({
+        categoryId: historical.categoryId,
+        categoryName: historical.categoryName,
+        totalOrders: historical.totalOrders,
+        todayOrders: historical.todayOrders,
+        yesterdayOrders: historical.yesterdayOrders,
+        orderChange: historical.orderChange,
+        orderChangePercent: historical.orderChangePercent,
+        totalRevenue: financial.revenue,
+        totalCost: financial.cost,
+        profit: financial.profit,
+        profitMargin,
       });
+    });
 
-      setMergedData(merged);
-      setLoading(false);
-    };
+    return merged;
+  }, [historicalData, financialData]);
 
-    mergeData();
-  }, [historicalData, orders, categories, categoryIdToName, costPriceService]);
+  // Update merged data when calculation changes
+  useEffect(() => {
+    setMergedData(calculateMergedData);
+    setLoading(false);
+  }, [calculateMergedData]);
 
   // Sort data by total orders (descending)
   const sortedData = useMemo(() => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Box,
   Container,
@@ -60,48 +60,75 @@ const OrderAnalytics: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } = useOrderFilters({ allOrders: allOrders as any, categories, products });
 
+  // Memoized loading and error states
+  const isLoading = useMemo(() => 
+    allOrdersLoading || productsLoading || categoriesLoading, 
+    [allOrdersLoading, productsLoading, categoriesLoading]
+  );
+  
+  const error = useMemo(() => 
+    allOrdersError || productsError || categoriesError, 
+    [allOrdersError, productsError, categoriesError]
+  );
+
+  // Memoized data fetching logic
   useEffect(() => {
-    if (allOrders.length === 0 && !allOrdersLoading && !allOrdersError) {
-      dispatch(fetchAllOrdersForAnalytics());
-    }
-    if (products.length === 0 && !productsLoading && !productsError) {
-      dispatch(fetchProducts({}));
-    }
-    if (categories.length === 0 && !categoriesLoading && !categoriesError) {
-      dispatch(fetchCategories());
-    }
+    const fetchData = async () => {
+      const promises = [];
+      
+      if (allOrders.length === 0 && !allOrdersLoading && !allOrdersError) {
+        promises.push(dispatch(fetchAllOrdersForAnalytics()));
+      }
+      if (products.length === 0 && !productsLoading && !productsError) {
+        promises.push(dispatch(fetchProducts({})));
+      }
+      if (categories.length === 0 && !categoriesLoading && !categoriesError) {
+        promises.push(dispatch(fetchCategories()));
+      }
+      
+      if (promises.length > 0) {
+        await Promise.all(promises);
+      }
+    };
+
+    fetchData();
+  }, [
+    allOrders.length, allOrdersLoading, allOrdersError,
+    products.length, productsLoading, productsError,
+    categories.length, categoriesLoading, categoriesError,
+    dispatch
+  ]);
+
+  // Memoized popover handlers
+  const handleFilterClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    setFilterAnchorEl(event.currentTarget);
   }, []);
 
-  const isLoading = allOrdersLoading || productsLoading || categoriesLoading;
-  const error = allOrdersError || productsError || categoriesError;
-
-  // Popover handlers
-  const handleFilterClick = (event: React.MouseEvent<HTMLElement>) => {
-    setFilterAnchorEl(event.currentTarget);
-  };
-  const handleFilterClose = () => {
+  const handleFilterClose = useCallback(() => {
     setFilterAnchorEl(null);
-  };
-  const handleDateClick = (event: React.MouseEvent<HTMLElement>) => {
-    setDateAnchorEl(event.currentTarget);
-  };
-  const handleDateClose = () => {
-    setDateAnchorEl(null);
-  };
+  }, []);
 
-  // Active filter count
-  const activeFilterCount = [
+  const handleDateClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    setDateAnchorEl(event.currentTarget);
+  }, []);
+
+  const handleDateClose = useCallback(() => {
+    setDateAnchorEl(null);
+  }, []);
+
+  // Memoized active filter count
+  const activeFilterCount = useMemo(() => [
     filterState.selectedCategory,
     filterState.selectedSku,
     filterState.selectedPlatform,
     filterState.selectedProduct,
-  ].filter(Boolean).length;
+  ].filter(Boolean).length, [filterState]);
 
-  // Date range summary
-  const dateSummary = `${format(
-    filterState.dateRange.startDate,
-    "dd MMM yyyy"
-  )} - ${format(filterState.dateRange.endDate, "dd MMM yyyy")}`;
+  // Memoized date range summary
+  const dateSummary = useMemo(() => 
+    `${format(filterState.dateRange.startDate, "dd MMM yyyy")} - ${format(filterState.dateRange.endDate, "dd MMM yyyy")}`,
+    [filterState.dateRange.startDate, filterState.dateRange.endDate]
+  );
 
   if (error) {
     return (

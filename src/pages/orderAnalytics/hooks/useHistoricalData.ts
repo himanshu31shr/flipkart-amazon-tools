@@ -34,9 +34,9 @@ interface HistoricalDataResult {
 }
 
 export const useHistoricalData = ({ orders, categories }: UseHistoricalDataProps): HistoricalDataResult => {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // Get today and yesterday date ranges
+  // Memoized date ranges - only recalculate when component mounts
   const dateRanges = useMemo(() => {
     const today = startOfDay(new Date());
     const yesterday = subDays(today, 1);
@@ -46,7 +46,18 @@ export const useHistoricalData = ({ orders, categories }: UseHistoricalDataProps
     };
   }, []);
 
-  // Process historical data by category
+  // Memoized category mapping
+  const categoryIdToName = useMemo(() => {
+    const map: Record<string, string> = {};
+    categories.forEach(cat => {
+      if (cat.id) {
+        map[cat.id] = cat.name;
+      }
+    });
+    return map;
+  }, [categories]);
+
+  // Memoized historical data processing
   const historicalData = useMemo(() => {
     if (!orders.length) {
       return {
@@ -57,19 +68,12 @@ export const useHistoricalData = ({ orders, categories }: UseHistoricalDataProps
       };
     }
 
-    // Map categoryId to category name
-    const categoryIdToName: Record<string, string> = {};
-    categories.forEach(cat => {
-      if (cat.id) {
-        categoryIdToName[cat.id] = cat.name;
-      }
-    });
-
     // Aggregate data by category
     const categoryMap: Record<string, HistoricalCategoryData> = {};
     let todayTotal = 0;
     let yesterdayTotal = 0;
 
+    // Process orders in a single pass
     orders.forEach((order: OrderItem) => {
       // Determine category information with proper fallback logic
       let categoryId: string;
@@ -101,27 +105,6 @@ export const useHistoricalData = ({ orders, categories }: UseHistoricalDataProps
 
       categoryMap[categoryId].totalOrders += 1;
 
-      // Count unique products in this category
-      const productSku = order.SKU;
-      if (productSku && !categoryMap[categoryId].productCount) {
-        // Count unique products by checking if we've seen this SKU before
-        const uniqueProducts = new Set(
-          orders
-            .filter(o => {
-              if (categoryId === 'uncategorized') {
-                // For uncategorized, include orders without valid category
-                return !o.product?.categoryId || !categoryIdToName[o.product.categoryId];
-              } else {
-                // For categorized items, match the exact categoryId
-                return o.product?.categoryId === categoryId;
-              }
-            })
-            .map(o => o.SKU)
-            .filter(Boolean)
-        );
-        categoryMap[categoryId].productCount = uniqueProducts.size;
-      }
-
       // Check if order is from today or yesterday
       if (order.date) {
         const orderDate = new Date(order.date);
@@ -134,6 +117,25 @@ export const useHistoricalData = ({ orders, categories }: UseHistoricalDataProps
           yesterdayTotal += 1;
         }
       }
+    });
+
+    // Calculate product counts efficiently
+    Object.values(categoryMap).forEach(category => {
+      const uniqueProducts = new Set(
+        orders
+          .filter(o => {
+            if (category.categoryId === 'uncategorized') {
+              // For uncategorized, include orders without valid category
+              return !o.product?.categoryId || !categoryIdToName[o.product.categoryId];
+            } else {
+              // For categorized items, match the exact categoryId
+              return o.product?.categoryId === category.categoryId;
+            }
+          })
+          .map(o => o.SKU)
+          .filter(Boolean)
+      );
+      category.productCount = uniqueProducts.size;
     });
 
     // Calculate changes and percentages
@@ -167,14 +169,16 @@ export const useHistoricalData = ({ orders, categories }: UseHistoricalDataProps
       todayTotal,
       yesterdayTotal
     };
-  }, [orders, categories, dateRanges]);
+  }, [orders, categoryIdToName, dateRanges]);
 
-  // Simulate loading state for better UX
+  // Only show loading briefly when data changes significantly
   useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, [orders]);
+    if (orders.length > 0) {
+      setLoading(true);
+      const timer = setTimeout(() => setLoading(false), 100); // Reduced from 500ms to 100ms
+      return () => clearTimeout(timer);
+    }
+  }, [orders.length]); // Only depend on orders length, not the entire orders array
 
   return {
     ...historicalData,
