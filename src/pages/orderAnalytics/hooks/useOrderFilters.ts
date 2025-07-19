@@ -16,7 +16,7 @@ interface UseOrderFiltersProps {
   products: Product[];
 }
 
-interface FilterState {
+export interface FilterState {
   selectedCategory: string;
   selectedSku: string;
   selectedPlatform: string;

@@ -96,7 +96,7 @@ export const HomePage: React.FC = () => {
       return;
     }
 
-    console.log('Auto-saving new PDF:', finalPdf);
+
     
     // Mark this PDF as being processed
     setProcessedPdfUrl(finalPdf);
@@ -143,7 +143,6 @@ export const HomePage: React.FC = () => {
           
           // If there's an authentication error, don't show it to the user
           if (result.error?.includes('authenticated')) {
-            console.log('Authentication error during auto-save, skipping...');
             setErrorMessage(undefined);
           }
         }
@@ -153,7 +152,6 @@ export const HomePage: React.FC = () => {
         
         // If there's an authentication error, don't show it to the user
         if (error instanceof Error && error.message.includes('authenticated')) {
-          console.log('Authentication error during auto-save, skipping...');
           setErrorMessage(undefined);
         }
       }

@@ -348,7 +348,7 @@ class PdfStorageService {
         };
       }
 
-      console.log('Starting PDF upload with auth user:', currentUser.uid);
+
 
       // Generate a unique file path with date-based folder structure
       const timestamp = Date.now();

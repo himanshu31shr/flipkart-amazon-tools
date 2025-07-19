@@ -173,7 +173,6 @@ export const ProductTable: React.FC<Props> = ({
       align: "right",
       format: (_, row?: Product) => {
         if (!row?.sku) {
-          console.log('No SKU found for row:', row);
           return null;
         }
         
@@ -182,10 +181,8 @@ export const ProductTable: React.FC<Props> = ({
         }
 
         const costPriceInfo = productCostPrices[row.sku];
-        console.log(`Cost price info for ${row.sku}:`, costPriceInfo);
         
         if (!costPriceInfo || typeof costPriceInfo.value !== 'number') {
-          console.log(`No valid cost price found for ${row.sku}`);
           return <FormattedCurrency value={0} />;
         }
         

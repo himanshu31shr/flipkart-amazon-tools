@@ -32,7 +32,6 @@ async function authenticate() {
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
-    console.log('Successfully authenticated');
   } catch (error) {
     console.error('Authentication failed:', error);
     throw error;
@@ -41,8 +40,6 @@ async function authenticate() {
 
 async function migrateCostPrices() {
   try {
-    console.log('Starting cost price migration...');
-
     // Authenticate first
     await authenticate();
 
@@ -50,13 +47,11 @@ async function migrateCostPrices() {
     const categoriesRef = collection(db, 'categories');
     const categoriesSnap = await getDocs(categoriesRef);
     const categories = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    console.log(`Found ${categories.length} categories to process`);
 
     // Get all products
     const productsRef = collection(db, 'products');
     const productsSnap = await getDocs(productsRef);
     const products = productsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    console.log(`Found ${products.length} products to process`);
 
     // Group products by category
     const productsByCategory = products.reduce((acc, product) => {
@@ -70,11 +65,9 @@ async function migrateCostPrices() {
     }, {});
 
     // Process each category
-    let processed = 0;
     for (const category of categories) {
       const categoryProducts = productsByCategory[category.id] || [];
       if (categoryProducts.length === 0) {
-        console.log(`Category ${category.id} has no products, skipping...`);
         continue;
       }
 
@@ -102,13 +95,8 @@ async function migrateCostPrices() {
             return updateDoc(productRef, { customCostPrice: null });
           })
         );
-
-        console.log(`Migrated category ${category.id} with ${categoryProducts.length} products`);
-        processed++;
       }
     }
-
-    console.log(`Migration complete! Processed ${processed} categories`);
   } catch (error) {
     console.error('Migration failed:', error);
     process.exit(1);
@@ -117,8 +105,6 @@ async function migrateCostPrices() {
 
 async function rollbackMigration() {
   try {
-    console.log('Starting migration rollback...');
-
     // Authenticate first
     await authenticate();
 
@@ -127,8 +113,6 @@ async function rollbackMigration() {
     const categoriesWithCostQuery = query(categoriesRef, where('costPrice', '!=', null));
     const categoriesSnap = await getDocs(categoriesWithCostQuery);
     const categories = categoriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    console.log(`Found ${categories.length} categories to rollback`);
 
     // Process each category
     for (const category of categories) {
@@ -149,11 +133,7 @@ async function rollbackMigration() {
           return updateDoc(productRef, { customCostPrice: product.customCostPrice || 0 });
         })
       );
-
-      console.log(`Rolled back category ${category.id} with ${products.length} products`);
     }
-
-    console.log('Rollback complete!');
   } catch (error) {
     console.error('Rollback failed:', error);
     process.exit(1);

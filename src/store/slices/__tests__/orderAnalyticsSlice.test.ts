@@ -5,7 +5,6 @@ describe('orderAnalyticsSlice', () => {
     metrics: null,
     categoryData: [],
     skuData: [],
-    topProducts: [],
     loading: false,
     error: null,
   };
@@ -19,7 +18,6 @@ describe('orderAnalyticsSlice', () => {
       metrics: null,
       categoryData: [] as [],
       skuData: [] as [],
-      topProducts: [] as [],
       loading: true,
       error: 'Some error',
     };
@@ -33,7 +31,6 @@ describe('orderAnalyticsSlice', () => {
     expect(state).toHaveProperty('metrics');
     expect(state).toHaveProperty('categoryData');
     expect(state).toHaveProperty('skuData');
-    expect(state).toHaveProperty('topProducts');
     expect(state).toHaveProperty('loading');
     expect(state).toHaveProperty('error');
   });
@@ -44,7 +41,6 @@ describe('orderAnalyticsSlice', () => {
     expect(state.metrics).toBeNull();
     expect(state.categoryData).toEqual([]);
     expect(state.skuData).toEqual([]);
-    expect(state.topProducts).toEqual([]);
     expect(state.loading).toBe(false);
     expect(state.error).toBeNull();
   });
