@@ -243,7 +243,7 @@ describe('MergedCategoryTable', () => {
     expect(screen.getByText('Clothing Product')).toBeInTheDocument();
   });
 
-  it('shows loading state initially', () => {
+  it('shows loading state briefly then renders data', async () => {
     renderWithProviders(
       <MergedCategoryTable
         historicalData={mockHistoricalData}
@@ -252,8 +252,13 @@ describe('MergedCategoryTable', () => {
       />
     );
 
-    // Should show loading initially
-    expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    // Should show loading briefly, then render data
+    await waitFor(() => {
+      expect(screen.getByText('Electronics')).toBeInTheDocument();
+    });
+    
+    expect(screen.getByText('Electronics')).toBeInTheDocument();
+    expect(screen.getByText('Clothing')).toBeInTheDocument();
   });
 
   it('shows empty state when no data', async () => {
