@@ -12,15 +12,11 @@ class CostPriceMigrationService extends FirebaseService {
    */
   async migrateCostPriceData(): Promise<void> {
     try {
-      console.log('Starting cost price migration...');
-
       // Get all categories
       const categories = await this.getDocuments<Category>(this.CATEGORIES_COLLECTION);
-      console.log(`Found ${categories.length} categories to process`);
 
       // Get all products
       const products = await this.getDocuments<Product>(this.PRODUCTS_COLLECTION);
-      console.log(`Found ${products.length} products to process`);
 
       // Group products by category
       const productsByCategory = products.reduce((acc, product) => {
@@ -34,13 +30,11 @@ class CostPriceMigrationService extends FirebaseService {
       }, {} as Record<string, Product[]>);
 
       // Process each category
-      let processed = 0;
       for (const category of categories) {
         if (!category.id) continue;
 
         const categoryProducts = productsByCategory[category.id] || [];
         if (categoryProducts.length === 0) {
-          console.log(`Category ${category.id} has no products, skipping...`);
           continue;
         }
 
@@ -74,13 +68,8 @@ class CostPriceMigrationService extends FirebaseService {
               )
             )
           );
-
-          console.log(`Migrated category ${category.id} with ${categoryProducts.length} products`);
-          processed++;
         }
       }
-
-      console.log(`Migration complete! Processed ${processed} categories`);
     } catch (error) {
       console.error('Migration failed:', error);
       throw error;
@@ -92,15 +81,11 @@ class CostPriceMigrationService extends FirebaseService {
    */
   async rollbackMigration(): Promise<void> {
     try {
-      console.log('Starting migration rollback...');
-
       // Get all categories with cost price
       const categories = await this.getDocuments<Category>(
         this.CATEGORIES_COLLECTION,
         [where('costPrice', '!=', null)]
       );
-
-      console.log(`Found ${categories.length} categories to rollback`);
 
       // Process each category
       for (const category of categories) {
@@ -129,11 +114,7 @@ class CostPriceMigrationService extends FirebaseService {
             )
           )
         );
-
-        console.log(`Rolled back category ${category.id} with ${products.length} products`);
       }
-
-      console.log('Rollback complete!');
     } catch (error) {
       console.error('Rollback failed:', error);
       throw error;
