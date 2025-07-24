@@ -41,8 +41,8 @@ export const defaultSortConfig: CategorySortConfig = {
   secondarySort: 'sku',
   sortOrder: 'asc',
   groupByCategory: true,
-  prioritizeActiveCategories: true,
-  sortCategoriesAlphabetically: false,
+  prioritizeActiveCategories: false,
+  sortCategoriesAlphabetically: true,
 };
 
 /**
