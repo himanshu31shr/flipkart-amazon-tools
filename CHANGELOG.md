@@ -1,5 +1,11 @@
 # Changelog
 
+## 8.1.0
+
+### Minor Changes
+
+- [#30](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/30) [`28e685a`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/28e685a0dfc5798c871c6e9dcde2b75aac4788d5) Thanks [@himanshu31shr](https://github.com/himanshu31shr)! - Updated PDf to merged correctly with correct quantity and sorting
+
 ## 8.0.0
 
 ### Major Changes
