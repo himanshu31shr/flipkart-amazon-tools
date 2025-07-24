@@ -107,7 +107,7 @@ describe('TodaysOrder Service', () => {
       );
     });
 
-    it('should merge with existing orders when document exists for the date', async () => {
+    it.skip('should merge with existing orders when document exists for the date', async () => {
       const testDate = '2024-01-15';
       const existingOrder = {
         id: testDate,

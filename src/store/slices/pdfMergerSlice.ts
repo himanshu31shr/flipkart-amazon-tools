@@ -3,6 +3,7 @@ import { PDFMergerService } from '../../pages/home/services/merge.service';
 import { ProductSummary } from '../../pages/home/services/base.transformer';
 import { store } from '..';
 import { CategorySortConfig } from "../../utils/pdfSorting";
+import { PDFConsolidationService, ConsolidationProgress, ConsolidationError } from '../../services/pdfConsolidation.service';
 
 export interface PdfMergerState {
   amazonFiles: File[];
@@ -12,6 +13,8 @@ export interface PdfMergerState {
   loading: boolean;
   error: string | null;
   selectedDate: Date;
+  consolidationProgress: ConsolidationProgress | null;
+  isConsolidating: boolean;
 }
 
 const initialState: PdfMergerState = {
@@ -22,6 +25,8 @@ const initialState: PdfMergerState = {
   loading: false,
   error: null,
   selectedDate: new Date(),
+  consolidationProgress: null,
+  isConsolidating: false,
 };
 
 interface MergePDFsParams {
@@ -49,7 +54,7 @@ const readFileFromInput = (file: File): Promise<Uint8Array> => {
 
 export const mergePDFs = createAsyncThunk(
   'pdfMerger/mergePDFs',
-  async (params: MergePDFsParams) => {
+  async (params: MergePDFsParams, { dispatch }) => {
     const { amazonFiles, flipkartFiles, sortConfig, selectedDate } = params;
 
     if (amazonFiles.length === 0 && flipkartFiles.length === 0) {
@@ -71,38 +76,69 @@ export const mergePDFs = createAsyncThunk(
     const products = store.getState().products.items;
     const categories = store.getState().products.categories;
 
-    const mergePdfs = new PDFMergerService(products, categories);
-    
-    // Read all Amazon files
-    const amazonFileContents = await Promise.all(
-      amazonFiles.map(file => readFileFromInput(file))
-    );
-    
-    // Read all Flipkart files
-    const flipkartFileContents = await Promise.all(
-      flipkartFiles.map(file => readFileFromInput(file))
-    );
-    
-    // Pass the sort config and selectedDate to the merge service
-    const pdf = await mergePdfs.mergePdfs({
-      amzon: amazonFileContents,
-      flp: flipkartFileContents,
-      sortConfig: sortConfig,
-      selectedDate: selectedDate
+    // Create consolidation service with progress tracking
+    const consolidationService = new PDFConsolidationService({
+      enableProgressTracking: true,
+      enableCancellation: true,
+      chunkSize: 5,
+      validateFiles: true
     });
 
-    if (!pdf) {
-      throw new Error('Failed to merge PDFs');
-    }
-
-    const outputPdfBytes = await pdf.save();
-    const blob = new Blob([outputPdfBytes], { type: 'application/pdf' });
-    const pdfUrl = URL.createObjectURL(blob);
-
-    return {
-      pdfUrl,
-      summary: mergePdfs.summary,
+    // Set up progress tracking
+    consolidationService.onProgress = (progress: ConsolidationProgress) => {
+      dispatch(pdfMergerSlice.actions.updateConsolidationProgress(progress));
     };
+
+    try {
+      // Step 1: Consolidate Amazon files
+      let consolidatedAmazonPDF: Uint8Array | null = null;
+      if (amazonFiles.length > 0) {
+        const amazonFileContents = await Promise.all(
+          amazonFiles.map(file => readFileFromInput(file))
+        );
+        consolidatedAmazonPDF = await consolidationService.mergeAmazonFiles(amazonFileContents);
+      }
+
+      // Step 2: Consolidate Flipkart files
+      let consolidatedFlipkartPDF: Uint8Array | null = null;
+      if (flipkartFiles.length > 0) {
+        const flipkartFileContents = await Promise.all(
+          flipkartFiles.map(file => readFileFromInput(file))
+        );
+        consolidatedFlipkartPDF = await consolidationService.mergeFlipkartFiles(flipkartFileContents);
+      }
+
+      // Step 3: Process with existing merger service
+      const mergePdfs = new PDFMergerService(products, categories);
+      const pdf = await mergePdfs.mergePdfs({
+        amzon: consolidatedAmazonPDF ? [consolidatedAmazonPDF] : [],
+        flp: consolidatedFlipkartPDF ? [consolidatedFlipkartPDF] : [],
+        sortConfig: sortConfig,
+        selectedDate: selectedDate
+      });
+
+      if (!pdf) {
+        throw new Error('Failed to merge PDFs');
+      }
+
+      const outputPdfBytes = await pdf.save();
+      const blob = new Blob([outputPdfBytes], { type: 'application/pdf' });
+      const pdfUrl = URL.createObjectURL(blob);
+
+      return {
+        pdfUrl,
+        summary: mergePdfs.summary,
+      };
+    } catch (error) {
+      // Handle consolidation errors
+      if (error instanceof Error) {
+        const consolidationError = error as ConsolidationError;
+        if (consolidationError.userMessage) {
+          throw new Error(consolidationError.userMessage);
+        }
+      }
+      throw error;
+    }
   }
 );
 
@@ -145,6 +181,16 @@ const pdfMergerSlice = createSlice({
       state.finalPdf = null;
       state.summary = [];
       state.selectedDate = new Date();
+      state.consolidationProgress = null;
+      state.isConsolidating = false;
+    },
+    updateConsolidationProgress: (state, action: PayloadAction<ConsolidationProgress>) => {
+      state.consolidationProgress = action.payload;
+      state.isConsolidating = true;
+    },
+    clearConsolidationProgress: (state) => {
+      state.consolidationProgress = null;
+      state.isConsolidating = false;
     }
   },
   extraReducers: (builder) => {
@@ -152,15 +198,20 @@ const pdfMergerSlice = createSlice({
       .addCase(mergePDFs.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.isConsolidating = true;
       })
       .addCase(mergePDFs.fulfilled, (state, action) => {
         state.loading = false;
         state.finalPdf = action.payload.pdfUrl;
         state.summary = action.payload.summary;
+        state.consolidationProgress = null;
+        state.isConsolidating = false;
       })
       .addCase(mergePDFs.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || 'Failed to merge PDFs';
+        state.consolidationProgress = null;
+        state.isConsolidating = false;
       });
   },
 });
@@ -173,6 +224,8 @@ export const {
   clearAmazonFiles,
   clearFlipkartFiles,
   setSelectedDate,
-  clearFiles
+  clearFiles,
+  updateConsolidationProgress,
+  clearConsolidationProgress
 } = pdfMergerSlice.actions;
 export const pdfMergerReducer = pdfMergerSlice.reducer; 

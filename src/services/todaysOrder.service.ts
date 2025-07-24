@@ -293,7 +293,12 @@ export class TodaysOrder extends FirebaseService {
           date: targetDate,
           orders: [
             ...this.cleanOrders(existingOrder.orders),
-            ...this.cleanOrders(order.orders),
+            ...this.cleanOrders(order.orders).filter(
+              (newOrder) =>
+                !this.cleanOrders(existingOrder.orders).some(
+                  (existing) => existing.orderId === newOrder.orderId
+                )
+            ),
           ],
         }
       );
