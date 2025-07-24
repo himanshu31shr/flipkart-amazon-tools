@@ -24,6 +24,8 @@ describe('pdfMergerSlice', () => {
     loading: false,
     error: null,
     selectedDate: new Date('2024-01-01'),
+    consolidationProgress: null,
+    isConsolidating: false,
   };
 
   describe('reducers', () => {
@@ -36,6 +38,8 @@ describe('pdfMergerSlice', () => {
         loading: false,
         error: null,
         selectedDate: expect.any(Date),
+        consolidationProgress: null,
+        isConsolidating: false,
       });
     });
 
