@@ -1,5 +1,15 @@
 # Changelog
 
+## 8.2.0
+
+### Minor Changes
+
+- [#32](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/32) [`7059232`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/70592327a40258a9c5339fba9b9b83d9f075ab78) Thanks [@himanshu31shr](https://github.com/himanshu31shr)! - Updated PDf to merged correctly with correct quantity and sorting
+
+### Patch Changes
+
+- [#32](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/32) [`7059232`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/70592327a40258a9c5339fba9b9b83d9f075ab78) Thanks [@himanshu31shr](https://github.com/himanshu31shr)! - Fixed amazon orders not showing up in active orders
+
 ## 8.1.0
 
 ### Minor Changes
