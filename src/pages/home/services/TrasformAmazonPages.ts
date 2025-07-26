@@ -139,6 +139,7 @@ export class AmazonPDFTransformer extends BaseTransformer {
       SKU: product.SKU,
       categoryId: skuProduct?.categoryId,
       category: category?.name,
+      orderId: product.orderId
     };
 
     if (category) {
@@ -218,6 +219,7 @@ export class AmazonPDFTransformer extends BaseTransformer {
           customCostPrice: null,
           metadata: {},
           categoryId: data.product.categoryId,
+          orderId: data.product.orderId
         };
       });
 
