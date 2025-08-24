@@ -1,5 +1,11 @@
 # Changelog
 
+## 8.2.1
+
+### Patch Changes
+
+- [#35](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/35) [`44e1b07`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/44e1b079967a4ee0f535998d95e0d0a46bb55a63) Thanks [@himanshu31shr](https://github.com/himanshu31shr)! - Added filters to active orders page
+
 ## 8.2.0
 
 ### Minor Changes
