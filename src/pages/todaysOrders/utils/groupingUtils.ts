@@ -116,58 +116,74 @@ export const getCategoryStatistics = (group: CategoryGroup) => {
 };
 
 /**
- * Filter groups by search term
+ * Filter groups by search term and platform
  */
 export const filterGroupsBySearch = (
   groupedData: GroupedOrderData,
-  searchTerm: string
+  searchTerm: string,
+  platform: 'all' | 'amazon' | 'flipkart' = 'all'
 ): GroupedOrderData => {
-  if (!searchTerm.trim()) {
-    return groupedData;
-  }
-
   const lowerSearchTerm = searchTerm.toLowerCase();
 
-  const filteredGroups = groupedData.categorizedGroups
-    .map(group => ({
-      ...group,
-      orders: group.orders.filter(order => 
-        order.name?.toLowerCase().includes(lowerSearchTerm) ||
-        order.SKU?.toLowerCase().includes(lowerSearchTerm) ||
-        group.categoryName.toLowerCase().includes(lowerSearchTerm)
-      ),
-    }))
+  const filterOrders = (order: ProductSummary) => {
+    const searchTermMatch = !searchTerm.trim() ||
+      order.name?.toLowerCase().includes(lowerSearchTerm) ||
+      order.SKU?.toLowerCase().includes(lowerSearchTerm);
+
+    const platformMatch = platform === 'all' || order.type === platform;
+
+    return searchTermMatch && platformMatch;
+  };
+
+  const filteredCategorizedGroups = groupedData.categorizedGroups
+    .map(group => {
+      // If the search term matches the category name, include all orders in that group
+      if (group.categoryName.toLowerCase().includes(lowerSearchTerm)) {
+        return {
+          ...group,
+          orders: group.orders.filter(order => {
+            const platformMatch = platform === 'all' || order.type === platform;
+            return platformMatch;
+          }),
+        };
+      }
+      // Otherwise, filter orders within the group
+      return {
+        ...group,
+        orders: group.orders.filter(filterOrders),
+      };
+    })
     .filter(group => group.orders.length > 0)
     .map(group => ({
       ...group,
       totalQuantity: group.orders.reduce((sum, order) => sum + (parseInt(order.quantity) || 0), 0),
       totalRevenue: group.orders.reduce((sum, order) => sum + calculateOrderRevenue(order), 0),
       totalItems: group.orders.length,
+      platforms: [...new Set(group.orders.map(o => o.type).filter(Boolean))]
     }));
 
-  const filteredUncategorized = {
+  const filteredUncategorizedGroup = {
     ...groupedData.uncategorizedGroup,
-    orders: groupedData.uncategorizedGroup.orders.filter(order =>
-      order.name?.toLowerCase().includes(lowerSearchTerm) ||
-      order.SKU?.toLowerCase().includes(lowerSearchTerm)
-    ),
+    orders: groupedData.uncategorizedGroup.orders.filter(filterOrders),
   };
 
-  filteredUncategorized.totalQuantity = filteredUncategorized.orders.reduce(
+  filteredUncategorizedGroup.totalQuantity = filteredUncategorizedGroup.orders.reduce(
     (sum, order) => sum + (parseInt(order.quantity) || 0), 0
   );
-  filteredUncategorized.totalRevenue = filteredUncategorized.orders.reduce(
+  filteredUncategorizedGroup.totalRevenue = filteredUncategorizedGroup.orders.reduce(
     (sum, order) => sum + calculateOrderRevenue(order), 0
   );
-  filteredUncategorized.totalItems = filteredUncategorized.orders.length;
+  filteredUncategorizedGroup.totalItems = filteredUncategorizedGroup.orders.length;
+  filteredUncategorizedGroup.platforms = [...new Set(filteredUncategorizedGroup.orders.map(o => o.type).filter(Boolean))];
+
 
   return {
-    categorizedGroups: filteredGroups,
-    uncategorizedGroup: filteredUncategorized,
+    categorizedGroups: filteredCategorizedGroups,
+    uncategorizedGroup: filteredUncategorizedGroup,
     summary: {
-      totalCategories: filteredGroups.length + (filteredUncategorized.totalItems > 0 ? 1 : 0),
-      totalOrders: filteredGroups.reduce((sum, group) => sum + group.totalItems, 0) + filteredUncategorized.totalItems,
-      totalRevenue: filteredGroups.reduce((sum, group) => sum + group.totalRevenue, 0) + filteredUncategorized.totalRevenue,
+      totalCategories: filteredCategorizedGroups.length + (filteredUncategorizedGroup.totalItems > 0 ? 1 : 0),
+      totalOrders: filteredCategorizedGroups.reduce((sum, group) => sum + group.totalItems, 0) + filteredUncategorizedGroup.totalItems,
+      totalRevenue: filteredCategorizedGroups.reduce((sum, group) => sum + group.totalRevenue, 0) + filteredUncategorizedGroup.totalRevenue,
     },
   };
 }; 

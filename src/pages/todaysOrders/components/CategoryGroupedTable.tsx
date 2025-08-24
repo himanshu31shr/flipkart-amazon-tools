@@ -18,6 +18,8 @@ import {
   Collapse,
   IconButton,
   TableSortLabel,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import {
   Category as CategoryIcon,
@@ -39,6 +41,7 @@ interface CategoryGroupedTableProps {
 
 type SortField = 'category' | 'itemCount' | 'totalQuantity' | 'totalRevenue';
 type SortDirection = 'asc' | 'desc';
+type Platform = 'all' | 'amazon' | 'flipkart';
 
 interface CategoryRowProps {
   group: CategoryGroup;
@@ -59,12 +62,22 @@ const getCategoryStatistics = (group: CategoryGroup) => {
 
 export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ groupedData }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [platformFilter, setPlatformFilter] = useState<Platform>('all');
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [sortField, setSortField] = useState<SortField>('category');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
-  // Filter data based on search term
-  const filteredData = filterGroupsBySearch(groupedData, searchTerm);
+  // Filter data based on search term and platform
+  const filteredData = filterGroupsBySearch(groupedData, searchTerm, platformFilter);
+
+  const handlePlatformChange = (
+    event: React.MouseEvent<HTMLElement>,
+    newPlatform: Platform | null,
+  ) => {
+    if (newPlatform) {
+      setPlatformFilter(newPlatform);
+    }
+  };
 
   const handleCategoryToggle = (categoryName: string) => {
     setExpandedCategories(prev => ({
@@ -279,22 +292,39 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
 
   return (
     <Box>
-      {/* Search Bar */}
-      <TextField
-        fullWidth
-        variant="outlined"
-        placeholder="Search by product name, SKU, or category..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        sx={{ mb: 3 }}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
-        }}
-      />
+      {/* Search and Filter Controls */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <TextField
+          variant="outlined"
+          placeholder="Search by product name, SKU, or category..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          sx={{ flexGrow: 1, mr: 2 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <ToggleButtonGroup
+          value={platformFilter}
+          exclusive
+          onChange={handlePlatformChange}
+          aria-label="platform filter"
+        >
+          <ToggleButton value="all" aria-label="all platforms">
+            All
+          </ToggleButton>
+          <ToggleButton value="amazon" aria-label="amazon">
+            Amazon
+          </ToggleButton>
+          <ToggleButton value="flipkart" aria-label="flipkart">
+            Flipkart
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
 
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
