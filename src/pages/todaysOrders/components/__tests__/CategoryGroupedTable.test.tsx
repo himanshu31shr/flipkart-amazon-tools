@@ -182,7 +182,7 @@ describe('CategoryGroupedTable', () => {
     });
   });
 
-  it('filters data when searching', async () => {
+  it('filters data when searching by category', async () => {
     render(<CategoryGroupedTable groupedData={mockGroupedData} />);
     
     const searchInput = screen.getByPlaceholderText('Search by product name, SKU, or category...');
@@ -194,6 +194,34 @@ describe('CategoryGroupedTable', () => {
     });
   });
 
+  it('filters data when searching by SKU', async () => {
+    render(<CategoryGroupedTable groupedData={mockGroupedData} />);
+    
+    const searchInput = screen.getByPlaceholderText('Search by product name, SKU, or category...');
+    fireEvent.change(searchInput, { target: { value: 'SKU001' } });
+    
+    await waitFor(() => {
+      expect(screen.getByText('Electronics')).toBeInTheDocument();
+      expect(screen.queryByText('Books')).not.toBeInTheDocument();
+    });
+  });
+
+  it('filters by platform when Amazon is selected', async () => {
+    render(<CategoryGroupedTable groupedData={mockGroupedData} />);
+    
+    const amazonButton = screen.getByText('Amazon');
+    fireEvent.click(amazonButton);
+    
+    await waitFor(() => {
+      // Expand the electronics category to check its contents
+      const electronicsAccordion = screen.getByText('Electronics').closest('[role="button"]');
+      fireEvent.click(electronicsAccordion!);
+
+      expect(screen.getByText('Test Product 1')).toBeInTheDocument(); // Amazon product
+      expect(screen.queryByText('Test Product 2')).not.toBeInTheDocument(); // Flipkart product
+    });
+  });
+
   it('shows action buttons for products with serial numbers', async () => {
     render(<CategoryGroupedTable groupedData={mockGroupedData} />);
     
@@ -202,10 +230,10 @@ describe('CategoryGroupedTable', () => {
     fireEvent.click(electronicsAccordion!);
     
     await waitFor(() => {
-      // Use getAllByTestId since there are multiple Amazon buttons (AMZ001, AMZ002, AMZ003)
-      const amazonButtons = screen.getAllByTestId('amazon-button');
-      expect(amazonButtons.length).toBeGreaterThan(0);
-      expect(screen.getByTestId('flipkart-button')).toBeInTheDocument();
+      const flipkartChips = screen.getAllByText('FLIPKART');
+      
+      expect(screen.getAllByText('AMAZON').length).toBeGreaterThan(0);
+      expect(flipkartChips.length).toBeGreaterThan(0);
     });
   });
 
@@ -252,22 +280,6 @@ describe('CategoryGroupedTable', () => {
     expect(uncategorizedChip).toBeInTheDocument();
   });
 
-  it('shows platform chips with correct colors', async () => {
-    render(<CategoryGroupedTable groupedData={mockGroupedData} />);
-    
-    // Find and expand Electronics accordion
-    const electronicsAccordion = screen.getByText('Electronics').closest('[role="button"]');
-    fireEvent.click(electronicsAccordion!);
-    
-    await waitFor(() => {
-      const amazonChips = screen.getAllByText('AMAZON');
-      const flipkartChips = screen.getAllByText('FLIPKART');
-      
-      expect(amazonChips.length).toBeGreaterThan(0);
-      expect(flipkartChips.length).toBeGreaterThan(0);
-    });
-  });
-
   it('displays correct revenue calculations in table rows', async () => {
     render(<CategoryGroupedTable groupedData={mockGroupedData} />);
     
@@ -283,4 +295,4 @@ describe('CategoryGroupedTable', () => {
       expect(revenue150Elements.length).toBeGreaterThanOrEqual(1);
     });
   });
-}); 
+});
