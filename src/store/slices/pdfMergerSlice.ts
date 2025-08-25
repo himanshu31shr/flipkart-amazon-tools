@@ -4,6 +4,7 @@ import { ProductSummary } from '../../pages/home/services/base.transformer';
 import { store } from '..';
 import { CategorySortConfig } from "../../utils/pdfSorting";
 import { PDFConsolidationService, ConsolidationProgress, ConsolidationError } from '../../services/pdfConsolidation.service';
+import { v4 as uuidv4 } from 'uuid'; // Import uuid
 
 export interface PdfMergerState {
   amazonFiles: File[];
@@ -76,6 +77,10 @@ export const mergePDFs = createAsyncThunk(
     const products = store.getState().products.items;
     const categories = store.getState().products.categories;
 
+    // Generate batch information
+    const batchNumber = uuidv4();
+    const batchTimestamp = new Date().toISOString();
+
     // Create consolidation service with progress tracking
     const consolidationService = new PDFConsolidationService({
       enableProgressTracking: true,
@@ -114,7 +119,9 @@ export const mergePDFs = createAsyncThunk(
         amzon: consolidatedAmazonPDF ? [consolidatedAmazonPDF] : [],
         flp: consolidatedFlipkartPDF ? [consolidatedFlipkartPDF] : [],
         sortConfig: sortConfig,
-        selectedDate: selectedDate
+        selectedDate: selectedDate,
+        batchNumber: batchNumber, // Pass batch number
+        batchTimestamp: batchTimestamp, // Pass batch timestamp
       });
 
       if (!pdf) {

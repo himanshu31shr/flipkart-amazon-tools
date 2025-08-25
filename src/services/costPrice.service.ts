@@ -41,7 +41,7 @@ export class CostPriceResolutionService extends FirebaseService {
     // Fetch all categories in one go
     const categoriesPromises = categoryIds.map(async (id) => {
       try {
-        return await this.getDocument<Category>(this.CATEGORIES_COLLECTION, id);
+        return await this.getDocument<Category>(this.CATEGORIES_COLMLECTION, id);
       } catch (error) {
         console.error(`Error fetching category ${id}:`, error);
         return null;
@@ -179,18 +179,8 @@ export class CostPriceResolutionService extends FirebaseService {
       costPrice: price
     });
 
-    // Get all products in this category that don't have a custom cost price
-    const products = await this.getDocuments<Product>(
-      this.PRODUCTS_COLLECTION,
-      [
-        where('categoryId', '==', categoryId),
-        where('customCostPrice', '==', null)
-      ]
-    );
-
     // No need to update products as they dynamically inherit from category
     // This is just for logging/tracking purposes
-    console.log(`Updated cost price for category ${categoryId}, affecting ${products.length} products`);
   }
 
   /**
@@ -248,4 +238,4 @@ export class CostPriceResolutionService extends FirebaseService {
       ]
     );
   }
-} 
+}

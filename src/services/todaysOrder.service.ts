@@ -11,6 +11,8 @@ export interface ActiveOrderSchema {
   id: string;
   orders: ActiveOrder[];
   date: string;
+  batchNumber?: string;
+  batchTimestamp?: string;
 }
 
 export class TodaysOrder extends FirebaseService {
@@ -46,6 +48,8 @@ export class TodaysOrder extends FirebaseService {
     if (order.orderId !== undefined) cleanOrder.orderId = order.orderId;
     if (order.createdAt !== undefined) cleanOrder.createdAt = order.createdAt;
     if (order.category !== undefined) cleanOrder.category = order.category;
+    if (order.batchNumber !== undefined) cleanOrder.batchNumber = order.batchNumber; // Add batchNumber
+    if (order.batchTimestamp !== undefined) cleanOrder.batchTimestamp = order.batchTimestamp; // Add batchTimestamp
     
     // Never include the product property when saving to database to avoid circular references
     // The product property is populated during read operations in mapProductToOrder method
@@ -58,8 +62,17 @@ export class TodaysOrder extends FirebaseService {
    * @param orders Array of orders to clean
    * @returns Array of clean orders
    */
-  private cleanOrders(orders: ActiveOrder[]): ActiveOrder[] {
-    return orders.map(order => this.removeUndefinedKeys(order));
+  private cleanOrders(orders: ActiveOrder[], batchNumber?: string, batchTimestamp?: string): ActiveOrder[] {
+    return orders.map(order => {
+      const cleanedOrder = this.removeUndefinedKeys(order);
+      if (batchNumber) {
+        cleanedOrder.batchNumber = batchNumber;
+      }
+      if (batchTimestamp) {
+        cleanedOrder.batchTimestamp = batchTimestamp;
+      }
+      return cleanedOrder;
+    });
   }
 
   async mapProductsToActiveOrder() {
@@ -85,7 +98,7 @@ export class TodaysOrder extends FirebaseService {
     }
   }
 
-  async getTodaysOrders(): Promise<ActiveOrderSchema | undefined> {
+  async getTodaysOrders(batchNumber?: string): Promise<ActiveOrderSchema | undefined> {
     await this.mapProductsToActiveOrder();
     const activeOrder = await this.getDocument<ActiveOrderSchema>(
       this.COLLECTION_NAME,
@@ -95,6 +108,9 @@ export class TodaysOrder extends FirebaseService {
       activeOrder.orders.forEach((order) => {
         this.mapProductToOrder(order);
       });
+      if (batchNumber) {
+        activeOrder.orders = activeOrder.orders.filter(order => order.batchNumber === batchNumber);
+      }
     }
 
     return activeOrder;
@@ -105,7 +121,7 @@ export class TodaysOrder extends FirebaseService {
    * @param date Date string in yyyy-MM-dd format
    * @returns ActiveOrderSchema for the specified date or undefined if no orders exist
    */
-  async getOrdersForDate(date: string): Promise<ActiveOrderSchema | undefined> {
+  async getOrdersForDate(date: string, batchNumber?: string): Promise<ActiveOrderSchema | undefined> {
     await this.mapProductsToActiveOrder();
     const activeOrder = await this.getDocument<ActiveOrderSchema>(
       this.COLLECTION_NAME,
@@ -115,6 +131,9 @@ export class TodaysOrder extends FirebaseService {
       activeOrder.orders.forEach((order) => {
         this.mapProductToOrder(order);
       });
+      if (batchNumber) {
+        activeOrder.orders = activeOrder.orders.filter(order => order.batchNumber === batchNumber);
+      }
     }
 
     return activeOrder;
@@ -247,14 +266,14 @@ export class TodaysOrder extends FirebaseService {
           ...order,
           orders: [
             ...this.cleanOrders(existingOrder.orders),
-            ...this.cleanOrders(order.orders),
+            ...this.cleanOrders(order.orders, order.batchNumber, order.batchTimestamp), // Pass batch info
           ],
         }
       );
     } else {
       const cleanOrderData = {
         ...order,
-        orders: this.cleanOrders(order.orders),
+        orders: this.cleanOrders(order.orders, order.batchNumber, order.batchTimestamp), // Pass batch info
       };
       await this.batchOperation<ActiveOrderSchema>(
         [cleanOrderData],
@@ -293,7 +312,7 @@ export class TodaysOrder extends FirebaseService {
           date: targetDate,
           orders: [
             ...this.cleanOrders(existingOrder.orders),
-            ...this.cleanOrders(order.orders).filter(
+            ...this.cleanOrders(order.orders, order.batchNumber, order.batchTimestamp).filter( // Pass batch info
               (newOrder) =>
                 !this.cleanOrders(existingOrder.orders).some(
                   (existing) => existing.orderId === newOrder.orderId
@@ -307,7 +326,7 @@ export class TodaysOrder extends FirebaseService {
         ...order,
         id: targetDate,
         date: targetDate,
-        orders: this.cleanOrders(order.orders),
+        orders: this.cleanOrders(order.orders, order.batchNumber, order.batchTimestamp), // Pass batch info
       };
       await this.batchOperation<ActiveOrderSchema>(
         [cleanOrderData],

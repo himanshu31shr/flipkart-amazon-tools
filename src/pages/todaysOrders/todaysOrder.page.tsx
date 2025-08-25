@@ -13,6 +13,10 @@ import {
   IconButton,
   Card,
   CardContent,
+  Select, // Added
+  MenuItem, // Added
+  FormControl, // Added
+  InputLabel, // Added
 } from "@mui/material";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -44,17 +48,18 @@ export const TodaysOrderPage: React.FC = () => {
   const { items: orders, loading } = useAppSelector(state => state.orders);
   const [viewMode, setViewMode] = useState<ViewMode>('individual');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedBatch, setSelectedBatch] = useState<string>('all'); // New state for batch filter
 
   useEffect(() => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
     const today = format(new Date(), 'yyyy-MM-dd');
     
     if (dateString === today) {
-      dispatch(fetchOrders());
+      dispatch(fetchOrders(selectedBatch === 'all' ? undefined : selectedBatch)); // Pass batchNumber
     } else {
-      dispatch(fetchOrdersForDate(dateString));
+      dispatch(fetchOrdersForDate({ date: dateString, batchNumber: selectedBatch === 'all' ? undefined : selectedBatch })); // Pass batchNumber
     }
-  }, [dispatch, selectedDate]);
+  }, [dispatch, selectedDate, selectedBatch]); // Added selectedBatch to dependencies
 
   const handleDateChange = (date: Date | null) => {
     if (date) {
@@ -83,6 +88,23 @@ export const TodaysOrderPage: React.FC = () => {
     return groupOrdersByCategory(orders);
   }, [orders]);
 
+  // Memoized unique batches for filter dropdown
+  const uniqueBatches = useMemo(() => {
+    const batches = new Map<string, { batchNumber: string; batchTimestamp: string }>();
+    orders.forEach(order => {
+      if (order.batchNumber && order.batchTimestamp) {
+        if (!batches.has(order.batchNumber)) {
+          batches.set(order.batchNumber, {
+            batchNumber: order.batchNumber,
+            batchTimestamp: order.batchTimestamp
+          });
+        }
+      }
+    });
+    // Sort batches by timestamp, newest first
+    return Array.from(batches.values()).sort((a, b) => new Date(b.batchTimestamp).getTime() - new Date(a.batchTimestamp).getTime());
+  }, [orders]);
+
   const totalRevenue = orders.reduce((sum, order) => {
     const price = order.product?.sellingPrice || 0;
     const quantity = parseInt(order.quantity) || 0;
@@ -102,6 +124,8 @@ export const TodaysOrderPage: React.FC = () => {
   const handleExportSummaryPDF = () => {
     exportNativeCategorySummaryToPDF(groupedData);
   };
+
+  
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
@@ -165,40 +189,60 @@ export const TodaysOrderPage: React.FC = () => {
 
         <Divider sx={{ mb: 3 }} />
 
-        {/* View Toggle and Export Controls */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-          <ButtonGroup variant="outlined" sx={{ borderRadius: 2 }}>
-            <Button
-              variant={viewMode === 'individual' ? 'contained' : 'outlined'}
-              onClick={() => setViewMode('individual')}
-              startIcon={<ViewListIcon />}
-              sx={{ minWidth: 140 }}
+        {/* Batch Filter and View Toggle/Export Controls */}
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: 'center', mb: 3, gap: 2 }}>
+          <FormControl sx={{ minWidth: 200, flexGrow: 1 }}>
+            <InputLabel id="batch-select-label">Filter by Batch</InputLabel>
+            <Select
+              labelId="batch-select-label"
+              id="batch-select"
+              value={selectedBatch}
+              label="Filter by Batch"
+              onChange={(event) => setSelectedBatch(event.target.value as string)}
             >
-              Individual Orders
-            </Button>
-            <Button
-              variant={viewMode === 'grouped' ? 'contained' : 'outlined'}
-              onClick={() => setViewMode('grouped')}
-              startIcon={<CategoryIcon />}
-              sx={{ minWidth: 140 }}
-            >
-              Grouped by Category
-            </Button>
-          </ButtonGroup>
+              <MenuItem value="all">All Batches</MenuItem>
+              {uniqueBatches.map((batch) => (
+                <MenuItem key={batch.batchNumber} value={batch.batchNumber}>
+                  {format(new Date(batch.batchTimestamp), 'MMM dd, yyyy HH:mm')} - {batch.batchNumber.substring(0, 8)}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-          {viewMode === 'grouped' && (
-            <Stack direction="row" spacing={1}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}> {/* This Box wraps ButtonGroup and Stack */}
+            <ButtonGroup variant="outlined" sx={{ borderRadius: 2 }}>
               <Button
-                variant="outlined"
-                size="small"
-                startIcon={<SummarizeIcon />}
-                onClick={handleExportSummaryPDF}
-                sx={{ minWidth: 120 }}
+                variant={viewMode === 'individual' ? 'contained' : 'outlined'}
+                onClick={() => setViewMode('individual')}
+                startIcon={<ViewListIcon />}
+                sx={{ minWidth: 140 }}
               >
-                Export Summary
+                Individual Orders
               </Button>
-            </Stack>
-          )}
+              <Button
+                variant={viewMode === 'grouped' ? 'contained' : 'outlined'}
+                onClick={() => setViewMode('grouped')}
+                startIcon={<CategoryIcon />}
+                sx={{ minWidth: 140 }}
+              >
+                Grouped by Category
+              </Button>
+            </ButtonGroup>
+
+            {viewMode === 'grouped' && (
+              <Stack direction="row" spacing={1}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<SummarizeIcon />}
+                  onClick={handleExportSummaryPDF}
+                  sx={{ minWidth: 120 }}
+                >
+                  Export Summary
+                </Button>
+              </Stack>
+            )}
+          </Box> {/* Closing tag for the new Box */}
         </Box>
 
         <Grid container spacing={3} sx={{ mb: 4 }}>

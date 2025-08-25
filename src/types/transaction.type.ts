@@ -37,6 +37,9 @@ export interface Transaction {
     updatedAt: string;
   };
   hash: string;
+  // New fields for batching
+  batchNumber?: string; // Unique identifier for the batch of merged PDFs
+  batchTimestamp?: string; // Timestamp when the batch was processed (ISO string)
 }
 
 export interface ProductPrice {
