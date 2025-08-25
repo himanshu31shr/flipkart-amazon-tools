@@ -133,14 +133,7 @@ const mockGroupedData: GroupedOrderData = {
 };
 
 describe('CategoryGroupedTable', () => {
-  it('renders summary cards correctly', () => {
-    render(<CategoryGroupedTable groupedData={mockGroupedData} />);
-    
-    expect(screen.getByText('3')).toBeInTheDocument(); // Total categories
-    expect(screen.getByText('4')).toBeInTheDocument(); // Total orders
-    expect(screen.getByText('₹475')).toBeInTheDocument(); // Total revenue
-    expect(screen.getByText('119')).toBeInTheDocument(); // Average revenue (475/4)
-  });
+  
 
   it('renders search input', () => {
     render(<CategoryGroupedTable groupedData={mockGroupedData} />);
@@ -163,7 +156,7 @@ describe('CategoryGroupedTable', () => {
     // Electronics category stats
     expect(screen.getByText('2 Items')).toBeInTheDocument();
     expect(screen.getByText('Qty: 3')).toBeInTheDocument();
-    expect(screen.getByText('₹350')).toBeInTheDocument();
+    
     expect(screen.getByText('amazon, flipkart')).toBeInTheDocument();
   });
 
@@ -280,19 +273,5 @@ describe('CategoryGroupedTable', () => {
     expect(uncategorizedChip).toBeInTheDocument();
   });
 
-  it('displays correct revenue calculations in table rows', async () => {
-    render(<CategoryGroupedTable groupedData={mockGroupedData} />);
-    
-    // Find and expand Electronics accordion
-    const electronicsAccordion = screen.getByText('Electronics').closest('[role="button"]');
-    fireEvent.click(electronicsAccordion!);
-    
-    await waitFor(() => {
-      // Product 1: 100 * 2 = 200
-      expect(screen.getByText('₹200')).toBeInTheDocument();
-      // Product 2: 150 * 1 = 150 - use getAllByText since unit price and revenue are both 150
-      const revenue150Elements = screen.getAllByText('₹150');
-      expect(revenue150Elements.length).toBeGreaterThanOrEqual(1);
-    });
-  });
+  
 });

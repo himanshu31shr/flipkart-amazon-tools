@@ -118,14 +118,18 @@ export class TodaysOrder extends FirebaseService {
 
   /**
    * Get orders for a specific date
-   * @param date Date string in yyyy-MM-dd format
+   * @param date Date string in ISO format (e.g., "2025-08-25T12:30:00.000Z")
    * @returns ActiveOrderSchema for the specified date or undefined if no orders exist
    */
   async getOrdersForDate(date: string, batchNumber?: string): Promise<ActiveOrderSchema | undefined> {
     await this.mapProductsToActiveOrder();
+    
+    // Convert ISO string to yyyy-MM-dd format for Firestore document ID
+    const dateId = format(new Date(date), "yyyy-MM-dd");
+
     const activeOrder = await this.getDocument<ActiveOrderSchema>(
       this.COLLECTION_NAME,
-      date
+      dateId // Use the formatted date as document ID
     );
     if (activeOrder) {
       activeOrder.orders.forEach((order) => {

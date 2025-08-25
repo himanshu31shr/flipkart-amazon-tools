@@ -9,8 +9,9 @@ import {
   Chip,
   ButtonGroup,
   Button,
-  Stack,
-  
+  Card,
+  CardContent,
+  IconButton,
   Select, // Added
   MenuItem, // Added
   FormControl, // Added
@@ -19,13 +20,16 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format } from 'date-fns';
+import { format, addDays, subDays } from 'date-fns';
 import React, { useEffect, useState, useMemo } from "react";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 
 import ViewListIcon from "@mui/icons-material/ViewList";
 import CategoryIcon from "@mui/icons-material/Category";
-import SummarizeIcon from "@mui/icons-material/Summarize";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
@@ -33,7 +37,7 @@ import { fetchOrders, fetchOrdersForDate } from "../../store/slices/ordersSlice"
 import { SummaryTable } from "../home/components/SummaryTable";
 import { CategoryGroupedTable } from "./components/CategoryGroupedTable";
 import { groupOrdersByCategory } from "./utils/groupingUtils";
-import { exportNativeCategorySummaryToPDF } from "./utils/nativePdfExport";
+import { FormattedCurrency } from "../../components/FormattedCurrency";
 
 
 type ViewMode = 'individual' | 'grouped';
@@ -41,7 +45,7 @@ type ViewMode = 'individual' | 'grouped';
 export const TodaysOrderPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { items: orders, loading } = useAppSelector(state => state.orders);
-  const [viewMode, setViewMode] = useState<ViewMode>('individual');
+  const [viewMode, setViewMode] = useState<ViewMode>('grouped');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedBatch, setSelectedBatch] = useState<string>('all'); // New state for batch filter
 
@@ -50,11 +54,11 @@ export const TodaysOrderPage: React.FC = () => {
     const today = format(new Date(), 'yyyy-MM-dd');
     
     if (dateString === today) {
-      dispatch(fetchOrders(selectedBatch === 'all' ? undefined : selectedBatch)); // Pass batchNumber
+      dispatch(fetchOrders());
     } else {
-      dispatch(fetchOrdersForDate({ date: dateString, batchNumber: selectedBatch === 'all' ? undefined : selectedBatch })); // Pass batchNumber
+      dispatch(fetchOrdersForDate({ date: selectedDate.toISOString() }));
     }
-  }, [dispatch, selectedDate, selectedBatch]); // Added selectedBatch to dependencies
+  }, [dispatch, selectedDate]);
 
   const handleDateChange = (date: Date | null) => {
     if (date) {
@@ -68,10 +72,25 @@ export const TodaysOrderPage: React.FC = () => {
     setSelectedDate(new Date());
   };
 
+  const handlePreviousDay = () => {
+    setSelectedDate(prevDate => subDays(prevDate, 1));
+  };
+
+  const handleNextDay = () => {
+    setSelectedDate(prevDate => addDays(prevDate, 1));
+  };
+
+  const filteredOrders = useMemo(() => {
+    if (selectedBatch === 'all') {
+      return orders;
+    }
+    return orders.filter(order => order.batchNumber === selectedBatch);
+  }, [orders, selectedBatch]);
+
   // Memoized grouped data for performance
   const groupedData = useMemo(() => {
-    return groupOrdersByCategory(orders);
-  }, [orders]);
+    return groupOrdersByCategory(filteredOrders);
+  }, [filteredOrders]);
 
   // Memoized unique batches for filter dropdown
   const uniqueBatches = useMemo(() => {
@@ -92,12 +111,6 @@ export const TodaysOrderPage: React.FC = () => {
 
   
 
-  const handleExportSummaryPDF = () => {
-    exportNativeCategorySummaryToPDF(groupedData);
-  };
-
-  
-
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
       <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
@@ -107,7 +120,7 @@ export const TodaysOrderPage: React.FC = () => {
             {format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "Today's Orders" : "Orders"}
           </Typography>
           <Chip 
-            label={`${orders.length} Orders`} 
+            label={`${filteredOrders.length} Orders`} 
             color="primary" 
             size="medium" 
             sx={{ ml: 2 }}
@@ -122,6 +135,9 @@ export const TodaysOrderPage: React.FC = () => {
           </Typography>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
+            <IconButton onClick={handlePreviousDay} size="large">
+              <ChevronLeftIcon />
+            </IconButton>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Select Date"
@@ -130,6 +146,9 @@ export const TodaysOrderPage: React.FC = () => {
                 sx={{ minWidth: 200 }}
               />
             </LocalizationProvider>
+            <IconButton onClick={handleNextDay} size="large">
+              <ChevronRightIcon />
+            </IconButton>
             
             <Button 
               variant="outlined" 
@@ -187,44 +206,71 @@ export const TodaysOrderPage: React.FC = () => {
               </Button>
             </ButtonGroup>
 
-            {viewMode === 'grouped' && (
-              <Stack direction="row" spacing={1}>
-                <Button
-                  variant="outlined"
-                  size="small"
-                  startIcon={<SummarizeIcon />}
-                  onClick={handleExportSummaryPDF}
-                  sx={{ minWidth: 120 }}
-                >
-                  Export Summary
-                </Button>
-              </Stack>
-            )}
+            
           </Box> {/* Closing tag for the new Box */}
         </Box>
 
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <Paper sx={{ p: 2, borderRadius: 2, borderLeft: '4px solid', borderColor: 'primary.main', height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <ShoppingCartIcon sx={{ color: 'primary.main', mr: 1, fontSize: 20 }} />
-                <Typography variant="subtitle1" color="text.secondary" fontWeight="medium">
+            <Card sx={{ borderLeft: '4px solid #1976d2' }}>
+              <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                <ShoppingCartIcon sx={{ color: '#1976d2', fontSize: 32, mb: 1 }} />
+                <Typography variant="h6" color="info.dark" sx={{ fontWeight: 'bold' }}>
+                  {filteredOrders.length}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
                   Total Orders
                 </Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
-                {orders.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Processed today
-              </Typography>
-            </Paper>
+              </CardContent>
+            </Card>
           </Grid>
           
-        </Grid>
-
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderLeft: '4px solid #1976d2' }}>
+              <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                <CategoryIcon sx={{ color: '#1976d2', fontSize: 32, mb: 1 }} />
+                <Typography variant="h6" color="info.dark" sx={{ fontWeight: 'bold' }}>
+                  {Object.keys(groupedData.categorizedGroups).length + (groupedData.uncategorizedGroup.totalItems > 0 ? 1 : 0)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Total Categories
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
         
-
+        
+          
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderLeft: '4px solid #ed6c02' }}>
+              <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                <AttachMoneyIcon sx={{ color: '#ed6c02', fontSize: 32, mb: 1 }} />
+                <Typography variant="h6" color="warning.dark" sx={{ fontWeight: 'bold' }}>
+                  <FormattedCurrency value={filteredOrders.reduce((acc, order) => acc + ((order.product?.sellingPrice || 0) * (parseInt(order.quantity) || 0)), 0)} />
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Total Revenue
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderLeft: '4px solid #9c27b0' }}>
+              <CardContent sx={{ textAlign: 'center', py: 2 }}>
+                <TrendingUpIcon sx={{ color: '#9c27b0', fontSize: 32, mb: 1 }} />
+                <Typography variant="h6" color="secondary" sx={{ fontWeight: 'bold' }}>
+                  {Math.round(filteredOrders.reduce((acc, order) => acc + ((order.product?.sellingPrice || 0) * (parseInt(order.quantity) || 0)), 0) / Math.max(filteredOrders.length, 1))}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Avg Order Value
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
         <Box sx={{ mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.dark', mb: 2 }}>
             {viewMode === 'individual' ? 'Current Orders' : 'Orders by Category'}
@@ -241,7 +287,7 @@ export const TodaysOrderPage: React.FC = () => {
           ) : (
             <>
               {viewMode === 'individual' ? (
-                <SummaryTable summary={orders} />
+                <SummaryTable summary={filteredOrders} />
               ) : (
                 <CategoryGroupedTable groupedData={groupedData} />
               )}
