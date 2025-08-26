@@ -92,7 +92,7 @@ const CategoryList: React.FC<CategoryListProps> = (): ReactElement => {
       setIsLoading(true);
       try {
         const service = new CategoryInventoryService();
-        const result = await service.getAllCategoriesWithInventory();
+        const result = (await service.getAllCategoriesWithInventory()) || [];
         setCategoriesWithInventory(
           result
             .filter(cat => !!cat.id)

@@ -13,33 +13,14 @@ import {
 import { RootState } from '../../types';
 import { Product } from '../../../services/product.service';
 import { Timestamp } from 'firebase/firestore';
-import { PayloadAction } from '@reduxjs/toolkit';
-
-// Mock Firebase Timestamp
-const createMockTimestamp = (input: Date | number) => {
-  const seconds = input instanceof Date 
-    ? Math.floor(input.getTime() / 1000) 
-    : Math.floor(input / 1000);
-  
-  return {
-    seconds,
-    nanoseconds: 0,
-    toDate: () => new Date(seconds * 1000),
-    toMillis: () => seconds * 1000,
-    isEqual: () => false,
-    toJSON: () => ({ seconds, nanoseconds: 0 }),
-    valueOf: () => seconds * 1000,
-  } as unknown as Timestamp;
-};
-
-const mockTimestamp = createMockTimestamp(1234567890 * 1000);
 
 jest.mock('firebase/firestore', () => ({
   Timestamp: {
-    fromDate: jest.fn((date: Date) => createMockTimestamp(date)),
-    fromMillis: jest.fn((millis: number) => createMockTimestamp(millis)),
+    now: jest.fn(() => ({ seconds: Date.now() / 1000, nanoseconds: 0, toMillis: () => Date.now() }))
   }
 }));
+
+const mockTimestamp = Timestamp.now();
 
 // Mock the services
 jest.mock('../../../services/product.service', () => ({
@@ -59,8 +40,6 @@ jest.mock('../../../services/category.service', () => ({
   })),
 }));
 
-describe('productsSlice', () => {
-  let store: ReturnType<typeof configureStore<{ products: RootState['products'] }>>;
 
   const mockProduct: Product = {
     sku: 'TEST-SKU-1',
@@ -121,6 +100,9 @@ describe('productsSlice', () => {
     categoryProductsLoading: false,
     categoryProductsError: null,
   };
+
+describe('productsSlice', () => {
+  let store: ReturnType<typeof configureStore<{ products: RootState['products'] }>>;
 
   beforeEach(() => {
     store = configureStore({

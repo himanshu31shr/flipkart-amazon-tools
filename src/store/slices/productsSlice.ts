@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { Timestamp } from 'firebase/firestore';
 import { Product, ProductFilter, ProductService } from '../../services/product.service';
 import { Category, CategoryService } from '../../services/category.service';
 
@@ -162,8 +163,19 @@ const productsSlice = createSlice({
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
-        state.filteredItems = action.payload.filter(product => {
+        state.items = action.payload.map(product => ({
+          ...product,
+          inventory: product.inventory ? {
+            ...product.inventory,
+            lastUpdated: product.inventory.lastUpdated instanceof Timestamp ? product.inventory.lastUpdated.toMillis() : product.inventory.lastUpdated,
+          } : undefined,
+          metadata: product.metadata ? {
+            ...product.metadata,
+            createdAt: product.metadata.createdAt instanceof Timestamp ? product.metadata.createdAt.toMillis() : product.metadata.createdAt,
+            updatedAt: product.metadata.updatedAt instanceof Timestamp ? product.metadata.updatedAt.toMillis() : product.metadata.updatedAt,
+          } : undefined,
+        }));
+        state.filteredItems = state.items.filter(product => {
           if (state.filters.platform && product.platform !== state.filters.platform) return false;
           if (state.filters.search) {
             const searchLower = state.filters.search.toLowerCase();
@@ -191,15 +203,25 @@ const productsSlice = createSlice({
         state.loading = false;
         const { products, updateExisting } = action.payload;
         
+        const processedProducts = products.map(product => ({
+          ...product,
+          inventory: product.inventory ? {
+            ...product.inventory,
+            lastUpdated: product.inventory.lastUpdated instanceof Timestamp ? product.inventory.lastUpdated.toMillis() : product.inventory.lastUpdated,
+          } : undefined,
+          metadata: product.metadata ? {
+            ...product.metadata,
+            createdAt: product.metadata.createdAt instanceof Timestamp ? product.metadata.createdAt.toMillis() : product.metadata.createdAt,
+            updatedAt: product.metadata.updatedAt instanceof Timestamp ? product.metadata.updatedAt.toMillis() : product.metadata.updatedAt,
+          } : undefined,
+        }));
+
         if (updateExisting) {
-          // If updating existing products, refresh the entire products list to get updated data
-          // For now, we'll add the new products and the existing ones will be updated in the background
-          const newProductSkus = new Set(products.map(p => `${p.sku}-${p.platform}`));
+          const newProductSkus = new Set(processedProducts.map(p => `${p.sku}-${p.platform}`));
           const existingProducts = state.items.filter(p => !newProductSkus.has(`${p.sku}-${p.platform}`));
-          state.items = [...existingProducts, ...products];
+          state.items = [...existingProducts, ...processedProducts];
         } else {
-          // Original behavior: just add new products
-          state.items = [...state.items, ...products];
+          state.items = [...state.items, ...processedProducts];
         }
         
         state.filteredItems = state.items.filter(product => {
@@ -221,7 +243,20 @@ const productsSlice = createSlice({
         const { sku, data } = action.payload;
         const index = state.items.findIndex(p => p.sku === sku);
         if (index !== -1) {
-          state.items[index] = { ...state.items[index], ...data };
+          state.items[index] = {
+            ...state.items[index],
+            ...data,
+            inventory: data.inventory ? {
+              ...state.items[index].inventory,
+              ...data.inventory,
+              lastUpdated: data.inventory.lastUpdated instanceof Timestamp ? data.inventory.lastUpdated.toMillis() : data.inventory.lastUpdated,
+            } : state.items[index].inventory,
+            metadata: data.metadata ? {
+              ...state.items[index].metadata,
+              ...data.metadata,
+              updatedAt: data.metadata.updatedAt instanceof Timestamp ? data.metadata.updatedAt.toMillis() : data.metadata.updatedAt,
+            } : state.items[index].metadata,
+          };
           state.filteredItems = state.items.filter(product => {
             if (state.filters.platform && product.platform !== state.filters.platform) return false;
             if (state.filters.search) {
@@ -238,7 +273,20 @@ const productsSlice = createSlice({
         const { skus, data } = action.payload;
         state.items = state.items.map(product => {
           if (skus.includes(product.sku)) {
-            return { ...product, ...data };
+            return {
+              ...product,
+              ...data,
+              inventory: data.inventory ? {
+                ...product.inventory,
+                ...data.inventory,
+                lastUpdated: data.inventory.lastUpdated instanceof Timestamp ? data.inventory.lastUpdated.toMillis() : data.inventory.lastUpdated,
+              } : product.inventory,
+              metadata: data.metadata ? {
+                ...product.metadata,
+                ...data.metadata,
+                updatedAt: data.metadata.updatedAt instanceof Timestamp ? data.metadata.updatedAt.toMillis() : data.metadata.updatedAt,
+              } : product.metadata,
+            };
           }
           return product;
         });
