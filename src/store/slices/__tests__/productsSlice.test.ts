@@ -14,11 +14,20 @@ import { RootState } from '../../types';
 import { Product } from '../../../services/product.service';
 import { Timestamp } from 'firebase/firestore';
 
-jest.mock('firebase/firestore', () => ({
-  Timestamp: {
-    now: jest.fn(() => ({ seconds: Date.now() / 1000, nanoseconds: 0, toMillis: () => Date.now() }))
-  }
-}));
+jest.mock('firebase/firestore', () => {
+  const originalModule = jest.requireActual('firebase/firestore');
+  const Timestamp = jest.fn((seconds, nanoseconds) => ({
+    seconds,
+    nanoseconds,
+    toDate: () => new Date(seconds * 1000 + nanoseconds / 1000000),
+    toMillis: () => seconds * 1000 + nanoseconds / 1000000,
+  }));
+  Timestamp.now = jest.fn(() => new Timestamp(Date.now() / 1000, 0));
+  return {
+    ...originalModule,
+    Timestamp,
+  };
+});
 
 const mockTimestamp = Timestamp.now();
 
