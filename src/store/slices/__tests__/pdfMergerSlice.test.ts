@@ -23,7 +23,7 @@ describe('pdfMergerSlice', () => {
     summary: [],
     loading: false,
     error: null,
-    selectedDate: new Date('2024-01-01'),
+    selectedDate: new Date('2024-01-01').toISOString(),
     consolidationProgress: null,
     isConsolidating: false,
   };
@@ -37,7 +37,7 @@ describe('pdfMergerSlice', () => {
         summary: [],
         loading: false,
         error: null,
-        selectedDate: expect.any(Date),
+        selectedDate: expect.any(String),
         consolidationProgress: null,
         isConsolidating: false,
       });
@@ -109,8 +109,13 @@ describe('pdfMergerSlice', () => {
         expect(state.finalPdf).toBeNull();
         expect(state.summary).toEqual([]);
         // selectedDate should be reset to current date
-        expect(state.selectedDate).toBeInstanceOf(Date);
-        expect(state.selectedDate.getTime()).toBeCloseTo(new Date().getTime(), -100000); // Within 100 seconds
+        const now = new Date();
+        const receivedDate = new Date(state.selectedDate);
+        expect(receivedDate.getFullYear()).toEqual(now.getFullYear());
+        expect(receivedDate.getMonth()).toEqual(now.getMonth());
+        expect(receivedDate.getDate()).toEqual(now.getDate());
+        // Allow for a small difference in time (e.g., a few milliseconds)
+        expect(Math.abs(receivedDate.getTime() - now.getTime())).toBeLessThan(100);
       });
     });
 

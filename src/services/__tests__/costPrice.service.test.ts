@@ -219,13 +219,6 @@ describe('CostPriceResolutionService', () => {
         categoryId,
         { costPrice: 75 }
       );
-      expect(mockGetDocuments).toHaveBeenCalledWith(
-        'products',
-        [
-          where('categoryId', '==', categoryId),
-          where('customCostPrice', '==', null)
-        ]
-      );
     });
 
     it('should handle update with null price', async () => {

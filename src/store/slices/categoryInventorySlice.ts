@@ -120,9 +120,17 @@ const categoryInventorySlice = createSlice({
       })
       .addCase(fetchCategoriesWithInventory.fulfilled, (state, action) => {
         state.loading = false;
-        state.categories = action.payload;
+        state.categories = action.payload.map(cat => ({
+          ...cat,
+          createdAt: cat.createdAt instanceof Date ? cat.createdAt.getTime() : cat.createdAt,
+          updatedAt: cat.updatedAt instanceof Date ? cat.updatedAt.getTime() : cat.updatedAt,
+          inventory: {
+            ...cat.inventory,
+            lastUpdated: cat.inventory.lastUpdated instanceof Date ? cat.inventory.lastUpdated.getTime() : cat.inventory.lastUpdated,
+          }
+        }));
         state.error = null;
-        state.lastUpdated = new Date().toISOString();
+        state.lastUpdated = new Date().getTime().toString();
       })
       .addCase(fetchCategoriesWithInventory.rejected, (state, action) => {
         state.loading = false;
@@ -139,12 +147,28 @@ const categoryInventorySlice = createSlice({
         state.error = null;
         const index = state.categories.findIndex(cat => cat.id === action.payload.id);
         if (index !== -1) {
-          state.categories[index] = action.payload;
+          state.categories[index] = {
+            ...action.payload,
+            createdAt: action.payload.createdAt instanceof Date ? action.payload.createdAt.getTime() : action.payload.createdAt,
+            updatedAt: action.payload.updatedAt instanceof Date ? action.payload.updatedAt.getTime() : action.payload.updatedAt,
+            inventory: {
+              ...action.payload.inventory,
+              lastUpdated: action.payload.inventory.lastUpdated instanceof Date ? action.payload.inventory.lastUpdated.getTime() : action.payload.inventory.lastUpdated,
+            }
+          };
         } else {
           // If category not found in current list, add it
-          state.categories.push(action.payload);
+          state.categories.push({
+            ...action.payload,
+            createdAt: action.payload.createdAt instanceof Date ? action.payload.createdAt.getTime() : action.payload.createdAt,
+            updatedAt: action.payload.updatedAt instanceof Date ? action.payload.updatedAt.getTime() : action.payload.updatedAt,
+            inventory: {
+              ...action.payload.inventory,
+              lastUpdated: action.payload.inventory.lastUpdated instanceof Date ? action.payload.inventory.lastUpdated.getTime() : action.payload.inventory.lastUpdated,
+            }
+          });
         }
-        state.lastUpdated = new Date().toISOString();
+        state.lastUpdated = new Date().getTime().toString();
       })
       .addCase(updateCategoryInventory.rejected, (state, action) => {
         state.loading = false;
@@ -160,12 +184,28 @@ const categoryInventorySlice = createSlice({
         state.error = null;
         const index = state.categories.findIndex(cat => cat.id === action.payload.id);
         if (index !== -1) {
-          state.categories[index] = action.payload;
+          state.categories[index] = {
+            ...action.payload,
+            createdAt: action.payload.createdAt instanceof Date ? action.payload.createdAt.getTime() : action.payload.createdAt,
+            updatedAt: action.payload.updatedAt instanceof Date ? action.payload.updatedAt.getTime() : action.payload.updatedAt,
+            inventory: {
+              ...action.payload.inventory,
+              lastUpdated: action.payload.inventory.lastUpdated instanceof Date ? action.payload.inventory.lastUpdated.getTime() : action.payload.inventory.lastUpdated,
+            }
+          };
         } else {
           // If category not found in current list, add it
-          state.categories.push(action.payload);
+          state.categories.push({
+            ...action.payload,
+            createdAt: action.payload.createdAt instanceof Date ? action.payload.createdAt.getTime() : action.payload.createdAt,
+            updatedAt: action.payload.updatedAt instanceof Date ? action.payload.updatedAt.getTime() : action.payload.updatedAt,
+            inventory: {
+              ...action.payload.inventory,
+              lastUpdated: action.payload.inventory.lastUpdated instanceof Date ? action.payload.inventory.lastUpdated.getTime() : action.payload.inventory.lastUpdated,
+            }
+          });
         }
-        state.lastUpdated = new Date().toISOString();
+        state.lastUpdated = new Date().getTime().toString();
       })
       .addCase(updateCategoryThreshold.rejected, (state, action) => {
         state.loading = false;
@@ -193,7 +233,10 @@ const categoryInventorySlice = createSlice({
       })
       .addCase(fetchCategoryInventoryHistory.fulfilled, (state, action) => {
         state.loading = false;
-        state.operations = action.payload;
+        state.operations = action.payload.map(op => ({
+          ...op,
+          timestamp: op.timestamp instanceof Date ? op.timestamp.getTime() : op.timestamp,
+        }));
         state.error = null;
       })
       .addCase(fetchCategoryInventoryHistory.rejected, (state, action) => {

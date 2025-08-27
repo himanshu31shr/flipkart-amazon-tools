@@ -26,12 +26,16 @@ export class PDFMergerService {
     amzon,
     flp,
     sortConfig,
-    selectedDate
+    selectedDate,
+    batchNumber,
+    batchTimestamp
   }: {
     amzon: Uint8Array[];
     flp: Uint8Array[];
     sortConfig?: CategorySortConfig;
     selectedDate?: Date;
+    batchNumber: string;
+    batchTimestamp: string;
   }): Promise<PDFDocument | undefined> {
     await this.initialize();
 
@@ -57,6 +61,8 @@ export class PDFMergerService {
       orders: this.summaryText,
       date: dateString,
       id: dateString,
+      batchNumber: batchNumber,
+      batchTimestamp: batchTimestamp,
     };
 
     // Use date-specific method if selectedDate is provided, otherwise use current method for backward compatibility

@@ -4,6 +4,7 @@ import { ProductSummary } from '../../pages/home/services/base.transformer';
 import { store } from '..';
 import { CategorySortConfig } from "../../utils/pdfSorting";
 import { PDFConsolidationService, ConsolidationProgress, ConsolidationError } from '../../services/pdfConsolidation.service';
+import { v4 as uuidv4 } from 'uuid'; // Import uuid
 
 export interface PdfMergerState {
   amazonFiles: File[];
@@ -12,7 +13,7 @@ export interface PdfMergerState {
   summary: ProductSummary[];
   loading: boolean;
   error: string | null;
-  selectedDate: Date;
+  selectedDate: string; // Changed to string
   consolidationProgress: ConsolidationProgress | null;
   isConsolidating: boolean;
 }
@@ -24,7 +25,7 @@ const initialState: PdfMergerState = {
   summary: [],
   loading: false,
   error: null,
-  selectedDate: new Date(),
+  selectedDate: new Date().toISOString(), // Stored as ISO string
   consolidationProgress: null,
   isConsolidating: false,
 };
@@ -33,7 +34,7 @@ interface MergePDFsParams {
   amazonFiles: File[];
   flipkartFiles: File[];
   sortConfig?: CategorySortConfig;
-  selectedDate?: Date;
+  selectedDate?: string; // Changed to string
 }
 
 // Helper function to read file contents
@@ -65,7 +66,7 @@ export const mergePDFs = createAsyncThunk(
     if (selectedDate) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const targetDate = new Date(selectedDate);
+      const targetDate = new Date(selectedDate); // Convert back to Date for comparison
       targetDate.setHours(0, 0, 0, 0);
       
       if (targetDate < today) {
@@ -75,6 +76,10 @@ export const mergePDFs = createAsyncThunk(
 
     const products = store.getState().products.items;
     const categories = store.getState().products.categories;
+
+    // Generate batch information
+    const batchNumber = uuidv4();
+    const batchTimestamp = new Date().toISOString();
 
     // Create consolidation service with progress tracking
     const consolidationService = new PDFConsolidationService({
@@ -114,7 +119,9 @@ export const mergePDFs = createAsyncThunk(
         amzon: consolidatedAmazonPDF ? [consolidatedAmazonPDF] : [],
         flp: consolidatedFlipkartPDF ? [consolidatedFlipkartPDF] : [],
         sortConfig: sortConfig,
-        selectedDate: selectedDate
+        selectedDate: selectedDate ? new Date(selectedDate) : undefined, // Convert back to Date for service
+        batchNumber: batchNumber, // Pass batch number
+        batchTimestamp: batchTimestamp, // Pass batch timestamp
       });
 
       if (!pdf) {
@@ -164,15 +171,15 @@ const pdfMergerSlice = createSlice({
     clearFlipkartFiles: (state) => {
       state.flipkartFiles = [];
     },
-    setSelectedDate: (state, action: PayloadAction<Date>) => {
+    setSelectedDate: (state, action: PayloadAction<string>) => { // Changed to string
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const targetDate = new Date(action.payload);
+      const targetDate = new Date(action.payload); // Convert back to Date for comparison
       targetDate.setHours(0, 0, 0, 0);
       
       // Only allow present or future dates
       if (targetDate >= today) {
-        state.selectedDate = action.payload;
+        state.selectedDate = action.payload; // Store as ISO string
       }
     },
     clearFiles: (state) => {
@@ -180,7 +187,7 @@ const pdfMergerSlice = createSlice({
       state.flipkartFiles = [];
       state.finalPdf = null;
       state.summary = [];
-      state.selectedDate = new Date();
+      state.selectedDate = new Date().toISOString(); // Store as ISO string
       state.consolidationProgress = null;
       state.isConsolidating = false;
     },
@@ -228,4 +235,4 @@ export const {
   updateConsolidationProgress,
   clearConsolidationProgress
 } = pdfMergerSlice.actions;
-export const pdfMergerReducer = pdfMergerSlice.reducer; 
+export const pdfMergerReducer = pdfMergerSlice.reducer;

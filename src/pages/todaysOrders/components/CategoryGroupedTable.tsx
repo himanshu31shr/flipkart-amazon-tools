@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Chip,
+  Typography,
   Paper,
   Table,
   TableBody,
@@ -9,23 +9,17 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  TextField,
-  InputAdornment,
   Collapse,
   IconButton,
-  TableSortLabel,
+  Chip,
+  TextField,
+  InputAdornment,
   ToggleButtonGroup,
   ToggleButton,
-} from '@mui/material';
+  TableSortLabel,
+} from "@mui/material";
 import {
   Category as CategoryIcon,
-  ShoppingCart as ShoppingCartIcon,
-  TrendingUp as TrendingUpIcon,
-  AttachMoney as AttachMoneyIcon,
   Search as SearchIcon,
   KeyboardArrowDown,
   KeyboardArrowUp,
@@ -39,7 +33,7 @@ interface CategoryGroupedTableProps {
   groupedData: GroupedOrderData;
 }
 
-type SortField = 'category' | 'itemCount' | 'totalQuantity' | 'totalRevenue';
+type SortField = 'category' | 'itemCount' | 'totalQuantity';
 type SortDirection = 'asc' | 'desc';
 type Platform = 'all' | 'amazon' | 'flipkart';
 
@@ -64,8 +58,8 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
   const [searchTerm, setSearchTerm] = useState('');
   const [platformFilter, setPlatformFilter] = useState<Platform>('all');
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
-  const [sortField, setSortField] = useState<SortField>('category');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortField, setSortField] = useState<SortField>('totalQuantity');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   // Filter data based on search term and platform
   const filteredData = filterGroupsBySearch(groupedData, searchTerm, platformFilter);
@@ -113,10 +107,7 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
         aValue = aStats.totalQuantity;
         bValue = bStats.totalQuantity;
         break;
-      case 'totalRevenue':
-        aValue = aStats.totalRevenue;
-        bValue = bStats.totalRevenue;
-        break;
+      
       default:
         aValue = a.categoryName.toLowerCase();
         bValue = b.categoryName.toLowerCase();
@@ -207,11 +198,7 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
               />
             )}
           </TableCell>
-          <TableCell align="right">
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-              <FormattedCurrency value={stats.totalRevenue} />
-            </Typography>
-          </TableCell>
+          
           <TableCell align="center">
             <Typography variant="body2" color="text.secondary">
               Category Summary
@@ -232,13 +219,12 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
                       <TableCell align="center"><strong>Quantity</strong></TableCell>
                       <TableCell align="center"><strong>Platform</strong></TableCell>
                       <TableCell align="right"><strong>Unit Price</strong></TableCell>
-                      <TableCell align="right"><strong>Revenue</strong></TableCell>
+                      
                       <TableCell align="center"><strong>Actions</strong></TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {group.orders.map((order, index) => {
-                      const revenue = (order.product?.sellingPrice || 0) * (parseInt(order.quantity) || 0);
                       return (
                         <TableRow 
                           key={`${order.SKU}-${index}`}
@@ -269,11 +255,7 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
                           <TableCell align="right" data-testid="unit-price">
                             <FormattedCurrency value={order.product?.sellingPrice || 0} />
                           </TableCell>
-                          <TableCell align="right" data-testid="revenue">
-                            <Typography sx={{ fontWeight: 500 }}>
-                              <FormattedCurrency value={revenue} />
-                            </Typography>
-                          </TableCell>
+                          
                           <TableCell align="center">
                             {renderActions(order)}
                           </TableCell>
@@ -326,64 +308,7 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
         </ToggleButtonGroup>
       </Box>
 
-      {/* Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderLeft: '4px solid #1976d2' }}>
-            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-              <CategoryIcon sx={{ color: '#1976d2', fontSize: 32, mb: 1 }} />
-              <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
-                {filteredData.summary.totalCategories}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Categories
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderLeft: '4px solid #2e7d32' }}>
-            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-              <ShoppingCartIcon sx={{ color: '#2e7d32', fontSize: 32, mb: 1 }} />
-              <Typography variant="h6" color="success.dark" sx={{ fontWeight: 'bold' }}>
-                {filteredData.summary.totalOrders}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Orders
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderLeft: '4px solid #ed6c02' }}>
-            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-              <AttachMoneyIcon sx={{ color: '#ed6c02', fontSize: 32, mb: 1 }} />
-              <Typography variant="h6" color="warning.dark" sx={{ fontWeight: 'bold' }}>
-                <FormattedCurrency value={filteredData.summary.totalRevenue} />
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Revenue
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderLeft: '4px solid #9c27b0' }}>
-            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-              <TrendingUpIcon sx={{ color: '#9c27b0', fontSize: 32, mb: 1 }} />
-              <Typography variant="h6" color="secondary" sx={{ fontWeight: 'bold' }}>
-                {Math.round(filteredData.summary.totalRevenue / Math.max(filteredData.summary.totalOrders, 1))}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Avg Order Value
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      
 
       {/* Main Data Table */}
       <TableContainer component={Paper} sx={{ boxShadow: 2 }}>
@@ -420,11 +345,10 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
               <TableCell align="center"><strong>Platform</strong></TableCell>
               <TableCell align="right">
                 <TableSortLabel
-                  active={sortField === 'totalRevenue'}
-                  direction={sortField === 'totalRevenue' ? sortDirection : 'asc'}
-                  onClick={() => handleSort('totalRevenue')}
+                  active={false}
+                  direction={'asc'}
                 >
-                  <strong>Revenue</strong>
+                  <strong>Unit Price</strong>
                 </TableSortLabel>
               </TableCell>
               <TableCell align="center"><strong>Actions</strong></TableCell>

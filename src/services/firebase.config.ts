@@ -101,16 +101,16 @@ if (process.env.NODE_ENV === 'test') {
       import.meta.env.VITE_FIREBASE_STORAGE_EMULATOR_HOST,
       parseInt(import.meta.env.VITE_FIREBASE_STORAGE_EMULATOR_PORT, 10)
     );
-    console.log('Connected to Firebase Storage emulator via environment variables');
+    
   } else if (isDevEnvironment) {
     // Default to localhost:9199 for development if not specified
     try {
       // Use port 9199 which is the default for Firebase Storage emulator
       connectStorageEmulator(storage, 'localhost', 9199);
-      console.log('Connected to Firebase Storage emulator at localhost:9199');
+      
     } catch (error) {
       console.error('Failed to connect to Firebase Storage emulator:', error);
-      console.log('Continuing without Storage emulator connection');
+      
     }
   }
   

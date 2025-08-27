@@ -41,7 +41,7 @@ export const StorageStats: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const folders = await pdfStorageService.listUserFolders();
+      const folders = (await pdfStorageService.listUserFolders()) || [];
       
       let totalFiles = 0;
       let totalSize = 0;

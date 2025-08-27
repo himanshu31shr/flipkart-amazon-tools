@@ -23,7 +23,7 @@ const orderService = new TodaysOrder();
 
 export const fetchOrders = createAsyncThunk(
   'orders/fetchOrders',
-  async (_, { getState }) => {
+  async (batchNumber?: string, { getState }) => { // Added batchNumber parameter
     const state = getState() as { orders: OrdersState; auth: { isAuthenticated: boolean } };
     const { lastFetched, items } = state.orders;
     const { isAuthenticated } = state.auth;
@@ -32,15 +32,15 @@ export const fetchOrders = createAsyncThunk(
       return items;
     }
     
-    const response = await orderService.getTodaysOrders();
+    const response = await orderService.getTodaysOrders(batchNumber); // Pass batchNumber
     return response?.orders || [];
   }
 );
 
 export const fetchOrdersForDate = createAsyncThunk(
   'orders/fetchOrdersForDate',
-  async (date: string) => {
-    const response = await orderService.getOrdersForDate(date);
+  async ({ date, batchNumber }: { date: string; batchNumber?: string }) => { // Modified parameters
+    const response = await orderService.getOrdersForDate(date, batchNumber); // Pass batchNumber
     return response?.orders || [];
   }
 );

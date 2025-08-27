@@ -7,7 +7,13 @@ import CategoryList from '../CategoryList';
 import { productsReducer } from '../../../store/slices/productsSlice';
 
 // Mock CategoryInventoryService
-jest.mock('../../../services/categoryInventory.service');
+
+
+jest.mock('../../../services/categoryInventory.service', () => ({
+  CategoryInventoryService: jest.fn().mockImplementation(() => ({
+    getAllCategoriesWithInventory: jest.fn().mockResolvedValue([]),
+  })),
+}));
 
 // Simple mock store with products slice
 const mockStore = configureStore({

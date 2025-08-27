@@ -329,7 +329,7 @@ class AlertingService {
     // Store alerts in localStorage
     this.saveAlertsToStorage();
 
-    console.log(`Alert triggered: ${alert.ruleName}`, alert);
+    
   }
 
   private generateAlertMessage(rule: AlertRule): string {
@@ -365,12 +365,12 @@ class AlertingService {
 
         case 'webhook':
           // In a real implementation, this would send to a webhook URL
-          console.log('Webhook alert (not implemented):', alert);
+          
           break;
 
         case 'email':
           // In a real implementation, this would send an email
-          console.log('Email alert (not implemented):', alert);
+          
           break;
       }
     } catch (error) {

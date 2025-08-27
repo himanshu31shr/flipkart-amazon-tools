@@ -119,6 +119,7 @@ describe('StorageManagementPage Multi-User View', () => {
 
     // Mock personal view folders
     (pdfStorageService.listAllFolders as jest.Mock).mockResolvedValue(mockFolders);
+    (pdfStorageService.listUserFolders as jest.Mock).mockResolvedValue(mockFolders); // Explicitly mock listUserFolders
     (pdfStorageService.listFolderContents as jest.Mock).mockResolvedValue([]);
 
     // Mock admin access

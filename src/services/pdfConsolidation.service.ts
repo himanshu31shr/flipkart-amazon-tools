@@ -412,9 +412,9 @@ export class PDFConsolidationService {
     }
   }
   
-  private updateProgress(progress: ConsolidationProgress): void {
+  private updateProgress(): void {
     // Emit progress event or update UI
-    console.log('Consolidation Progress:', progress);
+    
   }
   
   cancel(): void {
