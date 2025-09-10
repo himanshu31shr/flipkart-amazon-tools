@@ -1,7 +1,7 @@
 import {
   Chip
 } from "@mui/material";
-import React from "react";
+import React, { useMemo } from "react";
 import { Column, DataTable } from "../../../components/DataTable/DataTable";
 import {
   ViewAmazonListingButton,
@@ -10,17 +10,20 @@ import {
 import { ProductSummary } from "../services/base.transformer";
 import { Product } from "../../../types/product";
 import { Category } from "../../../types/category";
+import { Platform } from "../../todaysOrders/components/PlatformFilter";
 
 interface SummaryTableProps {
   summary: ProductSummary[];
   products?: Product[];
   categories?: Category[];
+  platformFilter?: Platform;
 }
 
 export const SummaryTable: React.FC<SummaryTableProps> = ({
   summary,
   products,
   categories,
+  platformFilter = 'all',
 }: SummaryTableProps) => {
   const renderActions = (product: ProductSummary) => (
     <>
@@ -41,6 +44,12 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({
       )}
     </>
   );
+
+  // Filter data based on platform
+  const filteredSummary = useMemo(() => {
+    if (platformFilter === 'all') return summary;
+    return summary.filter(item => item.type === platformFilter);
+  }, [summary, platformFilter]);
 
   // Get category name if available from products and categories props
   const getCategoryName = (item: ProductSummary) => {
@@ -116,9 +125,9 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({
     <DataTable
       id="summary-table"
       columns={columns}
-      data={summary}
-      defaultSortColumn="sku"
-      defaultSortDirection="asc"
+      data={filteredSummary}
+      defaultSortColumn="quantity"
+      defaultSortDirection="desc"
       rowsPerPageOptions={[10, 20, 40, 80, 100]}
       defaultRowsPerPage={20}
     />
