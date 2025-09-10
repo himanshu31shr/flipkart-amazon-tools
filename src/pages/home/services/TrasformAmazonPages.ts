@@ -1,12 +1,11 @@
 import type { PDFDocument, PDFPage } from "pdf-lib";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
-import { BaseTransformer, ProductSummary, TextItem } from "./base.transformer";
-import { Product } from "../../../services/product.service";
 import { Category } from "../../../services/category.service";
+import { Product } from "../../../services/product.service";
 import {
-  CategorySortConfig,
-  sortProductsByCategory,
+  CategorySortConfig
 } from "../../../utils/pdfSorting";
+import { BaseTransformer, ProductSummary, TextItem } from "./base.transformer";
 
 export class AmazonPDFTransformer extends BaseTransformer {
   protected filePath: Uint8Array;
@@ -168,15 +167,30 @@ export class AmazonPDFTransformer extends BaseTransformer {
     const pages = this.pdfDoc.getPages();
     let j = 0;
 
-    // Process all pages first to gather the complete product data
+    // Track processed pages to prevent duplication
+    const processedPages = new Set<number>();
     const productsData: {
       page: number;
       product: ProductSummary;
       pageIndex: number;
+      dataPageIndex: number; // Track which data page this came from
     }[] = [];
 
+
     for (let i = 0; i < pages.length; i++) {
-      if (i % 2 === 1) {
+      if (i % 2 === 1) { // Even pages (0-indexed) contain data for scraping
+        const labelPageIndex = i - 1; // Odd pages contain labels for final PDF
+        
+        // Validate that we haven't processed this label page yet
+        if (processedPages.has(labelPageIndex)) {
+          continue;
+        }
+
+        // Validate that the label page exists
+        if (labelPageIndex < 0 || labelPageIndex >= pages.length) {
+          continue;
+        }
+
         const page = await this.pdf.getPage(i + 1);
         const textContent = await page.getTextContent();
         const items = textContent.items as TextItem[];
@@ -187,85 +201,109 @@ export class AmazonPDFTransformer extends BaseTransformer {
 
         // Store the product and associated page index for later processing
         productsData.push({
-          page: i - 1, // The actual page we want to copy
+          page: labelPageIndex, // The actual label page we want to copy
           product,
           pageIndex: j,
+          dataPageIndex: i, // Track the data page for debugging
         });
 
+        processedPages.add(labelPageIndex);
         j++;
       }
     }
 
-    // Apply category sorting if enabled (always enabled by default)
-    if (this.sortConfig?.groupByCategory) {
-      // Extract products for sorting
-      const productsForSorting = productsData.map((data) => {
-        // Find the actual product from the products array
-        const matchedProduct = this.products.find(
-          (p) => p.sku === data.product.SKU
-        );
-        if (matchedProduct) {
-          // Return the matched product with the correct type
-          return matchedProduct;
+
+    // Apply sorting with improved error handling and consistency
+    try {
+      if (this.sortConfig?.groupByCategory && productsData.length > 0) {
+        
+        // Enrich product data with category information for sorting
+        const enrichedData = productsData.map((data, index) => {
+          const matchedProduct = this.products.find(p => p.sku === data.product.SKU);
+          const category = this.categories.find(c => c.id === matchedProduct?.categoryId);
+          
+          return {
+            ...data,
+            originalIndex: index, // Preserve original order for fallback
+            categoryName: category?.name || 'Uncategorized',
+            categoryId: matchedProduct?.categoryId || '',
+            matchedProduct
+          };
+        });
+
+        // Sort by category, then by SKU within category
+        enrichedData.sort((a, b) => {
+          // First sort by category
+          if (a.categoryName !== b.categoryName) {
+            // Put 'Uncategorized' last
+            if (a.categoryName === 'Uncategorized') return 1;
+            if (b.categoryName === 'Uncategorized') return -1;
+            return a.categoryName.localeCompare(b.categoryName);
+          }
+          
+          // Within same category, sort by SKU
+          const skuA = a.product.SKU || '';
+          const skuB = b.product.SKU || '';
+          return skuA.localeCompare(skuB);
+        });
+
+        // Extract the sorted productsData, ensuring we maintain all original data
+        const sortedProductsData = enrichedData.map(({ ...rest }) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { originalIndex, categoryName, categoryId, matchedProduct, ...cleanData } = rest;
+          return cleanData;
+        });
+        
+        // Validate that sorting didn't lose any data
+        if (sortedProductsData.length === productsData.length) {
+          // Replace original data with sorted data
+          productsData.length = 0;
+          productsData.push(...sortedProductsData);
         }
-        // Create a minimal product object if no match found
-        return {
-          sku: data.product.SKU || "",
-          name: data.product.name,
-          description: "",
-          platform: "amazon" as const,
-          visibility: "visible" as const,
-          sellingPrice: 0,
-          customCostPrice: null,
-          metadata: {},
-          categoryId: data.product.categoryId,
-          orderId: data.product.orderId
-        };
-      });
-
-      // Sort products by category
-      const sortedProducts = sortProductsByCategory(
-        productsForSorting,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.categories as any,
-        this.sortConfig
-      );
-
-      // Reorder productsData based on the sorted products
-      const sortedProductsData: typeof productsData = [];
-      for (const sortedProduct of sortedProducts) {
-        const originalProductData = productsData.find(
-          (data) =>
-            data.product.SKU === sortedProduct.sku &&
-            data.product.name === sortedProduct.name
-        );
-
-        if (originalProductData) {
-          sortedProductsData.push(originalProductData);
-        }
+      } else {
+        // Fallback: sort by SKU only
+        productsData.sort((a, b) => {
+          const skuA = a.product.SKU || "";
+          const skuB = b.product.SKU || "";
+          return skuA.localeCompare(skuB);
+        });
       }
-
-      // Use the sorted data for processing
-      if (sortedProductsData.length === productsData.length) {
-        productsData.length = 0; // Clear array
-        productsData.push(...sortedProductsData);
-      }
-    } else {
-      // If category grouping is disabled, sort by SKU as fallback
-      productsData.sort((a, b) => {
-        const skuA = a.product.SKU || "";
-        const skuB = b.product.SKU || "";
-        return skuA.localeCompare(skuB);
-      });
+    } catch {
+      // Continue with original order if sorting fails
     }
 
+    // Validate that all pages exist before processing
+    const totalPages = this.pdfDoc.getPageCount();
+    const validProductsData = productsData.filter(data => data.page >= 0 && data.page < totalPages);
+    
+    // Final check for unique pages before processing
+    const finalPageSet = new Set<number>();
+    const duplicatePages: number[] = [];
+    
+    validProductsData.forEach(data => {
+      if (finalPageSet.has(data.page)) {
+        duplicatePages.push(data.page);
+      } else {
+        finalPageSet.add(data.page);
+      }
+    });
+    
+    // Remove duplicates if any found (should not happen with our new logic)
+    const uniqueValidData = duplicatePages.length > 0 
+      ? validProductsData.filter((data, index, array) => 
+          array.findIndex(item => item.page === data.page) === index)
+      : validProductsData;
+
+
     // Now process the pages in the determined order
-    for (const data of productsData) {
-      const [copiedPage] = await this.outputPdf.copyPages(this.pdfDoc, [
-        data.page,
-      ]);
-      await this.addFooterText(copiedPage, data.product);
-      this.outputPdf.addPage(copiedPage);
+    for (const data of uniqueValidData) {
+      try {
+        const [copiedPage] = await this.outputPdf.copyPages(this.pdfDoc, [data.page]);
+        await this.addFooterText(copiedPage, data.product);
+        this.outputPdf.addPage(copiedPage);
+      } catch {
+        // Continue processing other pages even if one fails
+      }
     }
 
     return this.outputPdf;
