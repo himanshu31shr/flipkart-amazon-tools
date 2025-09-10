@@ -10,22 +10,14 @@ import {
   TableHead,
   TableRow,
   Typography,
-  Grid,
-  Card,
-  CardContent,
   TextField,
   InputAdornment,
   Collapse,
   IconButton,
   TableSortLabel,
-  ToggleButtonGroup,
-  ToggleButton,
 } from '@mui/material';
 import {
   Category as CategoryIcon,
-  ShoppingCart as ShoppingCartIcon,
-  TrendingUp as TrendingUpIcon,
-  AttachMoney as AttachMoneyIcon,
   Search as SearchIcon,
   KeyboardArrowDown,
   KeyboardArrowUp,
@@ -34,14 +26,15 @@ import { CategoryGroup, GroupedOrderData, filterGroupsBySearch } from '../utils/
 import { ViewAmazonListingButton, ViewFlipkartListingButton } from '../../../shared/ActionButtons';
 import { FormattedCurrency } from '../../../components/FormattedCurrency';
 import { ProductSummary } from '../../home/services/base.transformer';
+import { Platform } from './PlatformFilter';
 
 interface CategoryGroupedTableProps {
   groupedData: GroupedOrderData;
+  platformFilter?: Platform;
 }
 
-type SortField = 'category' | 'itemCount' | 'totalQuantity' | 'totalRevenue';
+type SortField = 'category' | 'itemCount' | 'totalQuantity';
 type SortDirection = 'asc' | 'desc';
-type Platform = 'all' | 'amazon' | 'flipkart';
 
 interface CategoryRowProps {
   group: CategoryGroup;
@@ -53,31 +46,19 @@ const getCategoryStatistics = (group: CategoryGroup) => {
   return {
     itemCount: group.totalItems,
     totalQuantity: group.totalQuantity,
-    totalRevenue: group.totalRevenue,
     averageQuantity: group.totalItems > 0 ? Math.round(group.totalQuantity / group.totalItems * 100) / 100 : 0,
-    averageRevenue: group.totalItems > 0 ? Math.round(group.totalRevenue / group.totalItems * 100) / 100 : 0,
     platforms: group.platforms,
   };
 };
 
-export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ groupedData }) => {
+export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ groupedData, platformFilter = 'all' }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [platformFilter, setPlatformFilter] = useState<Platform>('all');
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
-  const [sortField, setSortField] = useState<SortField>('category');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortField, setSortField] = useState<SortField>('totalQuantity');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   // Filter data based on search term and platform
   const filteredData = filterGroupsBySearch(groupedData, searchTerm, platformFilter);
-
-  const handlePlatformChange = (
-    event: React.MouseEvent<HTMLElement>,
-    newPlatform: Platform | null,
-  ) => {
-    if (newPlatform) {
-      setPlatformFilter(newPlatform);
-    }
-  };
 
   const handleCategoryToggle = (categoryName: string) => {
     setExpandedCategories(prev => ({
@@ -112,10 +93,6 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
       case 'totalQuantity':
         aValue = aStats.totalQuantity;
         bValue = bStats.totalQuantity;
-        break;
-      case 'totalRevenue':
-        aValue = aStats.totalRevenue;
-        bValue = bStats.totalRevenue;
         break;
       default:
         aValue = a.categoryName.toLowerCase();
@@ -207,11 +184,6 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
               />
             )}
           </TableCell>
-          <TableCell align="right">
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-              <FormattedCurrency value={stats.totalRevenue} />
-            </Typography>
-          </TableCell>
           <TableCell align="center">
             <Typography variant="body2" color="text.secondary">
               Category Summary
@@ -221,7 +193,7 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
 
         {/* Product Detail Rows */}
         <TableRow>
-          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
             <Collapse in={isExpanded} timeout="auto" unmountOnExit>
               <Box sx={{ margin: 1 }}>
                 <Table size="small">
@@ -232,13 +204,11 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
                       <TableCell align="center"><strong>Quantity</strong></TableCell>
                       <TableCell align="center"><strong>Platform</strong></TableCell>
                       <TableCell align="right"><strong>Unit Price</strong></TableCell>
-                      <TableCell align="right"><strong>Revenue</strong></TableCell>
                       <TableCell align="center"><strong>Actions</strong></TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {group.orders.map((order, index) => {
-                      const revenue = (order.product?.sellingPrice || 0) * (parseInt(order.quantity) || 0);
                       return (
                         <TableRow 
                           key={`${order.SKU}-${index}`}
@@ -269,11 +239,6 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
                           <TableCell align="right" data-testid="unit-price">
                             <FormattedCurrency value={order.product?.sellingPrice || 0} />
                           </TableCell>
-                          <TableCell align="right" data-testid="revenue">
-                            <Typography sx={{ fontWeight: 500 }}>
-                              <FormattedCurrency value={revenue} />
-                            </Typography>
-                          </TableCell>
                           <TableCell align="center">
                             {renderActions(order)}
                           </TableCell>
@@ -292,14 +257,14 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
 
   return (
     <Box>
-      {/* Search and Filter Controls */}
+      {/* Search Controls */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <TextField
           variant="outlined"
           placeholder="Search by product name, SKU, or category..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ flexGrow: 1, mr: 2 }}
+          sx={{ flexGrow: 1 }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -308,82 +273,8 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
             ),
           }}
         />
-        <ToggleButtonGroup
-          value={platformFilter}
-          exclusive
-          onChange={handlePlatformChange}
-          aria-label="platform filter"
-        >
-          <ToggleButton value="all" aria-label="all platforms">
-            All
-          </ToggleButton>
-          <ToggleButton value="amazon" aria-label="amazon">
-            Amazon
-          </ToggleButton>
-          <ToggleButton value="flipkart" aria-label="flipkart">
-            Flipkart
-          </ToggleButton>
-        </ToggleButtonGroup>
       </Box>
 
-      {/* Summary Cards */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderLeft: '4px solid #1976d2' }}>
-            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-              <CategoryIcon sx={{ color: '#1976d2', fontSize: 32, mb: 1 }} />
-              <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
-                {filteredData.summary.totalCategories}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Categories
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderLeft: '4px solid #2e7d32' }}>
-            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-              <ShoppingCartIcon sx={{ color: '#2e7d32', fontSize: 32, mb: 1 }} />
-              <Typography variant="h6" color="success.dark" sx={{ fontWeight: 'bold' }}>
-                {filteredData.summary.totalOrders}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Orders
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderLeft: '4px solid #ed6c02' }}>
-            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-              <AttachMoneyIcon sx={{ color: '#ed6c02', fontSize: 32, mb: 1 }} />
-              <Typography variant="h6" color="warning.dark" sx={{ fontWeight: 'bold' }}>
-                <FormattedCurrency value={filteredData.summary.totalRevenue} />
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Revenue
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderLeft: '4px solid #9c27b0' }}>
-            <CardContent sx={{ textAlign: 'center', py: 2 }}>
-              <TrendingUpIcon sx={{ color: '#9c27b0', fontSize: 32, mb: 1 }} />
-              <Typography variant="h6" color="secondary" sx={{ fontWeight: 'bold' }}>
-                {Math.round(filteredData.summary.totalRevenue / Math.max(filteredData.summary.totalOrders, 1))}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Avg Order Value
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
 
       {/* Main Data Table */}
       <TableContainer component={Paper} sx={{ boxShadow: 2 }}>
@@ -418,22 +309,13 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
                 </TableSortLabel>
               </TableCell>
               <TableCell align="center"><strong>Platform</strong></TableCell>
-              <TableCell align="right">
-                <TableSortLabel
-                  active={sortField === 'totalRevenue'}
-                  direction={sortField === 'totalRevenue' ? sortDirection : 'asc'}
-                  onClick={() => handleSort('totalRevenue')}
-                >
-                  <strong>Revenue</strong>
-                </TableSortLabel>
-              </TableCell>
               <TableCell align="center"><strong>Actions</strong></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredData.categorizedGroups.length === 0 && filteredData.uncategorizedGroup.totalItems === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} sx={{ textAlign: 'center', py: 4 }}>
+                <TableCell colSpan={5} sx={{ textAlign: 'center', py: 4 }}>
                   <CategoryIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
                   <Typography variant="h6" color="text.secondary" gutterBottom>
                     No orders found

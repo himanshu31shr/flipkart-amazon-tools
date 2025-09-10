@@ -2,17 +2,11 @@ import {
   Box,
   CircularProgress,
   Container,
-  Grid,
   Typography,
   Paper,
-  Divider,
   Chip,
-  ButtonGroup,
   Button,
-  Stack,
   IconButton,
-  Card,
-  CardContent,
 } from "@mui/material";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -20,13 +14,6 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format } from 'date-fns';
 import React, { useEffect, useState, useMemo } from "react";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
-import MoneyOffIcon from "@mui/icons-material/MoneyOff";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import ViewListIcon from "@mui/icons-material/ViewList";
-import CategoryIcon from "@mui/icons-material/Category";
-import SummarizeIcon from "@mui/icons-material/Summarize";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
@@ -34,16 +21,18 @@ import { fetchOrders, fetchOrdersForDate } from "../../store/slices/ordersSlice"
 import { SummaryTable } from "../home/components/SummaryTable";
 import { CategoryGroupedTable } from "./components/CategoryGroupedTable";
 import { groupOrdersByCategory } from "./utils/groupingUtils";
-import { exportNativeCategorySummaryToPDF } from "./utils/nativePdfExport";
-import { TodaysFilesWidget } from "../storage-management/components/TodaysFilesWidget";
+import { Platform } from "./components/PlatformFilter";
+import { FilesModal } from "./components/FilesModal";
+import { UnifiedFilters, ViewMode } from "./components/UnifiedFilters";
 
-type ViewMode = 'individual' | 'grouped';
 
 export const TodaysOrderPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { items: orders, loading } = useAppSelector(state => state.orders);
-  const [viewMode, setViewMode] = useState<ViewMode>('individual');
+  const [viewMode, setViewMode] = useState<ViewMode>('grouped');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [platformFilter, setPlatformFilter] = useState<Platform>('all');
+  const [filesModalOpen, setFilesModalOpen] = useState(false);
 
   useEffect(() => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
@@ -78,198 +67,89 @@ export const TodaysOrderPage: React.FC = () => {
     setSelectedDate(new Date());
   };
 
+  const handlePlatformFilterChange = (platform: Platform) => {
+    setPlatformFilter(platform);
+  };
+
   // Memoized grouped data for performance
   const groupedData = useMemo(() => {
     return groupOrdersByCategory(orders);
   }, [orders]);
 
-  const totalRevenue = orders.reduce((sum, order) => {
-    const price = order.product?.sellingPrice || 0;
-    const quantity = parseInt(order.quantity) || 0;
-    return sum + (price * quantity);
-  }, 0);
-
-  const totalCost = orders.reduce((sum, order) => {
-    const cost = order.product?.customCostPrice ?? 0;
-    const quantity = parseInt(order.quantity) || 0;
-    return sum + (cost * quantity);
-  }, 0);
-
-  const profitMargin = totalRevenue > 0 
-    ? Math.round(((totalRevenue - totalCost) / totalRevenue) * 100)
-    : 0;
-
-  const handleExportSummaryPDF = () => {
-    exportNativeCategorySummaryToPDF(groupedData);
-  };
-
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
       <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <ShoppingCartIcon sx={{ fontSize: 32, mr: 2, color: 'primary.main' }} />
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
-            {format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "Today's Orders" : "Orders"}
-          </Typography>
-          <Chip 
-            label={`${orders.length} Orders`} 
-            color="primary" 
-            size="medium" 
-            sx={{ ml: 2 }}
-          />
-        </Box>
-
-        {/* Date Navigation */}
-        <Card sx={{ mb: 3, borderRadius: 2, border: "1px solid", borderColor: "primary.light" }}>
-          <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-              <CalendarTodayIcon sx={{ color: 'primary.main' }} />
-              <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
-                Date Navigation
-              </Typography>
-              
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
-                <IconButton onClick={handlePreviousDay} color="primary">
-                  <ArrowBackIcon />
-                </IconButton>
-                
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <DatePicker
-                    label="Select Date"
-                    value={selectedDate}
-                    onChange={handleDateChange}
-                    sx={{ minWidth: 200 }}
-                  />
-                </LocalizationProvider>
-                
-                <IconButton onClick={handleNextDay} color="primary">
-                  <ArrowForwardIcon />
-                </IconButton>
-                
-                <Button 
-                  variant="outlined" 
-                  size="small" 
-                  onClick={handleTodayButton}
-                  sx={{ ml: 1 }}
-                >
-                  Today
-                </Button>
-              </Box>
-            </Box>
-            
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Showing orders for {format(selectedDate, 'EEEE, MMMM dd, yyyy')}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <ShoppingCartIcon sx={{ fontSize: 32, mr: 2, color: 'primary.main' }} />
+            <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
+              {format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "Today's Orders" : "Orders"}
             </Typography>
-          </CardContent>
-        </Card>
-
-        <Divider sx={{ mb: 3 }} />
-
-        {/* View Toggle and Export Controls */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-          <ButtonGroup variant="outlined" sx={{ borderRadius: 2 }}>
-            <Button
-              variant={viewMode === 'individual' ? 'contained' : 'outlined'}
-              onClick={() => setViewMode('individual')}
-              startIcon={<ViewListIcon />}
-              sx={{ minWidth: 140 }}
+            <Chip 
+              label={`${orders.length} Orders`} 
+              color="primary" 
+              size="medium" 
+              sx={{ ml: 2 }}
+            />
+          </Box>
+          
+          {/* Date Navigation beside heading */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
+            <IconButton onClick={handlePreviousDay} color="primary" size="small">
+              <ArrowBackIcon fontSize="small" />
+            </IconButton>
+            
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                value={selectedDate}
+                onChange={handleDateChange}
+                sx={{ 
+                  '& .MuiInputBase-root': { 
+                    fontSize: '0.875rem',
+                    minWidth: '160px'
+                  }
+                }}
+                slotProps={{
+                  textField: {
+                    size: 'small',
+                    variant: 'outlined'
+                  }
+                }}
+              />
+            </LocalizationProvider>
+            
+            <IconButton onClick={handleNextDay} color="primary" size="small">
+              <ArrowForwardIcon fontSize="small" />
+            </IconButton>
+            
+            <Button 
+              variant={format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "contained" : "outlined"}
+              size="small" 
+              onClick={handleTodayButton}
+              sx={{ minWidth: 'auto', px: 2 }}
             >
-              Individual Orders
+              Today
             </Button>
-            <Button
-              variant={viewMode === 'grouped' ? 'contained' : 'outlined'}
-              onClick={() => setViewMode('grouped')}
-              startIcon={<CategoryIcon />}
-              sx={{ minWidth: 140 }}
-            >
-              Grouped by Category
-            </Button>
-          </ButtonGroup>
-
-          {viewMode === 'grouped' && (
-            <Stack direction="row" spacing={1}>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<SummarizeIcon />}
-                onClick={handleExportSummaryPDF}
-                sx={{ minWidth: 120 }}
-              >
-                Export Summary
-              </Button>
-            </Stack>
-          )}
+          </Box>
         </Box>
 
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper sx={{ p: 2, borderRadius: 2, borderLeft: '4px solid', borderColor: 'primary.main', height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <ShoppingCartIcon sx={{ color: 'primary.main', mr: 1, fontSize: 20 }} />
-                <Typography variant="subtitle1" color="text.secondary" fontWeight="medium">
-                  Total Orders
-                </Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
-                {orders.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Processed today
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper sx={{ p: 2, borderRadius: 2, borderLeft: '4px solid', borderColor: 'success.main', height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <AttachMoneyIcon sx={{ color: 'success.main', mr: 1, fontSize: 20 }} />
-                <Typography variant="subtitle1" color="text.secondary" fontWeight="medium">
-                  Total Revenue
-                </Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'success.dark' }}>
-                ₹{totalRevenue.toLocaleString()}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Gross revenue from today&apos;s sales
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper sx={{ p: 2, borderRadius: 2, borderLeft: '4px solid', borderColor: 'error.main', height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <MoneyOffIcon sx={{ color: 'error.main', mr: 1, fontSize: 20 }} />
-                <Typography variant="subtitle1" color="text.secondary" fontWeight="medium">
-                  Total Cost
-                </Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'error.dark' }}>
-                ₹{totalCost.toLocaleString()}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Cost of goods sold
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper sx={{ p: 2, borderRadius: 2, borderLeft: '4px solid', borderColor: 'secondary.main', height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <TrendingUpIcon sx={{ color: 'secondary.main', mr: 1, fontSize: 20 }} />
-                <Typography variant="subtitle1" color="text.secondary" fontWeight="medium">
-                  Profit Margin
-                </Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'secondary.dark' }}>
-                {profitMargin}%
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Percentage profit on sales
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
 
-        {/* Today's Files - Quick Access */}
-        <TodaysFilesWidget selectedDate={selectedDate} />
+        {/* Unified Filters */}
+        <UnifiedFilters
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          platformFilter={platformFilter}
+          onPlatformFilterChange={handlePlatformFilterChange}
+          onFilesClick={() => setFilesModalOpen(true)}
+        />
+
+
+        {/* Files Modal */}
+        <FilesModal
+          open={filesModalOpen}
+          onClose={() => setFilesModalOpen(false)}
+          selectedDate={selectedDate}
+        />
 
         <Box sx={{ mb: 2 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.dark', mb: 2 }}>
@@ -287,9 +167,9 @@ export const TodaysOrderPage: React.FC = () => {
           ) : (
             <>
               {viewMode === 'individual' ? (
-                <SummaryTable summary={orders} />
+                <SummaryTable summary={orders} platformFilter={platformFilter} />
               ) : (
-                <CategoryGroupedTable groupedData={groupedData} />
+                <CategoryGroupedTable groupedData={groupedData} platformFilter={platformFilter} />
               )}
             </>
           )}
