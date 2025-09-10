@@ -1,5 +1,20 @@
 # Changelog
 
+## 8.2.2
+
+### Patch Changes
+
+- [#38](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/38) [`6f14722`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/6f14722f272b2c5da6c54ca0eaf9b6fd17f0b517) Thanks [@himanshu31shr](https://github.com/himanshu31shr)! - Fix Amazon PDF page duplication issue in invoice processing
+
+  Resolved critical issue where Amazon PDF transformation could create duplicate pages in the merged output. The fix includes:
+
+  - Added unique page tracking with Set to prevent processing the same page twice
+  - Simplified sorting logic to eliminate race conditions causing duplicates
+  - Enhanced validation pipeline to catch and remove any remaining duplicates
+  - Improved error handling throughout the transformation process
+
+  This ensures each Amazon invoice page appears exactly once in the final merged PDF, improving reliability for e-commerce order processing.
+
 ## 8.2.1
 
 ### Patch Changes
