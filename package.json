@@ -32,7 +32,13 @@
     "test:watch": "npm run test -- --watch",
     "test:coverage": "npm run test -- --coverage",
     "test:watch:coverage": "npm run test:coverage -- --watch",
-    "test:ci": "npm run test -- --watchAll=false",
+    "test:ci": "npm run test -- --watchAll=false --verbose",
+    "test:ci:json": "npm run test -- --watchAll=false --json --outputFile=test-results.json",
+    "test:critical": "NODE_ENV=test jest --config jest.critical.config.cjs --verbose",
+    "test:smoke": "NODE_ENV=test jest --config jest.smoke.config.cjs --verbose",
+    "test:changed": "npm run test:ci -- --onlyChanged",
+    "test:related": "npm run test:ci -- --findRelatedTests --passWithNoTests",
+    "test:fast": "npm run test:critical && npm run test:smoke",
     "test:storage-rules": "firebase emulators:exec --only storage \"npm run test\"",
     "pre-commit": "lint-staged",
     "prepare": "husky",
@@ -45,7 +51,7 @@
   "lint-staged": {
     "src/**/*.{ts,tsx,js,jsx}": [
       "eslint --fix",
-      "npm run test:ci -- --findRelatedTests --passWithNoTests"
+      "npm run test:related"
     ]
   },
   "dependencies": {
