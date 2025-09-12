@@ -5,7 +5,7 @@ import { CACHE_DURATIONS, shouldFetchData } from '../config';
 import { batchService } from '../../services/batch.service';
 import { BatchInfo } from '../../types/transaction.type';
 
-interface OrdersState {
+export interface OrdersState {
   items: ActiveOrder[];
   loading: boolean;
   error: string | null;

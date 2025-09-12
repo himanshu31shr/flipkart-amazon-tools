@@ -27,7 +27,9 @@ const mockTransactionWithBatch: Transaction = {
     sellingPrice: 100,
     categoryId: 'cat-1',
     platform: 'amazon',
-    visibility: 'visible'
+    visibility: 'visible',
+    customCostPrice: null,
+    metadata: {}
   },
   metadata: {
     createdAt: '2025-01-09T10:00:00.000Z',
@@ -67,7 +69,9 @@ const mockTransactionWithoutBatch: Transaction = {
     sellingPrice: 150,
     categoryId: 'cat-2',
     platform: 'flipkart',
-    visibility: 'visible'
+    visibility: 'visible',
+    customCostPrice: null,
+    metadata: {}
   },
   metadata: {
     createdAt: '2025-01-08T15:00:00.000Z',

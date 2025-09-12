@@ -1,6 +1,10 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { ordersReducer, selectFilteredOrders, setPlatformFilter, setBatchFilter } from '../ordersSlice';
 import { ActiveOrder } from '../../../services/todaysOrder.service';
+import type { OrdersState } from '../ordersSlice';
+
+// Test state type
+type TestState = { orders: OrdersState };
 
 // Mock orders for testing
 const mockOrders: ActiveOrder[] = [
@@ -76,7 +80,7 @@ describe('ordersSlice unified filtering', () => {
           lastFetched: null,
           pendingUpdates: {},
           batchFilter: null,
-          platformFilter: 'all',
+          platformFilter: 'all' as const,
           batches: [],
           batchesLoading: false,
           selectedDate: null,
@@ -86,7 +90,7 @@ describe('ordersSlice unified filtering', () => {
   });
 
   it('should return all orders when no filters are applied', () => {
-    const state = store.getState();
+    const state = store.getState() as TestState;
     const filteredOrders = selectFilteredOrders(state);
     
     expect(filteredOrders).toHaveLength(3);
@@ -96,7 +100,7 @@ describe('ordersSlice unified filtering', () => {
   it('should filter by platform only', () => {
     store.dispatch(setPlatformFilter('amazon'));
     
-    const state = store.getState();
+    const state = store.getState() as TestState;
     const filteredOrders = selectFilteredOrders(state);
     
     expect(filteredOrders).toHaveLength(2);
@@ -106,7 +110,7 @@ describe('ordersSlice unified filtering', () => {
   it('should filter by batch only', () => {
     store.dispatch(setBatchFilter('batch-1'));
     
-    const state = store.getState();
+    const state = store.getState() as TestState;
     const filteredOrders = selectFilteredOrders(state);
     
     expect(filteredOrders).toHaveLength(1);
@@ -117,7 +121,7 @@ describe('ordersSlice unified filtering', () => {
     store.dispatch(setPlatformFilter('amazon'));
     store.dispatch(setBatchFilter('batch-3'));
     
-    const state = store.getState();
+    const state = store.getState() as TestState;
     const filteredOrders = selectFilteredOrders(state);
     
     expect(filteredOrders).toHaveLength(1);
@@ -129,7 +133,7 @@ describe('ordersSlice unified filtering', () => {
     store.dispatch(setPlatformFilter('flipkart'));
     store.dispatch(setBatchFilter('batch-1')); // batch-1 is amazon only
     
-    const state = store.getState();
+    const state = store.getState() as TestState;
     const filteredOrders = selectFilteredOrders(state);
     
     expect(filteredOrders).toHaveLength(0);
@@ -140,7 +144,7 @@ describe('ordersSlice unified filtering', () => {
     store.dispatch(setPlatformFilter('amazon'));
     store.dispatch(setBatchFilter('batch-1'));
     
-    let state = store.getState();
+    let state = store.getState() as TestState;
     let filteredOrders = selectFilteredOrders(state);
     expect(filteredOrders).toHaveLength(1);
 
@@ -148,7 +152,7 @@ describe('ordersSlice unified filtering', () => {
     store.dispatch(setPlatformFilter('all'));
     store.dispatch(setBatchFilter('all'));
     
-    state = store.getState();
+    state = store.getState() as TestState;
     filteredOrders = selectFilteredOrders(state);
     expect(filteredOrders).toHaveLength(3);
   });
