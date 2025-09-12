@@ -4,7 +4,6 @@ import {
   Container,
   Typography,
   Paper,
-  Chip,
   Button,
   IconButton,
 } from "@mui/material";
@@ -32,7 +31,7 @@ import { CategoryGroupedTable } from "./components/CategoryGroupedTable";
 import { groupOrdersByCategory } from "./utils/groupingUtils";
 import { Platform } from "./components/PlatformFilter";
 import { FilesModal } from "./components/FilesModal";
-import { UnifiedFilters, ViewMode } from "./components/UnifiedFilters";
+import { ModernFilters, ViewMode } from "./components/ModernFilters";
 
 
 export const TodaysOrderPage: React.FC = () => {
@@ -126,16 +125,6 @@ export const TodaysOrderPage: React.FC = () => {
             <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
               {format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "Today's Orders" : "Orders"}
             </Typography>
-            <Chip 
-              label={
-                isFiltered 
-                  ? `Showing ${filteredOrdersCount} of ${totalOrdersCount} Orders`
-                  : `${totalOrdersCount} Orders`
-              } 
-              color={isFiltered ? "secondary" : "primary"} 
-              size="medium" 
-              sx={{ ml: 2 }}
-            />
           </Box>
           
           {/* Date Navigation beside heading */}
@@ -179,8 +168,8 @@ export const TodaysOrderPage: React.FC = () => {
         </Box>
 
 
-        {/* Unified Filters */}
-        <UnifiedFilters
+        {/* Modern Filters */}
+        <ModernFilters
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           platformFilter={platformFilter}
@@ -190,6 +179,9 @@ export const TodaysOrderPage: React.FC = () => {
           batches={batches}
           batchesLoading={batchesLoading}
           onFilesClick={() => setFilesModalOpen(true)}
+          onClearAllFilters={() => dispatch(clearAllFilters())}
+          totalCount={totalOrdersCount}
+          filteredCount={filteredOrdersCount}
         />
 
 
@@ -201,49 +193,13 @@ export const TodaysOrderPage: React.FC = () => {
         />
 
         <Box sx={{ mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
-              {viewMode === 'individual' 
-                ? 'Current Orders' 
-                : 'Orders by Category'
-              }
-            </Typography>
-            
-            {/* Filter Status */}
-            {isFiltered && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Filters:
-                </Typography>
-                {platformFilter !== 'all' && (
-                  <Chip 
-                    label={`${platformFilter.charAt(0).toUpperCase() + platformFilter.slice(1)}`} 
-                    size="small" 
-                    variant="outlined" 
-                    color="info"
-                  />
-                )}
-                {batchFilter && batchFilter !== 'all' && (
-                  <Chip 
-                    label={batches.find(b => b.batchId === batchFilter)?.fileName || `Batch ${batchFilter.slice(-8)}`} 
-                    size="small" 
-                    variant="outlined" 
-                    color="secondary"
-                  />
-                )}
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => {
-                    dispatch(clearAllFilters());
-                  }}
-                  sx={{ minWidth: 'auto', px: 1, fontSize: '0.75rem' }}
-                >
-                  Clear Filters
-                </Button>
-              </Box>
-            )}
-          </Box>
+          {/* Section Header */}
+          <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.dark', mb: 2 }}>
+            {viewMode === 'individual' 
+              ? 'Current Orders' 
+              : 'Orders by Category'
+            }
+          </Typography>
           {loading ? (
             <Box
               display="flex"
