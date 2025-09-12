@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.0.1
+
+### Patch Changes
+
+- [`f32da3a`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/f32da3a3aa50734bf6e624e2d0dde1f631d36c3d) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - Fix release workflow to correctly create GitHub releases when changesets are published
+
 ## 9.0.0
 
 ### Major Changes
