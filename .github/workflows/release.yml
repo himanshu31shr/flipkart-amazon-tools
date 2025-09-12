@@ -44,9 +44,21 @@ jobs:
       - name: Run Release Quality Validation
         if: steps.check-changesets.outputs.has_changesets == 'true'
         run: |
-          echo "🧪 Running release validation tests..."
+          echo "🧪 Running comprehensive release validation..."
+          
+          # Run type checking
+          echo "📋 TypeScript validation..."
+          npm run type-check
+          
+          # Run linting
+          echo "🧹 Code quality validation..."
+          npm run lint
+          
+          # Run critical tests
+          echo "🧪 Running critical tests..."
           npm run test:critical
-          echo "✅ Release validation completed"
+          
+          echo "✅ All release validation completed"
 
       - name: Download CI Build Artifacts
         if: steps.check-changesets.outputs.has_changesets == 'true'
