@@ -78,8 +78,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
 
+      - name: Check if build artifacts exist
+        id: check-artifacts
+        run: |
+          if [ -d "dist" ] && [ "$(ls -A dist 2>/dev/null)" ]; then
+            echo "artifacts_available=true" >> $GITHUB_OUTPUT
+            echo "✅ Build artifacts found in dist/"
+          else
+            echo "artifacts_available=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No build artifacts found"
+          fi
+
       - name: Build if no artifacts found
-        if: steps.download-artifacts.outcome == 'failure' && !hashFiles('dist/**')
+        if: steps.check-artifacts.outputs.artifacts_available == 'false'
         run: |
           echo "🔨 No build artifacts found, building from source..."
           npm run build

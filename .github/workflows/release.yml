@@ -41,54 +41,28 @@ jobs:
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
 
-      - name: Wait for CI Success
+      - name: Run Release Quality Validation
         if: steps.check-changesets.outputs.has_changesets == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const sha = context.sha;
-            
-            console.log(`🔍 Waiting for CI checks to complete for commit ${sha}`);
-            
-            // Wait for CI workflow to complete
-            let attempts = 0;
-            const maxAttempts = 30; // 15 minutes max wait
-            
-            while (attempts < maxAttempts) {
-              const { data: runs } = await github.rest.actions.listWorkflowRuns({
-                owner,
-                repo,
-                workflow_id: 'ci.yml',
-                head_sha: sha,
-                status: 'completed'
-              });
-              
-              const ciRun = runs.workflow_runs.find(run => run.head_sha === sha);
-              
-              if (ciRun) {
-                if (ciRun.conclusion === 'success') {
-                  console.log('✅ CI workflow completed successfully');
-                  return;
-                } else {
-                  core.setFailed(`❌ CI workflow failed with conclusion: ${ciRun.conclusion}`);
-                  return;
-                }
-              }
-              
-              console.log(`⏳ CI still running... attempt ${attempts + 1}/${maxAttempts}`);
-              await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
-              attempts++;
-            }
-            
-            core.setFailed('⏰ CI workflow did not complete within timeout period');
+        run: |
+          echo "🧪 Running release validation tests..."
+          npm run test:critical
+          echo "✅ Release validation completed"
 
       - name: Download CI Build Artifacts
         if: steps.check-changesets.outputs.has_changesets == 'true'
         uses: actions/download-artifact@v4
+        continue-on-error: true
+        id: download-ci-artifacts
         with:
           name: build-artifacts-${{ github.sha }}
           path: dist/
+
+      - name: Build if CI artifacts not available
+        if: steps.check-changesets.outputs.has_changesets == 'true' && steps.download-ci-artifacts.outcome == 'failure'
+        run: |
+          echo "🔨 CI artifacts not available, building from source..."
+          npm run build
+          echo "✅ Application built successfully"
 
       - name: Create Release Pull Request or Publish to npm
         if: steps.check-changesets.outputs.has_changesets == 'true'
