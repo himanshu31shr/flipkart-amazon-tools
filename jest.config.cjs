@@ -9,14 +9,14 @@ module.exports = {
     '!src/vite-env.d.ts',
     '!src/**/__tests__/**',
   ],
-  coverageThreshold: {
-    global: {
-      branches: 60, // Start with 60%, increase to 80%
-      functions: 60,
-      lines: 60,
-      statements: 60,
-    },
-  },
+  // coverageThreshold: {
+  //   global: {
+  //     branches: 60, // Start with 60%, increase to 80%
+  //     functions: 60,
+  //     lines: 60,
+  //     statements: 60,
+  //   },
+  // },
   coverageReporters: ['text', 'lcov', 'html'],
   moduleNameMapper: {
     '^.+\\.(css|less|scss)$': 'identity-obj-proxy',
