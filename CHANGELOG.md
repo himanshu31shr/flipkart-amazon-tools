@@ -1,5 +1,19 @@
 # Changelog
 
+## 9.0.0
+
+### Major Changes
+
+- [#41](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/41) [`11e62e3`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/11e62e3270f3a9ccef4603419d3030ff9d79f668) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - Introduced batches for orders management
+
+### Minor Changes
+
+- [#40](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/40) [`992abaf`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/992abaffc9aeed04e369b686702ee5cc81b5203d) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - Facelifted todays order page
+
+### Patch Changes
+
+- [#42](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/42) [`bc12c8a`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/bc12c8a6532605583a65a0835f3a5e2128ad2273) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - changes in pipeline
+
 ## 8.2.2
 
 ### Patch Changes
