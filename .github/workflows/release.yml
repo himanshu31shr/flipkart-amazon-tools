@@ -90,8 +90,21 @@ jobs:
           # Use PAT if available for better permissions, otherwise use GITHUB_TOKEN
           GITHUB_TOKEN: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
 
+      - name: Check if version was bumped
+        id: check-version-bump
+        run: |
+          # Check if this commit message indicates a release
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          if [[ "$COMMIT_MSG" == *"chore: release packages"* ]]; then
+            echo "version_bumped=true" >> $GITHUB_OUTPUT
+            echo "🎉 Version bump detected from commit message"
+          else
+            echo "version_bumped=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No version bump detected"
+          fi
+
       - name: Create GitHub Release
-        if: steps.changesets.outputs.published == 'true'
+        if: steps.check-version-bump.outputs.version_bumped == 'true'
         id: create-release
         run: |
           # Get current version from package.json
