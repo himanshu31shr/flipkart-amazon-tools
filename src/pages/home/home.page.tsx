@@ -218,6 +218,11 @@ export const HomePage: React.FC = () => {
         })
       ).unwrap();
 
+      // Clear input files after successful merge to ensure separate batches for subsequent uploads
+      // Don't clear finalPdf and summary as they're needed for auto-save
+      dispatch(clearAmazonFiles());
+      dispatch(clearFlipkartFiles());
+
       // Auto-save is handled by the useEffect
     } catch (err) {
       console.error(err);

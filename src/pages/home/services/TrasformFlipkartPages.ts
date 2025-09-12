@@ -4,6 +4,7 @@ import { BaseTransformer, ProductSummary, TextItem } from "./base.transformer";
 import { Product } from "../../../services/product.service";
 import { Category } from "../../../services/category.service";
 import { CategorySortConfig } from "../../../utils/pdfSorting";
+import { BatchInfo } from "../../../types/transaction.type";
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export class FlipkartPageTransformer extends BaseTransformer {
@@ -15,10 +16,11 @@ export class FlipkartPageTransformer extends BaseTransformer {
     filePath: Uint8Array,
     products: Product[],
     categories: Category[],
-    sortConfig?: CategorySortConfig
+    sortConfig?: CategorySortConfig,
+    batchInfo?: BatchInfo
   ) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    super(filePath, products, categories as any, sortConfig);
+    super(filePath, products, categories as any, sortConfig, batchInfo);
   }
 
   async initialize(): Promise<void> {
@@ -74,6 +76,7 @@ export class FlipkartPageTransformer extends BaseTransformer {
         name: "",
         quantity: "0",
         type: "flipkart",
+        batchInfo: this.batchInfo,
       };
 
       if (lines.length > 0) {

@@ -8,6 +8,35 @@ declare module "../services/product.service" {
   }
 }
 
+/**
+ * Batch information for grouping orders from the same PDF upload
+ */
+export interface BatchInfo {
+  /** Unique identifier for the batch */
+  batchId: string;
+  /** ISO timestamp when the batch was uploaded */
+  uploadedAt: string;
+  /** Original filename of the uploaded PDF */
+  fileName: string;
+  /** Firebase storage file ID (optional) */
+  fileId?: string;
+  /** Optional description of the batch */
+  description?: string;
+  /** Platform type for the batch */
+  platform: 'amazon' | 'flipkart' | 'mixed';
+  /** Number of orders in this batch */
+  orderCount: number;
+  /** Additional metadata */
+  metadata: {
+    /** User ID who uploaded the batch */
+    userId: string;
+    /** Date selected for processing (YYYY-MM-DD) */
+    selectedDate: string;
+    /** ISO timestamp when batch was processed */
+    processedAt: string;
+  };
+}
+
 export interface Transaction {
   transactionId: string;
   platform: 'amazon' | 'flipkart';
@@ -37,6 +66,8 @@ export interface Transaction {
     updatedAt: string;
   };
   hash: string;
+  /** Optional batch information for grouping orders */
+  batchInfo?: BatchInfo;
 }
 
 export interface ProductPrice {

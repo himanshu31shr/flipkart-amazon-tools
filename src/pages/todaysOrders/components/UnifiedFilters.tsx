@@ -13,6 +13,8 @@ import {
   Folder as FolderIcon,
 } from '@mui/icons-material';
 import { PlatformFilter, Platform } from './PlatformFilter';
+import { BatchFilter } from './BatchFilter';
+import { BatchInfo } from '../../../types/transaction.type';
 
 export type ViewMode = 'individual' | 'grouped';
 
@@ -25,6 +27,12 @@ interface UnifiedFiltersProps {
   platformFilter: Platform;
   onPlatformFilterChange: (platform: Platform) => void;
   
+  // Batch filter
+  batchFilter: string;
+  onBatchFilterChange: (batchId: string) => void;
+  batches: BatchInfo[];
+  batchesLoading?: boolean;
+  
   // Files modal
   onFilesClick: () => void;
 }
@@ -34,6 +42,10 @@ export const UnifiedFilters: React.FC<UnifiedFiltersProps> = ({
   onViewModeChange,
   platformFilter,
   onPlatformFilterChange,
+  batchFilter,
+  onBatchFilterChange,
+  batches,
+  batchesLoading = false,
   onFilesClick
 }) => {
   return (
@@ -62,7 +74,7 @@ export const UnifiedFilters: React.FC<UnifiedFiltersProps> = ({
                 startIcon={<CategoryIcon fontSize="small" />}
                 sx={{ minWidth: 120 }}
               >
-                Grouped
+                Category
               </Button>
             </ButtonGroup>
           </Box>
@@ -77,6 +89,16 @@ export const UnifiedFilters: React.FC<UnifiedFiltersProps> = ({
               size="small"
             />
           </Box>
+          
+          {/* Batch Filter */}
+          <BatchFilter
+            value={batchFilter}
+            onChange={onBatchFilterChange}
+            batches={batches}
+            loading={batchesLoading}
+            label="Batch"
+            size="small"
+          />
         </Box>
         
         {/* Right Side: Files Access */}
