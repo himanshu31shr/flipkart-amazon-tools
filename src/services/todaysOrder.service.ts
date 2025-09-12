@@ -11,6 +11,7 @@ export interface ActiveOrderSchema {
   id: string;
   orders: ActiveOrder[];
   date: string;
+  batchId?: string; // Optional batch ID for grouping orders
 }
 
 export class TodaysOrder extends FirebaseService {
@@ -29,6 +30,21 @@ export class TodaysOrder extends FirebaseService {
   }
 
   /**
+   * Remove undefined values from any object
+   * @param obj Object to clean
+   * @returns Clean object without undefined values
+   */
+  private removeUndefinedValues<T extends Record<string, unknown>>(obj: T): Partial<T> {
+    const cleaned: Partial<T> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined && value !== null) {
+        cleaned[key as keyof T] = value as T[keyof T];
+      }
+    }
+    return cleaned;
+  }
+
+  /**
    * Remove undefined keys from an order object
    * @param order The order object to clean
    * @returns Clean order object without undefined values
@@ -44,8 +60,10 @@ export class TodaysOrder extends FirebaseService {
     // Add optional properties only if they are defined
     if (order.SKU !== undefined) cleanOrder.SKU = order.SKU;
     if (order.orderId !== undefined) cleanOrder.orderId = order.orderId;
+    if (order.batchInfo !== undefined) cleanOrder.batchInfo = order.batchInfo;
     if (order.createdAt !== undefined) cleanOrder.createdAt = order.createdAt;
     if (order.category !== undefined) cleanOrder.category = order.category;
+    if (order.categoryId !== undefined) cleanOrder.categoryId = order.categoryId;
     
     // Never include the product property when saving to database to avoid circular references
     // The product property is populated during read operations in mapProductToOrder method
@@ -240,24 +258,26 @@ export class TodaysOrder extends FirebaseService {
 
     // Process the order
     if (existingOrder) {
+      const updateData = this.removeUndefinedValues({
+        ...order,
+        orders: [
+          ...this.cleanOrders(existingOrder.orders),
+          ...this.cleanOrders(order.orders),
+        ],
+      });
+      
       await this.updateDocument<ActiveOrderSchema>(
         this.COLLECTION_NAME,
         existingOrder.id,
-        {
-          ...order,
-          orders: [
-            ...this.cleanOrders(existingOrder.orders),
-            ...this.cleanOrders(order.orders),
-          ],
-        }
+        updateData as ActiveOrderSchema
       );
     } else {
-      const cleanOrderData = {
+      const cleanOrderData = this.removeUndefinedValues({
         ...order,
         orders: this.cleanOrders(order.orders),
-      };
+      });
       await this.batchOperation<ActiveOrderSchema>(
-        [cleanOrderData],
+        [cleanOrderData as ActiveOrderSchema],
         this.COLLECTION_NAME,
         "create",
         (item) => item.id
@@ -284,33 +304,35 @@ export class TodaysOrder extends FirebaseService {
 
     // Process the order
     if (existingOrder) {
+      const updateData = this.removeUndefinedValues({
+        ...order,
+        id: targetDate,
+        date: targetDate,
+        orders: [
+          ...this.cleanOrders(existingOrder.orders),
+          ...this.cleanOrders(order.orders).filter(
+            (newOrder) =>
+              !this.cleanOrders(existingOrder.orders).some(
+                (existing) => existing.orderId === newOrder.orderId
+              )
+          ),
+        ],
+      });
+      
       await this.updateDocument<ActiveOrderSchema>(
         this.COLLECTION_NAME,
         existingOrder.id,
-        {
-          ...order,
-          id: targetDate,
-          date: targetDate,
-          orders: [
-            ...this.cleanOrders(existingOrder.orders),
-            ...this.cleanOrders(order.orders).filter(
-              (newOrder) =>
-                !this.cleanOrders(existingOrder.orders).some(
-                  (existing) => existing.orderId === newOrder.orderId
-                )
-            ),
-          ],
-        }
+        updateData as ActiveOrderSchema
       );
     } else {
-      const cleanOrderData = {
+      const cleanOrderData = this.removeUndefinedValues({
         ...order,
         id: targetDate,
         date: targetDate,
         orders: this.cleanOrders(order.orders),
-      };
+      });
       await this.batchOperation<ActiveOrderSchema>(
-        [cleanOrderData],
+        [cleanOrderData as ActiveOrderSchema],
         this.COLLECTION_NAME,
         "create",
         (item) => item.id

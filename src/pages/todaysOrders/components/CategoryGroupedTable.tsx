@@ -26,11 +26,9 @@ import { CategoryGroup, GroupedOrderData, filterGroupsBySearch } from '../utils/
 import { ViewAmazonListingButton, ViewFlipkartListingButton } from '../../../shared/ActionButtons';
 import { FormattedCurrency } from '../../../components/FormattedCurrency';
 import { ProductSummary } from '../../home/services/base.transformer';
-import { Platform } from './PlatformFilter';
 
 interface CategoryGroupedTableProps {
   groupedData: GroupedOrderData;
-  platformFilter?: Platform;
 }
 
 type SortField = 'category' | 'itemCount' | 'totalQuantity';
@@ -51,14 +49,14 @@ const getCategoryStatistics = (group: CategoryGroup) => {
   };
 };
 
-export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ groupedData, platformFilter = 'all' }) => {
+export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ groupedData }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
   const [sortField, setSortField] = useState<SortField>('totalQuantity');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  // Filter data based on search term and platform
-  const filteredData = filterGroupsBySearch(groupedData, searchTerm, platformFilter);
+  // Filter data based on search term only (platform filtering now handled in Redux)
+  const filteredData = filterGroupsBySearch(groupedData, searchTerm, 'all');
 
   const handleCategoryToggle = (categoryName: string) => {
     setExpandedCategories(prev => ({
@@ -203,6 +201,7 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
                       <TableCell><strong>Product Name</strong></TableCell>
                       <TableCell align="center"><strong>Quantity</strong></TableCell>
                       <TableCell align="center"><strong>Platform</strong></TableCell>
+                      <TableCell align="center"><strong>Batch</strong></TableCell>
                       <TableCell align="right"><strong>Unit Price</strong></TableCell>
                       <TableCell align="center"><strong>Actions</strong></TableCell>
                     </TableRow>
@@ -235,6 +234,25 @@ export const CategoryGroupedTable: React.FC<CategoryGroupedTableProps> = ({ grou
                               size="small" 
                               variant="outlined"
                             />
+                          </TableCell>
+                          <TableCell align="center">
+                            {order.batchInfo ? (
+                              <Chip
+                                label={order.batchInfo.fileName.substring(0, 15) + (order.batchInfo.fileName.length > 15 ? '...' : '')}
+                                color="info"
+                                variant="outlined"
+                                size="small"
+                                title={`${order.batchInfo.fileName} - ${order.batchInfo.orderCount} orders`}
+                              />
+                            ) : (
+                              <Chip
+                                label="Legacy"
+                                color="default"
+                                variant="outlined"
+                                size="small"
+                                title="Order without batch information"
+                              />
+                            )}
                           </TableCell>
                           <TableCell align="right" data-testid="unit-price">
                             <FormattedCurrency value={order.product?.sellingPrice || 0} />

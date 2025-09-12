@@ -110,11 +110,19 @@ export const mergePDFs = createAsyncThunk(
 
       // Step 3: Process with existing merger service
       const mergePdfs = new PDFMergerService(products, categories);
+      
+      // Extract file names for batch tracking
+      const fileNames = [
+        ...amazonFiles.map(file => file.name),
+        ...flipkartFiles.map(file => file.name)
+      ];
+      
       const pdf = await mergePdfs.mergePdfs({
         amzon: consolidatedAmazonPDF ? [consolidatedAmazonPDF] : [],
         flp: consolidatedFlipkartPDF ? [consolidatedFlipkartPDF] : [],
         sortConfig: sortConfig,
-        selectedDate: selectedDate
+        selectedDate: selectedDate,
+        fileNames: fileNames
       });
 
       if (!pdf) {
