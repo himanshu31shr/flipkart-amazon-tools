@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.0.2
+
+### Patch Changes
+
+- [`b9aecfe`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/b9aecfe5e75bc3afb1eaf2bb69548b62afd80e66) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - Validate GitHub release creation with improved workflow condition logic
+
 ## 9.0.1
 
 ### Patch Changes
