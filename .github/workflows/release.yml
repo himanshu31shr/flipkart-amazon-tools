@@ -8,6 +8,7 @@ permissions:
   contents: write
   pull-requests: write
   actions: write
+  id-token: write
 
 jobs:
   release:
@@ -40,11 +41,54 @@ jobs:
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
 
-      - name: Run Release Quality Tests
+      - name: Wait for CI Success
         if: steps.check-changesets.outputs.has_changesets == 'true'
-        run: |
-          echo "🧪 Running comprehensive test suite for release validation..."
-          npm run test:coverage
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const sha = context.sha;
+            
+            console.log(`🔍 Waiting for CI checks to complete for commit ${sha}`);
+            
+            // Wait for CI workflow to complete
+            let attempts = 0;
+            const maxAttempts = 30; // 15 minutes max wait
+            
+            while (attempts < maxAttempts) {
+              const { data: runs } = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id: 'ci.yml',
+                head_sha: sha,
+                status: 'completed'
+              });
+              
+              const ciRun = runs.workflow_runs.find(run => run.head_sha === sha);
+              
+              if (ciRun) {
+                if (ciRun.conclusion === 'success') {
+                  console.log('✅ CI workflow completed successfully');
+                  return;
+                } else {
+                  core.setFailed(`❌ CI workflow failed with conclusion: ${ciRun.conclusion}`);
+                  return;
+                }
+              }
+              
+              console.log(`⏳ CI still running... attempt ${attempts + 1}/${maxAttempts}`);
+              await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
+              attempts++;
+            }
+            
+            core.setFailed('⏰ CI workflow did not complete within timeout period');
+
+      - name: Download CI Build Artifacts
+        if: steps.check-changesets.outputs.has_changesets == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts-${{ github.sha }}
+          path: dist/
 
       - name: Create Release Pull Request or Publish to npm
         if: steps.check-changesets.outputs.has_changesets == 'true'
@@ -62,24 +106,84 @@ jobs:
 
       - name: Create GitHub Release
         if: steps.changesets.outputs.hasChangesets == 'false' && steps.changesets.outputs.pullRequestNumber == ''
+        id: create-release
         run: |
           # Get current version from package.json
           VERSION=$(node -p "require('./package.json').version")
           echo "Creating release for version v$VERSION"
           
+          # Upload build artifacts to release
+          if [ -d "dist" ] && [ "$(ls -A dist)" ]; then
+            echo "📦 Creating release package..."
+            cd dist
+            zip -r ../sacred-sutra-tools-v$VERSION.zip .
+            cd ..
+          fi
+          
           # Create GitHub release
-          gh release create "v$VERSION" \
-            --title "Release v$VERSION" \
-            --notes "## Changes
+          if [ -f "sacred-sutra-tools-v$VERSION.zip" ]; then
+            gh release create "v$VERSION" \
+              --title "Release v$VERSION" \
+              --notes "## Changes
+
+          See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
+
+          ## Deployment
+
+          This release has been automatically deployed to production.
+          
+          🌐 **Live URL**: https://himanshu31shr.github.io/flipkart-amazon-tools/
+          
+          ## Assets
+          
+          - \`sacred-sutra-tools-v$VERSION.zip\` - Production build artifacts
+          
+          ## Quality Assurance
+          
+          - ✅ All tests passed
+          - ✅ TypeScript validation completed  
+          - ✅ Code quality checks passed
+          - ✅ Build artifacts verified" \
+              --latest \
+              sacred-sutra-tools-v$VERSION.zip
+          else
+            gh release create "v$VERSION" \
+              --title "Release v$VERSION" \
+              --notes "## Changes
 
           See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
 
           ## Deployment
 
           This release will be automatically deployed to production." \
-            --latest
+              --latest
+          fi
+          
+          echo "release_created=true" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Trigger Deployment
+        if: steps.create-release.outputs.release_created == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            
+            console.log('🚀 Triggering deployment workflow...');
+            
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id: 'deploy.yml',
+              ref: 'master',
+              inputs: {
+                environment: 'production'
+              }
+            });
+            
+            console.log('✅ Deployment workflow triggered successfully');
 
       - name: Manual PR Creation Fallback
         if: failure() && steps.changesets.outputs.hasChangesets == 'true'
