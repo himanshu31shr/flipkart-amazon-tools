@@ -6,6 +6,7 @@ import {
   CategorySortConfig
 } from "../../../utils/pdfSorting";
 import { BaseTransformer, ProductSummary, TextItem } from "./base.transformer";
+import { BatchInfo } from "../../../types/transaction.type";
 
 export class AmazonPDFTransformer extends BaseTransformer {
   protected filePath: Uint8Array;
@@ -17,9 +18,10 @@ export class AmazonPDFTransformer extends BaseTransformer {
     filePath: Uint8Array,
     products: Product[],
     categories: Category[],
-    sortConfig?: CategorySortConfig
+    sortConfig?: CategorySortConfig,
+    batchInfo?: BatchInfo
   ) {
-    super(filePath, products, categories, sortConfig);
+    super(filePath, products, categories, sortConfig, batchInfo);
     this.filePath = filePath;
   }
 
@@ -51,6 +53,7 @@ export class AmazonPDFTransformer extends BaseTransformer {
         name: "",
         quantity: "",
         type: "amazon",
+        batchInfo: this.batchInfo,
       };
     }
 
@@ -110,8 +113,9 @@ export class AmazonPDFTransformer extends BaseTransformer {
       name: name.replace(/1 /, "").trim(),
       quantity,
       SKU: sku || "",
-      type: "amazon",
+      type: "amazon" as const,
       orderId: extractedOrderNumber || undefined,
+      batchInfo: this.batchInfo,
     };
   }
 
@@ -138,7 +142,8 @@ export class AmazonPDFTransformer extends BaseTransformer {
       SKU: product.SKU,
       categoryId: skuProduct?.categoryId,
       category: category?.name,
-      orderId: product.orderId
+      orderId: product.orderId,
+      batchInfo: product.batchInfo  // 🔥 FIX: Include batchInfo in summary!
     };
 
     if (category) {

@@ -4,7 +4,6 @@ import {
   Container,
   Typography,
   Paper,
-  Chip,
   Button,
   IconButton,
 } from "@mui/material";
@@ -17,21 +16,37 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { fetchOrders, fetchOrdersForDate } from "../../store/slices/ordersSlice";
+import { 
+  fetchOrders, 
+  fetchOrdersForDate, 
+  fetchBatchesForDate, 
+  fetchBatchesForToday,
+  selectFilteredOrders,
+  setBatchFilter,
+  setPlatformFilter,
+  clearAllFilters
+} from "../../store/slices/ordersSlice";
 import { SummaryTable } from "../home/components/SummaryTable";
 import { CategoryGroupedTable } from "./components/CategoryGroupedTable";
 import { groupOrdersByCategory } from "./utils/groupingUtils";
 import { Platform } from "./components/PlatformFilter";
 import { FilesModal } from "./components/FilesModal";
-import { UnifiedFilters, ViewMode } from "./components/UnifiedFilters";
+import { ModernFilters, ViewMode } from "./components/ModernFilters";
 
 
 export const TodaysOrderPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { items: orders, loading } = useAppSelector(state => state.orders);
+  const { 
+    items: orders, 
+    loading, 
+    batches, 
+    batchesLoading,
+    batchFilter,
+    platformFilter
+  } = useAppSelector(state => state.orders);
+  
   const [viewMode, setViewMode] = useState<ViewMode>('grouped');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [platformFilter, setPlatformFilter] = useState<Platform>('all');
   const [filesModalOpen, setFilesModalOpen] = useState(false);
 
   useEffect(() => {
@@ -40,8 +55,10 @@ export const TodaysOrderPage: React.FC = () => {
     
     if (dateString === today) {
       dispatch(fetchOrders());
+      dispatch(fetchBatchesForToday());
     } else {
       dispatch(fetchOrdersForDate(dateString));
+      dispatch(fetchBatchesForDate(dateString));
     }
   }, [dispatch, selectedDate]);
 
@@ -68,13 +85,36 @@ export const TodaysOrderPage: React.FC = () => {
   };
 
   const handlePlatformFilterChange = (platform: Platform) => {
-    setPlatformFilter(platform);
+    dispatch(setPlatformFilter(platform));
   };
 
-  // Memoized grouped data for performance
+  const handleBatchFilterChange = (batchId: string) => {
+    dispatch(setBatchFilter(batchId));
+  };
+
+  const filteredOrders = useAppSelector(selectFilteredOrders);
+
+  // Memoized data for different view modes
   const groupedData = useMemo(() => {
-    return groupOrdersByCategory(orders);
-  }, [orders]);
+    return groupOrdersByCategory(filteredOrders);
+  }, [filteredOrders]);
+
+  // Calculate filter status
+  const isFiltered = platformFilter !== 'all' || (batchFilter && batchFilter !== 'all');
+  const totalOrdersCount = orders.length;
+  const filteredOrdersCount = filteredOrders.length;
+  
+  // Debug logging
+  console.log('🔍 Filter Status:', {
+    totalOrders: totalOrdersCount,
+    filteredOrders: filteredOrdersCount,
+    platformFilter,
+    batchFilter,
+    isFiltered,
+    ordersExist: orders.length > 0,
+    filteredOrdersExist: filteredOrders.length > 0
+  });
+  
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
@@ -85,12 +125,6 @@ export const TodaysOrderPage: React.FC = () => {
             <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
               {format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "Today's Orders" : "Orders"}
             </Typography>
-            <Chip 
-              label={`${orders.length} Orders`} 
-              color="primary" 
-              size="medium" 
-              sx={{ ml: 2 }}
-            />
           </Box>
           
           {/* Date Navigation beside heading */}
@@ -134,13 +168,20 @@ export const TodaysOrderPage: React.FC = () => {
         </Box>
 
 
-        {/* Unified Filters */}
-        <UnifiedFilters
+        {/* Modern Filters */}
+        <ModernFilters
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           platformFilter={platformFilter}
           onPlatformFilterChange={handlePlatformFilterChange}
+          batchFilter={batchFilter || 'all'}
+          onBatchFilterChange={handleBatchFilterChange}
+          batches={batches}
+          batchesLoading={batchesLoading}
           onFilesClick={() => setFilesModalOpen(true)}
+          onClearAllFilters={() => dispatch(clearAllFilters())}
+          totalCount={totalOrdersCount}
+          filteredCount={filteredOrdersCount}
         />
 
 
@@ -152,8 +193,12 @@ export const TodaysOrderPage: React.FC = () => {
         />
 
         <Box sx={{ mb: 2 }}>
+          {/* Section Header */}
           <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.dark', mb: 2 }}>
-            {viewMode === 'individual' ? 'Current Orders' : 'Orders by Category'}
+            {viewMode === 'individual' 
+              ? 'Current Orders' 
+              : 'Orders by Category'
+            }
           </Typography>
           {loading ? (
             <Box
@@ -164,12 +209,31 @@ export const TodaysOrderPage: React.FC = () => {
             >
               <CircularProgress color="primary" size={40} thickness={4} />
             </Box>
+          ) : filteredOrdersCount === 0 && isFiltered ? (
+            <Paper sx={{ p: 4, textAlign: 'center', border: '1px dashed', borderColor: 'divider' }}>
+              <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                No orders match your current filters
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Try adjusting your platform or batch filters to see more results
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  dispatch(clearAllFilters());
+                }}
+              >
+                Clear All Filters
+              </Button>
+            </Paper>
           ) : (
             <>
-              {viewMode === 'individual' ? (
-                <SummaryTable summary={orders} platformFilter={platformFilter} />
-              ) : (
-                <CategoryGroupedTable groupedData={groupedData} platformFilter={platformFilter} />
+              {viewMode === 'individual' && (
+                <SummaryTable summary={filteredOrders} />
+              )}
+              {viewMode === 'grouped' && (
+                <CategoryGroupedTable groupedData={groupedData} />
               )}
             </>
           )}

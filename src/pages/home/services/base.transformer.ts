@@ -2,6 +2,7 @@ import { PDFDocument } from "pdf-lib";
 import { Product } from "../../../types/product";
 import { Category } from "../../../types/category";
 import { CategorySortConfig, defaultSortConfig } from "../../../utils/pdfSorting";
+import { BatchInfo } from "../../../types/transaction.type";
 
 export interface TextItem {
   str: string;
@@ -18,6 +19,7 @@ export interface ProductSummary {
   createdAt?: string;
   category?: string;
   categoryId?: string;
+  batchInfo?: BatchInfo;
 }
 
 export class BaseTransformer {
@@ -26,16 +28,19 @@ export class BaseTransformer {
   protected outputPdf!: PDFDocument;
   protected summaryText: ProductSummary[] = [];
   protected sortConfig?: CategorySortConfig;
+  protected batchInfo?: BatchInfo;
 
   constructor(
     filePath: Uint8Array, 
     protected products: Product[], 
     protected categories: Category[],
-    sortConfig?: CategorySortConfig
+    sortConfig?: CategorySortConfig,
+    batchInfo?: BatchInfo
   ) {
     this.filePath = filePath;
     this.products = products;
     this.categories = categories;
+    this.batchInfo = batchInfo;
     
     // Always use category sorting with SKU as secondary sort
     this.sortConfig = {

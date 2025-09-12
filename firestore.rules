@@ -90,6 +90,12 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow update: if isAuthenticated();
       allow delete: if isAdmin();
-    }  
+    }
+
+    match /batches/{batchId} {
+      allow read: if isAuthenticated() || isEmulatorSeeding();
+      allow create, update: if isAuthenticated() || isEmulatorSeeding();
+      allow delete: if isAuthenticated() || isEmulatorSeeding();
+    }
   }
 }

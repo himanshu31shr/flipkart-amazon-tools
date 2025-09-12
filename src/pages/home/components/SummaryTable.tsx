@@ -1,7 +1,7 @@
 import {
   Chip
 } from "@mui/material";
-import React, { useMemo } from "react";
+import React from "react";
 import { Column, DataTable } from "../../../components/DataTable/DataTable";
 import {
   ViewAmazonListingButton,
@@ -10,20 +10,17 @@ import {
 import { ProductSummary } from "../services/base.transformer";
 import { Product } from "../../../types/product";
 import { Category } from "../../../types/category";
-import { Platform } from "../../todaysOrders/components/PlatformFilter";
 
 interface SummaryTableProps {
   summary: ProductSummary[];
   products?: Product[];
   categories?: Category[];
-  platformFilter?: Platform;
 }
 
 export const SummaryTable: React.FC<SummaryTableProps> = ({
   summary,
   products,
   categories,
-  platformFilter = 'all',
 }: SummaryTableProps) => {
   const renderActions = (product: ProductSummary) => (
     <>
@@ -45,11 +42,8 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({
     </>
   );
 
-  // Filter data based on platform
-  const filteredSummary = useMemo(() => {
-    if (platformFilter === 'all') return summary;
-    return summary.filter(item => item.type === platformFilter);
-  }, [summary, platformFilter]);
+  // No longer need platform filtering since it's handled in Redux
+  const filteredSummary = summary;
 
   // Get category name if available from products and categories props
   const getCategoryName = (item: ProductSummary) => {
@@ -112,6 +106,33 @@ export const SummaryTable: React.FC<SummaryTableProps> = ({
         );
       },
       filter: true,
+    },
+    {
+      id: "batchInfo",
+      label: "Batch",
+      filter: true,
+      format: (_, row) => {
+        const item = row as ProductSummary;
+        if (!item.batchInfo) {
+          return (
+            <Chip
+              label="Legacy"
+              color="default"
+              variant="outlined"
+              size="small"
+            />
+          );
+        }
+        return (
+          <Chip
+            label={item.batchInfo.fileName.substring(0, 20) + (item.batchInfo.fileName.length > 20 ? '...' : '')}
+            color="info"
+            variant="outlined"
+            size="small"
+            title={`${item.batchInfo.fileName} - ${item.batchInfo.orderCount} orders`}
+          />
+        );
+      },
     },
     {
       id: "actions",

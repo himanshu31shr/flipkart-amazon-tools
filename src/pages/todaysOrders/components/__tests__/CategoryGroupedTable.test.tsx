@@ -207,16 +207,17 @@ describe('CategoryGroupedTable', () => {
     });
   });
 
-  it('filters by platform when platformFilter prop is set to amazon', async () => {
-    render(<CategoryGroupedTable groupedData={mockGroupedData} platformFilter="amazon" />);
+  it('displays all products when no filtering is applied at component level', async () => {
+    render(<CategoryGroupedTable groupedData={mockGroupedData} />);
     
     await waitFor(() => {
       // Expand the electronics category to check its contents
       const electronicsAccordion = screen.getByText('Electronics').closest('[role="button"]');
       fireEvent.click(electronicsAccordion!);
 
-      expect(screen.getByText('Test Product 1')).toBeInTheDocument(); // Amazon product
-      expect(screen.queryByText('Test Product 2')).not.toBeInTheDocument(); // Flipkart product
+      // Both products should be visible (filtering now handled in Redux)
+      expect(screen.getByText('Test Product 1')).toBeInTheDocument();
+      expect(screen.getByText('Test Product 2')).toBeInTheDocument();
     });
   });
 

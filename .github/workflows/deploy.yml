@@ -84,6 +84,11 @@ jobs:
           single-commit: true
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
 
+      - name: Run Post-Deployment Smoke Tests
+        run: |
+          echo "🧪 Running smoke tests to validate deployment..."
+          npm run test:smoke
+
       - name: Deployment Success Notification
         if: success()
         run: |
