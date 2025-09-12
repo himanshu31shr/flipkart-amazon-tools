@@ -314,9 +314,14 @@ jobs:
             summary += '\n';
 
             // Test results details from the test job
-            const testSummary = '${{ needs.test.outputs.summary }}';
-            if (testSummary && testSummary !== '' && testSummary !== 'undefined') {
-              summary += testSummary + '\n\n';
+            const testSummaryRaw = `${{ needs.test.outputs.summary }}`;
+            if (testSummaryRaw && testSummaryRaw !== '' && testSummaryRaw !== 'undefined') {
+              try {
+                // Safely add test summary
+                summary += testSummaryRaw + '\n\n';
+              } catch (error) {
+                console.log('Could not add test summary:', error.message);
+              }
             }
 
             // Overall status
