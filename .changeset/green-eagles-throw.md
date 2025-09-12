@@ -1,5 +1,5 @@
 ---
-"material-ui-vite-ts": minor
+"sacred-sutra-tools": minor
 ---
 
 Facelifted todays order page
