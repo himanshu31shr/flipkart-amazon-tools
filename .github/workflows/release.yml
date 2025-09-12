@@ -40,6 +40,12 @@ jobs:
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
 
+      - name: Run Release Quality Tests
+        if: steps.check-changesets.outputs.has_changesets == 'true'
+        run: |
+          echo "🧪 Running comprehensive test suite for release validation..."
+          npm run test:coverage
+
       - name: Create Release Pull Request or Publish to npm
         if: steps.check-changesets.outputs.has_changesets == 'true'
         id: changesets

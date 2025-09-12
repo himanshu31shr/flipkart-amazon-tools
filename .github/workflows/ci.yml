@@ -29,8 +29,13 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Run Tests
+      - name: Run Tests (Pull Request - Full Suite)
+        if: github.event_name == 'pull_request'
         run: npm run test:ci
+
+      - name: Run Tests (Master Push - Fast Suite)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        run: npm run test:fast
 
       - name: Build Application (only on master)
         if: github.ref == 'refs/heads/master'

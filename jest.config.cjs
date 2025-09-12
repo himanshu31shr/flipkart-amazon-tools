@@ -31,5 +31,16 @@ module.exports = {
     customExportConditions: ['node', 'node-addons'],
   },
   moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
-  testMatch: ['**/__tests__/**/*.(test|spec).[jt]s?(x)', '**/?(*.)+(spec|test).[tj]s?(x)']
+  testMatch: ['**/__tests__/**/*.(test|spec).[jt]s?(x)', '**/?(*.)+(spec|test).[tj]s?(x)'],
+  
+  // Performance optimizations
+  cache: true,
+  cacheDirectory: '<rootDir>/node_modules/.cache/jest',
+  maxWorkers: '75%', // Use 75% of available workers for optimal performance
+  
+  // Optimize test execution
+  testSequencer: '<rootDir>/node_modules/@jest/test-sequencer/build/index.js',
+  
+  // Bail after first test suite failure in CI to save time
+  bail: process.env.CI ? 1 : 0
 };
