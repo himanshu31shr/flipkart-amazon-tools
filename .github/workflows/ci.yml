@@ -8,12 +8,14 @@ on:
 
 permissions:
   contents: read
+  checks: write
+  pull-requests: write
+  statuses: write
 
 jobs:
-  test:
-    name: Test & Build
+  setup:
+    name: 🔧 Setup & Install Dependencies  
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,23 +25,317 @@ jobs:
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
 
-      - name: Type Check
-        run: npm run type-check
+      - name: Cache Dependencies
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
-      - name: Lint
-        run: npm run lint
+  type-check:
+    name: 📋 TypeScript Check
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Run Tests
-        run: npm run test:ci
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
 
-      - name: Build Application (only on master)
-        if: github.ref == 'refs/heads/master'
-        run: npm run build
+      - name: Run Type Check
+        run: |
+          echo "🔍 Running TypeScript type checking..."
+          if npm run type-check; then
+            echo "✅ TypeScript check passed"
+            echo "## 📋 TypeScript Check Results" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Status:** All type checks passed successfully" >> $GITHUB_STEP_SUMMARY
+            echo "🔍 **Files:** TypeScript definitions are valid" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ TypeScript check failed"
+            echo "## 📋 TypeScript Check Results" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Status:** Type check failed" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Action needed:** Fix TypeScript errors before proceeding" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
-      - name: Upload Build Artifacts (only on master)
-        if: github.ref == 'refs/heads/master'
+  lint:
+    name: 🧹 Code Quality Check
+    runs-on: ubuntu-latest  
+    needs: setup
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+
+      - name: Run Linting
+        run: |
+          echo "🧹 Running ESLint..."
+          if npm run lint; then
+            echo "✅ Code quality check passed"
+            echo "## 🧹 Code Quality Results" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Status:** All linting rules passed" >> $GITHUB_STEP_SUMMARY
+            echo "🎯 **Quality:** Code follows project standards" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Code quality check failed"
+            echo "## 🧹 Code Quality Results" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Status:** ESLint found issues" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Action needed:** Fix linting errors before proceeding" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  test:
+    name: 🧪 Test Suite
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+
+      - name: Run Tests (Pull Request - Full Suite)
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🧪 Running comprehensive test suite for PR validation..."
+          echo "## 🧪 Test Suite Results" >> $GITHUB_STEP_SUMMARY
+          echo "🔄 **Running:** Comprehensive test suite for PR validation..." >> $GITHUB_STEP_SUMMARY
+          
+          if npm run test:ci:json; then
+            echo "✅ Test suite passed"
+            echo "📊 Test results saved to test-results.json"
+          else
+            echo "❌ Test suite failed"
+            echo "❌ **Status:** Some tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Action needed:** Fix failing tests before proceeding" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Run Tests (Master Push - Fast Suite)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        run: |
+          echo "⚡ Running fast test suite for master branch..."
+          echo "## 🧪 Fast Test Suite Results" >> $GITHUB_STEP_SUMMARY
+          echo "⚡ **Running:** Critical and smoke tests for deployment..." >> $GITHUB_STEP_SUMMARY
+          
+          if npm run test:fast; then
+            echo "✅ Fast test suite passed"
+            echo "✅ **Status:** Critical tests passed - ready for deployment" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Fast test suite failed"
+            echo "❌ **Status:** Critical tests failed - deployment blocked" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Parse Test Results
+        if: github.event_name == 'pull_request' && always()
+        id: test-results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            try {
+              let summary = '## 🧪 Test Results Summary\n\n';
+              let testResults = null;
+              
+              if (fs.existsSync('test-results.json')) {
+                testResults = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
+                
+                const { numTotalTests, numPassedTests, numFailedTests, numTotalTestSuites } = testResults;
+                
+                summary += `📊 **Test Statistics:**\n`;
+                summary += `- Total Tests: ${numTotalTests}\n`;
+                summary += `- Passed: ${numPassedTests} ✅\n`;
+                summary += `- Failed: ${numFailedTests} ❌\n`;
+                summary += `- Test Suites: ${numTotalTestSuites}\n\n`;
+                
+                if (numFailedTests > 0) {
+                  summary += `⚠️ **Failed Tests:**\n`;
+                  testResults.testResults.forEach(suite => {
+                    if (suite.status === 'failed') {
+                      summary += `- ${suite.name}\n`;
+                    }
+                  });
+                  summary += `\n`;
+                }
+                
+                summary += `🎯 **Success Rate:** ${Math.round((numPassedTests / numTotalTests) * 100)}%\n`;
+                
+                if (numFailedTests === 0) {
+                  summary += `\n🎉 All tests passed! Great job! 🚀`;
+                }
+                
+                // Create GitHub annotations for failed tests
+                if (testResults.testResults) {
+                  testResults.testResults.forEach(suite => {
+                    if (suite.status === 'failed' && suite.assertionResults) {
+                      suite.assertionResults.forEach(test => {
+                        if (test.status === 'failed') {
+                          core.error(`Test failed: ${test.title}`, {
+                            file: suite.name,
+                            title: 'Test Failure'
+                          });
+                        }
+                      });
+                    }
+                  });
+                }
+              } else {
+                summary += `❌ Could not find test results file. Tests may have failed to run.`;
+              }
+              
+              // Add to step summary
+              fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + '\n');
+              
+              core.setOutput('summary', summary);
+              console.log(summary);
+              
+              return {
+                totalTests: testResults?.numTotalTests || 0,
+                passedTests: testResults?.numPassedTests || 0,
+                failedTests: testResults?.numFailedTests || 0
+              };
+            } catch (error) {
+              core.setFailed(`Failed to parse test results: ${error.message}`);
+              return null;
+            }
+
+      - name: Test Results Summary
+        if: success()
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "✅ Test analysis completed - check PR comments for details"
+          else
+            echo "✅ Fast test suite completed successfully"
+          fi
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ github.sha }}
+          path: coverage/
+          retention-days: 7
+
+  build:
+    name: 🏗️ Build Application
+    runs-on: ubuntu-latest
+    needs: [type-check, lint, test]
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+
+      - name: Build Application
+        run: |
+          echo "🏗️ Building application for production..."
+          echo "## 🏗️ Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "🔄 **Status:** Building application for production..." >> $GITHUB_STEP_SUMMARY
+          
+          if npm run build; then
+            echo "✅ Application built successfully"
+            echo "✅ **Status:** Build completed successfully" >> $GITHUB_STEP_SUMMARY
+            echo "📦 **Output:** Production-ready artifacts created" >> $GITHUB_STEP_SUMMARY
+            echo "🚀 **Ready for:** Deployment to GitHub Pages" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Build failed"
+            echo "❌ **Status:** Build process failed" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Action needed:** Fix build errors before deployment" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts-${{ github.sha }}
           path: dist/
-          retention-days: 7 
+          retention-days: 7
+
+  pr-status:
+    name: 📊 PR Status Summary
+    runs-on: ubuntu-latest
+    needs: [type-check, lint, test, build]
+    if: always() && github.event_name == 'pull_request'
+    steps:
+      - name: Check Status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = [
+              { name: 'Setup & Dependencies', result: '${{ needs.setup.result }}', icon: '🔧' },
+              { name: 'TypeScript Check', result: '${{ needs.type-check.result }}', icon: '📋' },
+              { name: 'Code Quality Check', result: '${{ needs.lint.result }}', icon: '🧹' },
+              { name: 'Test Suite', result: '${{ needs.test.result }}', icon: '🧪' },
+              { name: 'Build Application', result: '${{ needs.build.result }}', icon: '🏗️' }
+            ];
+
+            let summary = '## 🚀 CI/CD Pipeline Results\n\n';
+            let allPassed = true;
+
+            // Main status table
+            summary += '| Check | Status | Result |\n';
+            summary += '|-------|--------|--------|\n';
+
+            jobs.forEach(job => {
+              const statusIcon = job.result === 'success' ? '✅' : 
+                               job.result === 'skipped' ? '⏭️' : 
+                               job.result === 'failure' ? '❌' : '⚠️';
+              
+              summary += `| ${job.icon} ${job.name} | ${statusIcon} | \`${job.result}\` |\n`;
+              
+              if (job.result !== 'success' && job.result !== 'skipped') {
+                allPassed = false;
+              }
+            });
+
+            summary += '\n';
+
+            // Test results details from the test job
+            const testSummary = '${{ steps.test-results.outputs.summary }}';
+            if (testSummary && testSummary !== '') {
+              summary += testSummary + '\n\n';
+            }
+
+            // Overall status
+            if (allPassed) {
+              summary += '## 🎉 Success!\n\n';
+              summary += '**All checks passed!** This PR is ready for review and merge.\n\n';
+              summary += '### What happens next?\n';
+              summary += '- ✅ Code review by maintainers\n';
+              summary += '- 🚀 Automatic deployment after merge to master\n';
+              summary += '- 📦 Release notes generation (if changesets included)\n';
+            } else {
+              summary += '## ⚠️ Action Required\n\n';
+              summary += '**Some checks failed.** Please address the issues above before this PR can be merged.\n\n';
+              summary += '### How to fix:\n';
+              summary += '1. Check the failed job details in the Actions tab\n';
+              summary += '2. Fix the issues locally\n';
+              summary += '3. Push your changes to update this PR\n';
+            }
+
+            // Add workflow run link
+            summary += `\n---\n📊 **[View detailed logs](${context.payload.repository.html_url}/actions/runs/${context.runId})**`;
+
+            // Add this as a comment to the PR
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            }); 
