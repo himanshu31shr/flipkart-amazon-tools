@@ -147,9 +147,10 @@ jobs:
             
             try {
               let summary = '## 🧪 Test Results Summary\n\n';
+              let testResults = null;
               
               if (fs.existsSync('test-results.json')) {
-                const testResults = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
+                testResults = JSON.parse(fs.readFileSync('test-results.json', 'utf8'));
                 
                 const { numTotalTests, numPassedTests, numFailedTests, numTotalTestSuites } = testResults;
                 
@@ -174,32 +175,31 @@ jobs:
                 if (numFailedTests === 0) {
                   summary += `\n🎉 All tests passed! Great job! 🚀`;
                 }
+                
+                // Create GitHub annotations for failed tests
+                if (testResults.testResults) {
+                  testResults.testResults.forEach(suite => {
+                    if (suite.status === 'failed' && suite.assertionResults) {
+                      suite.assertionResults.forEach(test => {
+                        if (test.status === 'failed') {
+                          core.error(`Test failed: ${test.title}`, {
+                            file: suite.name,
+                            title: 'Test Failure'
+                          });
+                        }
+                      });
+                    }
+                  });
+                }
               } else {
                 summary += `❌ Could not find test results file. Tests may have failed to run.`;
               }
               
               // Add to step summary
-              const fs = require('fs');
               fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + '\n');
               
               core.setOutput('summary', summary);
               console.log(summary);
-              
-              // Create GitHub annotations for failed tests
-              if (testResults && testResults.testResults) {
-                testResults.testResults.forEach(suite => {
-                  if (suite.status === 'failed' && suite.assertionResults) {
-                    suite.assertionResults.forEach(test => {
-                      if (test.status === 'failed') {
-                        core.error(`Test failed: ${test.title}`, {
-                          file: suite.name,
-                          title: 'Test Failure'
-                        });
-                      }
-                    });
-                  }
-                });
-              }
               
               return {
                 totalTests: testResults?.numTotalTests || 0,
