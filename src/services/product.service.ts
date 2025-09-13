@@ -15,11 +15,6 @@ export interface Product {
   visibility: "visible" | "hidden";
   sellingPrice: number;
   categoryId?: string; // Reference to category document ID
-  inventory?: {
-    quantity: number;
-    lowStockThreshold: number;
-    lastUpdated: Timestamp;
-  };
   metadata: {
     createdAt?: Timestamp;
     updatedAt?: Timestamp;
@@ -388,107 +383,6 @@ export class ProductService extends FirebaseService {
     return product as Product;
   }
 
-  /**
-   * Update inventory quantity for a product
-   * @param sku Product SKU
-   * @param quantityChange Amount to change (positive to add, negative to subtract)
-   * @returns Updated product
-   */
-  async updateInventory(sku: string, quantityChange: number): Promise<Product> {
-    try {
-      // First get the current product to ensure it exists
-      const product = await this.getProductDetails(sku);
-
-      // Initialize inventory if it doesn't exist
-      if (!product.inventory) {
-        // Create a new inventory object for products that don't have one
-        await this.updateDocument(this.COLLECTION_NAME, sku, {
-          inventory: {
-            quantity: quantityChange, // Allow any value including negative
-            lowStockThreshold: 5,
-            lastUpdated: Timestamp.now(),
-          },
-        });
-      } else {
-        // Calculate the new quantity for existing inventory - allow negative values
-        const newQuantity = product.inventory.quantity + quantityChange;
-
-        // Update the product with the new inventory quantity
-        await this.updateDocument(this.COLLECTION_NAME, sku, {
-          inventory: {
-            ...product.inventory,
-            quantity: newQuantity,
-            lastUpdated: Timestamp.now(),
-          },
-        });
-      }
-
-      // Return the updated product
-      return this.getProductDetails(sku);
-    } catch {
-      return this.getProductDetails(sku);
-    }
-  }
-
-  /**
-   * Reduce inventory when an order is placed
-   * @param sku Product SKU
-   * @param quantity Quantity ordered
-   * @returns Updated product
-   */
-  async reduceInventoryForOrder(
-    sku: string,
-    quantity: number
-  ): Promise<Product> {
-    return this.updateInventory(sku, -Math.abs(quantity));
-  }
-
-  /**
-   * Check if a product has sufficient inventory for an order
-   * @param sku Product SKU
-   * @param quantity Quantity to check
-   * @returns Boolean indicating if there's enough inventory
-   */
-  async hasSufficientInventory(
-    sku: string,
-    quantity: number
-  ): Promise<boolean> {
-    try {
-      const product = await this.getProductDetails(sku);
-      // If product has no inventory field, consider it as having 0 quantity
-      if (!product.inventory) return quantity <= 0;
-      return product.inventory.quantity >= quantity;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Get products with low inventory
-   * @returns Array of products with low inventory
-   */
-  async getLowInventoryProducts(): Promise<Product[]> {
-    try {
-      const products = await this.getProducts();
-      return products.filter(
-        (product) =>
-          // Only include products that have inventory data
-          product.inventory &&
-          product.inventory.quantity <= product.inventory.lowStockThreshold
-      );
-    } catch {
-      return [];
-    }
-  }
-
-  async checkInventory(sku: string): Promise<number> {
-    try {
-      const product = await this.getProductDetails(sku);
-      return product?.inventory?.quantity || 0;
-    } catch {
-      return 0;
-    }
-  }
 
   /**
    * Get the resolved cost price for a product

@@ -82,11 +82,6 @@ const createMockProduct = (platform: 'flipkart' | 'amazon', serialNumber?: strin
   platform,
   visibility: 'visible' as const,
   sellingPrice: 150,
-  inventory: {
-    quantity: 10,
-    lowStockThreshold: 5,
-    lastUpdated: Timestamp.now(),
-  },
   metadata: {
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),

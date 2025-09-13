@@ -31,11 +31,6 @@ const createMockProduct = (overrides: Partial<Product> = {}): Product => ({
   description: 'Test description',
   visibility: 'visible',
   existsOnSellerPage: true,
-  inventory: {
-    quantity: 10,
-    lowStockThreshold: 5,
-    lastUpdated: Timestamp.now(),
-  },
   metadata: {
     amazonSerialNumber: 'B123456789',
     createdAt: Timestamp.now(),

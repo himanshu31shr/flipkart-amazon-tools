@@ -7,18 +7,16 @@ import { transactionsReducer } from './slices/transactionsSlice';
 import { authReducer } from './slices/authSlice';
 import { pdfMergerReducer } from './slices/pdfMergerSlice';
 import orderHistoryReducer from './slices/orderHistorySlice';
-import inventoryReducer from './slices/inventorySlice';
 import categoriesReducer from './slices/categoriesSlice';
 import orderAnalyticsReducer from './slices/orderAnalyticsSlice';
 import allOrdersForAnalyticsReducer from './slices/allOrdersForAnalyticsSlice';
-import categoryInventoryReducer from './slices/categoryInventorySlice';
 
 const persistConfig = {
   key: 'root',
   version: 1,
   storage,
   whitelist: [], // Temporarily disable all persistence
-  blacklist: ['auth', 'pdfMerger', 'products', 'orders', 'transactions', 'orderHistory', 'inventory', 'orderAnalytics', 'allOrdersForAnalytics'], // Don't persist these reducers
+  blacklist: ['auth', 'pdfMerger', 'products', 'orders', 'transactions', 'orderHistory', 'orderAnalytics', 'allOrdersForAnalytics'], // Don't persist these reducers
 };
 
 const rootReducer = combineReducers({
@@ -28,11 +26,9 @@ const rootReducer = combineReducers({
   auth: authReducer,
   pdfMerger: pdfMergerReducer,
   orderHistory: orderHistoryReducer,
-  inventory: inventoryReducer,
   categories: categoriesReducer,
   orderAnalytics: orderAnalyticsReducer,
   allOrdersForAnalytics: allOrdersForAnalyticsReducer,
-  categoryInventory: categoryInventoryReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

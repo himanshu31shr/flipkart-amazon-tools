@@ -1,6 +1,5 @@
 import { groupOrdersByCategory, calculateOrderRevenue, getCategoryStatistics, filterGroupsBySearch } from '../utils/groupingUtils';
 import { ProductSummary } from '../../home/services/base.transformer';
-import { Timestamp } from 'firebase/firestore';
 
 // Mock Timestamp for tests
 jest.mock('firebase/firestore', () => ({
@@ -26,11 +25,6 @@ const mockOrders: ProductSummary[] = [
       categoryId: 'cat1',
       platform: 'amazon',
       visibility: 'visible',
-      inventory: {
-        quantity: 10,
-        lowStockThreshold: 5,
-        lastUpdated: Timestamp.now()
-      },
       metadata: { 
         amazonSerialNumber: 'AMZ001'
       }
@@ -51,11 +45,6 @@ const mockOrders: ProductSummary[] = [
       categoryId: 'cat1',
       platform: 'flipkart',
       visibility: 'visible',
-      inventory: {
-        quantity: 15,
-        lowStockThreshold: 5,
-        lastUpdated: Timestamp.now()
-      },
       metadata: { 
         flipkartSerialNumber: 'FLK001'
       }
@@ -76,11 +65,6 @@ const mockOrders: ProductSummary[] = [
       categoryId: 'cat2',
       platform: 'amazon',
       visibility: 'visible',
-      inventory: {
-        quantity: 20,
-        lowStockThreshold: 5,
-        lastUpdated: Timestamp.now()
-      },
       metadata: { 
         amazonSerialNumber: 'AMZ002'
       }
@@ -101,11 +85,6 @@ const mockOrders: ProductSummary[] = [
       categoryId: '',
       platform: 'amazon',
       visibility: 'visible',
-      inventory: {
-        quantity: 8,
-        lowStockThreshold: 5,
-        lastUpdated: Timestamp.now()
-      },
       metadata: { 
         amazonSerialNumber: 'AMZ003'
       }

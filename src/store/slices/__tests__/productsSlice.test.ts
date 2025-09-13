@@ -70,11 +70,6 @@ describe('productsSlice', () => {
     customCostPrice: 50,
     platform: 'amazon' as const,
     visibility: 'visible' as const,
-    inventory: {
-      quantity: 10,
-      lowStockThreshold: 5,
-      lastUpdated: mockTimestamp,
-    },
     metadata: {
       createdAt: mockTimestamp,
       updatedAt: mockTimestamp,
@@ -92,11 +87,6 @@ describe('productsSlice', () => {
     customCostPrice: 100,
     platform: 'flipkart' as const,
     visibility: 'hidden' as const,
-    inventory: {
-      quantity: 5,
-      lowStockThreshold: 2,
-      lastUpdated: mockTimestamp,
-    },
     metadata: {
       createdAt: mockTimestamp,
       updatedAt: mockTimestamp,

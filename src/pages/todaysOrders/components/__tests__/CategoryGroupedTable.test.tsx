@@ -39,7 +39,6 @@ const mockGroupedData: GroupedOrderData = {
             categoryId: 'cat1',
             platform: 'amazon',
             visibility: 'visible',
-            inventory: { quantity: 10, lowStockThreshold: 5 },
             metadata: { amazonSerialNumber: 'AMZ001' }
           }
         } as ProductSummary,
@@ -58,7 +57,6 @@ const mockGroupedData: GroupedOrderData = {
             categoryId: 'cat1',
             platform: 'flipkart',
             visibility: 'visible',
-            inventory: { quantity: 15, lowStockThreshold: 5 },
             metadata: { flipkartSerialNumber: 'FLK001' }
           }
         } as ProductSummary
@@ -86,7 +84,6 @@ const mockGroupedData: GroupedOrderData = {
             categoryId: 'cat2',
             platform: 'amazon',
             visibility: 'visible',
-            inventory: { quantity: 20, lowStockThreshold: 5 },
             metadata: { amazonSerialNumber: 'AMZ002' }
           }
         } as ProductSummary
@@ -115,7 +112,6 @@ const mockGroupedData: GroupedOrderData = {
           categoryId: '',
           platform: 'amazon',
           visibility: 'visible',
-          inventory: { quantity: 8, lowStockThreshold: 5 },
           metadata: { amazonSerialNumber: 'AMZ003' }
         }
       } as ProductSummary

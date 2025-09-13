@@ -5,7 +5,6 @@ import { format } from 'date-fns';
 // Mock the dependencies
 jest.mock('../firebase.service');
 jest.mock('../product.service');
-jest.mock('../categoryInventory.service');
 jest.mock('../category.service');
 
 describe('TodaysOrder Service', () => {
@@ -43,8 +42,6 @@ describe('TodaysOrder Service', () => {
     jest.spyOn(todaysOrderService as any, 'mapProductsToActiveOrder').mockResolvedValue(undefined);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     jest.spyOn(todaysOrderService as any, 'mapProductToOrder').mockImplementation(() => {});
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    jest.spyOn(todaysOrderService as any, 'reduceInventoryForOrders').mockResolvedValue(undefined);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     jest.spyOn(todaysOrderService as any, 'cleanOrders').mockImplementation((orders) => orders);
   });
@@ -139,22 +136,6 @@ describe('TodaysOrder Service', () => {
       );
     });
 
-    it('should reduce inventory after processing orders', async () => {
-      const testDate = '2024-01-15';
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const reduceInventorySpy = jest.spyOn(todaysOrderService as any, 'reduceInventoryForOrders');
-      mockGetDocument.mockResolvedValue(null);
-      
-      const newOrder = {
-        id: testDate,
-        date: testDate,
-        orders: [mockProductSummary],
-      };
-
-      await todaysOrderService.updateOrdersForDate(newOrder, testDate);
-
-      expect(reduceInventorySpy).toHaveBeenCalledWith(newOrder.orders);
-    });
 
     it('should return updated orders for the date', async () => {
       const testDate = '2024-01-15';
