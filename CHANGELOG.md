@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.1.0
+
+### Minor Changes
+
+- [#46](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/46) [`7a47092`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/7a47092cbcc541dd433350b12f09ad4fa0acad4b) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - Removed inventory management completely
+
 ## 9.0.2
 
 ### Patch Changes
