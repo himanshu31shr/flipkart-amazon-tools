@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.2.0
+
+### Minor Changes
+
+- [#48](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/48) [`5d7d953`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/5d7d95341422d3e8f6e099583a146c56b90f302f) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - Rename create-pr command file to standard .md extension
+
 ## 9.1.0
 
 ### Minor Changes
