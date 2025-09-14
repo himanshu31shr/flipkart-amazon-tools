@@ -2,7 +2,6 @@ import { format } from "date-fns";
 import { ProductSummary } from "../pages/home/services/base.transformer";
 import { FirebaseService } from "./firebase.service";
 import { Product, ProductService } from "./product.service";
-import { CategoryInventoryService } from "./categoryInventory.service";
 import { Category, CategoryService } from "./category.service";
 
 export type ActiveOrder = ProductSummary;
@@ -17,7 +16,6 @@ export interface ActiveOrderSchema {
 export class TodaysOrder extends FirebaseService {
   private readonly COLLECTION_NAME = "active-orders";
   private productService: ProductService;
-  private categoryInventoryService: CategoryInventoryService;
   private categoryService: CategoryService;
   private products: Product[] = [];
   private categories: Category[] = [];
@@ -25,7 +23,6 @@ export class TodaysOrder extends FirebaseService {
   constructor() {
     super();
     this.productService = new ProductService();
-    this.categoryInventoryService = new CategoryInventoryService();
     this.categoryService = new CategoryService();
   }
 
@@ -178,78 +175,28 @@ export class TodaysOrder extends FirebaseService {
   }
 
   /**
-   * Check if there's sufficient inventory for all products in the order
+   * Check if all products in the order can be processed
    * @param orders List of orders to check
-   * @returns Boolean indicating if all products have sufficient inventory
+   * @returns Boolean indicating if all products can be processed
    */
   async checkInventoryForOrders(orders: ActiveOrder[]): Promise<boolean> {
     for (const order of orders) {
       try {
         // Skip orders without a valid SKU
         if (!order.SKU) {
-          // Order missing SKU, skipping inventory check
+          // Order missing SKU, skipping check
           return true; // Allow order to proceed
         }
 
-        const hasSufficient = await this.productService.hasSufficientInventory(
-          order.SKU,
-          Number(order.quantity) || 1
-        );
-        if (!hasSufficient) {
-          return false;
-        }
+        // Inventory checking removed - proceeding with order
       } catch {
-        // Error checking inventory, but don't block the order
+        // Error checking order, but don't block the order
         return true;
       }
     }
     return true;
   }
 
-  /**
-   * Reduce inventory for all products in the order
-   * Also updates category inventory for each product
-   * @param orders List of orders to process
-   */
-  async reduceInventoryForOrders(orders: ActiveOrder[]): Promise<void> {
-    for (const order of orders) {
-      try {
-        // Skip orders without a valid SKU
-        if (!order.SKU) {
-          // Order missing SKU, skipping inventory reduction
-          return;
-        }
-
-        const quantity = Number(order.quantity) || 1;
-
-        // Reduce product inventory
-        const updatedProduct =
-          await this.productService.reduceInventoryForOrder(
-            order.SKU,
-            quantity
-          );
-
-        // Also reduce category inventory if product has a category
-        if (updatedProduct.categoryId) {
-          try {
-            await this.categoryInventoryService.updateCategoryInventory(
-              updatedProduct.categoryId,
-              -quantity,
-              `Order fulfillment for SKU: ${order.SKU}`,
-              "system"
-            );
-            // Successfully reduced category inventory
-          } catch {
-            // Failed to update category inventory, but don't fail the entire operation
-          }
-        } else {
-          // Product has no categoryId - skipping category inventory update
-        }
-      } catch {
-        // Error reducing inventory, but don't fail the entire operation
-      }
-    }
-  }
 
   async updateTodaysOrder(
     order: ActiveOrderSchema
@@ -284,8 +231,7 @@ export class TodaysOrder extends FirebaseService {
       );
     }
 
-    // Reduce inventory after the order is successfully processed
-    await this.reduceInventoryForOrders(order.orders);
+    // Inventory management removed
 
     return await this.getTodaysOrders();
   }
@@ -339,8 +285,7 @@ export class TodaysOrder extends FirebaseService {
       );
     }
 
-    // Reduce inventory after the order is successfully processed
-    await this.reduceInventoryForOrders(order.orders);
+    // Inventory management removed
 
     return await this.getOrdersForDate(targetDate);
   }

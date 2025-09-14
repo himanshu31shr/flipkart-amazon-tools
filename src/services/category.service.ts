@@ -6,7 +6,6 @@ export interface Category {
   name: string;
   description?: string;
   tag?: string;
-  costPrice?: number | null;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -31,7 +30,6 @@ export class CategoryService extends FirebaseService {
       name: category.name,
       description: category.description || '',
       tag: category.tag || '',
-      costPrice: category.costPrice ?? null,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
@@ -54,9 +52,6 @@ export class CategoryService extends FirebaseService {
     }
     if (category.tag !== undefined) {
       sanitizedUpdates.tag = category.tag || '';
-    }
-    if (category.costPrice !== undefined) {
-      sanitizedUpdates.costPrice = category.costPrice ?? null;
     }
     
     await this.updateDocument(this.COLLECTION_NAME, id, sanitizedUpdates);

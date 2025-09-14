@@ -28,7 +28,6 @@ const mockTransactionWithBatch: Transaction = {
     categoryId: 'cat-1',
     platform: 'amazon',
     visibility: 'visible',
-    customCostPrice: null,
     metadata: {}
   },
   metadata: {
@@ -70,7 +69,6 @@ const mockTransactionWithoutBatch: Transaction = {
     categoryId: 'cat-2',
     platform: 'flipkart',
     visibility: 'visible',
-    customCostPrice: null,
     metadata: {}
   },
   metadata: {

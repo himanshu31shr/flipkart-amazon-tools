@@ -9,29 +9,20 @@ import {
   Snackbar,
   Alert,
   Divider,
-  Chip,
 } from '@mui/material';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import WarningIcon from '@mui/icons-material/Warning';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadIcon from '@mui/icons-material/Upload';
+import CategoryIcon from '@mui/icons-material/Category';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { 
-  fetchCategoriesWithInventory, 
-  fetchLowStockCategories, 
-  updateCategoryInventory 
-} from '../../store/slices/categoryInventorySlice';
 import { fetchProducts } from '../../store/slices/productsSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
-import CategoryLowStockAlert from '../inventory/components/CategoryLowStockAlert';
-import UnifiedCategoryTable from './UnifiedCategoryTable';
+import SimpleCategoryTable from './SimpleCategoryTable';
 import { CategoryDataService } from '../../services/categoryData.service';
 import CategoryImportModal from './components/CategoryImportSection';
 
 export const CategoriesPage: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { lowStockCategories, loading } = useAppSelector((state) => state.categoryInventory);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
@@ -46,30 +37,16 @@ export const CategoriesPage: React.FC = () => {
   useEffect(() => {
     // Only fetch data if authenticated
     if (isAuthenticated) {
-      dispatch(fetchCategoriesWithInventory());
-      dispatch(fetchLowStockCategories());
+      dispatch(fetchProducts({}));
     }
   }, [dispatch, isAuthenticated]);
 
   const handleRefresh = () => {
-    dispatch(fetchCategoriesWithInventory());
-    dispatch(fetchLowStockCategories());
+    dispatch(fetchProducts({}));
     // Also trigger refresh of UnifiedCategoryTable
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const handleUpdateInventory = async (categoryId: string, quantity: number) => {
-    try {
-      await dispatch(updateCategoryInventory({ categoryId, quantity })).unwrap();
-      setSnackbarMessage('Category inventory updated successfully');
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
-    } catch {
-      setSnackbarMessage('Failed to update category inventory');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
-    }
-  };
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -100,11 +77,7 @@ export const CategoriesPage: React.FC = () => {
   const refreshAllData = async () => {
     if (isAuthenticated) {
       try {
-        await Promise.all([
-          dispatch(fetchCategoriesWithInventory()),
-          dispatch(fetchLowStockCategories()),
-          dispatch(fetchProducts({})) // Refresh products data as well
-        ]);
+        await dispatch(fetchProducts({}));
       } catch (error) {
         console.error('Failed to refresh data:', error);
       }
@@ -129,18 +102,10 @@ export const CategoriesPage: React.FC = () => {
     <Container maxWidth="xl" sx={{ py: 3 }}>
       <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <InventoryIcon sx={{ fontSize: 32, mr: 2, color: 'primary.main' }} />
+          <CategoryIcon sx={{ fontSize: 32, mr: 2, color: 'primary.main' }} />
           <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
-            Category & Inventory Management
+            Category Management
           </Typography>
-          {lowStockCategories.length > 0 && (
-            <Chip 
-              icon={<WarningIcon />} 
-              label={`${lowStockCategories.length} Low Stock Categories`} 
-              color="warning" 
-              sx={{ ml: 2, fontWeight: 'bold' }}
-            />
-          )}
           <Box sx={{ flexGrow: 1 }} />
           
           {/* Data Management Actions */}
@@ -166,8 +131,8 @@ export const CategoriesPage: React.FC = () => {
           <Button 
             variant="contained" 
             onClick={handleRefresh}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : <RefreshIcon />}
+            disabled={false}
+            startIcon={<RefreshIcon />}
             sx={{ fontWeight: 'medium' }}
           >
             Refresh All Data
@@ -176,15 +141,9 @@ export const CategoriesPage: React.FC = () => {
 
         <Divider sx={{ mb: 3 }} />
 
-        {lowStockCategories.length > 0 && (
-          <CategoryLowStockAlert 
-            categories={lowStockCategories} 
-            onUpdateInventory={handleUpdateInventory} 
-          />
-        )}
 
-        {/* Unified Category Table */}
-        <UnifiedCategoryTable 
+        {/* Simple Category Table */}
+        <SimpleCategoryTable 
           refreshTrigger={refreshTrigger} 
           onDataChange={() => setRefreshTrigger(prev => prev + 1)}
         />

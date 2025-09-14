@@ -2,8 +2,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import LabelIcon from "@mui/icons-material/Label";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import InventoryIcon from "@mui/icons-material/Inventory";
-import InventoryManagementIcon from "@mui/icons-material/Warehouse";
+import ManagementIcon from "@mui/icons-material/Warehouse";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import CategoryIcon from "@mui/icons-material/Category";
@@ -127,7 +126,7 @@ export const DefaultContainer = ({
     const path = location.pathname;
     setOrdersOpen(path.includes('/home/') || path.includes('/activeOrders/'));
     setProductsOpen(path.includes('/products/') || path.includes('/hidden-products/') || path.includes('/uncategorized-products/'));
-    setManagementOpen(path.includes('/categories/') || path.includes('/inventory/') || path.includes('/storage-management/'));
+    setManagementOpen(path.includes('/categories/') || path.includes('/storage-management/'));
   }, [location.pathname]);
 
   const toggleDrawer = (newOpen: boolean) => () => {
@@ -237,7 +236,7 @@ export const DefaultContainer = ({
         <ListItem disablePadding>
           <ListItemButton onClick={() => setProductsOpen(!productsOpen)}>
             <StyledListItemIcon>
-              <InventoryIcon />
+              <ShoppingCartIcon />
             </StyledListItemIcon>
             <StyledListItemText primary="Products" />
             {productsOpen ? <ExpandLess /> : <ExpandMore />}
@@ -255,7 +254,7 @@ export const DefaultContainer = ({
               <ListItem key={"All Products"} disablePadding>
                 <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/products/")}>
                   <StyledListItemIcon>
-                    <InventoryIcon />
+                    <ShoppingCartIcon />
                   </StyledListItemIcon>
                   <StyledListItemText primary={"All Products"} />
                 </StyledListItemButton>
@@ -300,7 +299,7 @@ export const DefaultContainer = ({
         <ListItem disablePadding>
           <ListItemButton onClick={() => setManagementOpen(!managementOpen)}>
             <StyledListItemIcon>
-              <InventoryManagementIcon />
+              <ManagementIcon />
             </StyledListItemIcon>
             <StyledListItemText primary="Management" />
             {managementOpen ? <ExpandLess /> : <ExpandMore />}
@@ -315,12 +314,12 @@ export const DefaultContainer = ({
               style={{ textDecoration: 'none', color: 'inherit' }}
               onClick={handleNavigation}
             >
-              <ListItem key={"Categories & Inventory"} disablePadding>
+              <ListItem key={"Categories"} disablePadding>
                 <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/categories/")}>
                   <StyledListItemIcon>
                     <CategoryIcon />
                   </StyledListItemIcon>
-                  <StyledListItemText primary={"Categories & Inventory"} />
+                  <StyledListItemText primary={"Categories"} />
                 </StyledListItemButton>
               </ListItem>
             </Link>

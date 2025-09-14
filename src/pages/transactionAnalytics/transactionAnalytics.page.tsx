@@ -21,7 +21,6 @@ import {
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { TransactionAnalysisService } from "../../services/transactionAnalysis.service";
-import { CostPriceResolutionService } from "../../services/costPrice.service";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { fetchProducts } from "../../store/slices/productsSlice";
 import { fetchTransactions, saveTransactions } from "../../store/slices/transactionsSlice";
@@ -108,12 +107,10 @@ export const TransactionAnalytics: React.FC = () => {
             maxDate: new Date(Math.max(...dates.map((date) => date.getTime()))),
           });
 
-          // Create services
-          const costPriceService = new CostPriceResolutionService();
+          // Create services (cost price service removed)
           const transactionService = new TransactionAnalysisService(
             transactionsWithPrices,
-            priceMap,
-            costPriceService
+            priceMap
           );
           
           // Wait for async analyze to complete

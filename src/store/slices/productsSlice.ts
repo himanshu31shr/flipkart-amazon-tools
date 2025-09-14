@@ -98,12 +98,11 @@ export const fetchCategories = createAsyncThunk(
 
 export const addCategory = createAsyncThunk(
   'products/addCategory',
-  async (categoryData: { name: string; description?: string; tag?: string; costPrice?: number | null }) => {
+  async (categoryData: { name: string; description?: string; tag?: string }) => {
     const newCategoryId = await categoryService.createCategory({ 
       name: categoryData.name,
       description: categoryData.description || '',
-      tag: categoryData.tag || '',
-      costPrice: categoryData.costPrice ?? null 
+      tag: categoryData.tag || ''
     });
     return newCategoryId;
   }

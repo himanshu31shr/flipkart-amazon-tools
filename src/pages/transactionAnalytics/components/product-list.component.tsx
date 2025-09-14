@@ -77,8 +77,8 @@ const ProductList: React.FC<Props> = ({ transactions, summary }) => {
         existing.units += transaction.quantity;
         existing.sales += transaction.sellingPrice * transaction.quantity;
         
-        // Use customCostPrice or 0 if not available
-        const costPrice = transaction.product.customCostPrice || 0;
+        // Cost price calculation removed (was using customCostPrice)
+        const costPrice = 0;
         existing.cost += costPrice * transaction.quantity;
         
         // Calculate profit: sales - cost - expenses

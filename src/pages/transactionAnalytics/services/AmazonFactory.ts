@@ -2,7 +2,6 @@ import Papa from "papaparse";
 import { Transaction } from "../../../types/transaction.type";
 import { AmazonCsvData } from "../../../types/types";
 import { AbstractFactory } from "./ReportExtractionFactory";
-import { Timestamp } from 'firebase/firestore';
 
 interface AmazonRawData {
   data: AmazonCsvData[];
@@ -101,18 +100,12 @@ export class AmazonFactory implements AbstractFactory {
       },
       product: {
         name: row["description"] || "",
-        customCostPrice: null,
         sku: sku,
         description: row["description"] || "",
         platform: "amazon",
         metadata: {},
         visibility: "visible",
         sellingPrice: sellingPrice,
-        inventory: {
-          quantity: 0,
-          lowStockThreshold: 5,
-          lastUpdated: Timestamp.now()
-        },
       },
       metadata: {
         createdAt: new Date().toISOString(),

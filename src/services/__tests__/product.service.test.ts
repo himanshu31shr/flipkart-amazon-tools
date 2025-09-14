@@ -48,7 +48,6 @@ describe('ProductService', () => {
     {
       'Seller SKU Id': 'TEST-SKU-3',
       'Product Title': 'Test Product 3',
-      'Product Name': 'Test Product 3 Name',
       'Listing Status': 'Active',
       'Your Selling Price': '150',
       'Minimum Order Quantity': '1',
@@ -62,15 +61,9 @@ describe('ProductService', () => {
       sku: 'TEST-SKU-1',
       name: 'Test Product',
       description: 'Test description',
-      customCostPrice: 50,
       platform: 'amazon',
       visibility: 'visible',
       sellingPrice: 100,
-      inventory: {
-        quantity: 10,
-        lowStockThreshold: 5,
-        lastUpdated: { seconds: 1234567890, nanoseconds: 0 } as Timestamp,
-      },
       metadata: {
         createdAt: { seconds: 1234567890, nanoseconds: 0 } as Timestamp,
         updatedAt: { seconds: 1234567890, nanoseconds: 0 } as Timestamp,
@@ -138,7 +131,8 @@ describe('ProductService', () => {
       };
 
       mockXLSXRead.mockReturnValue(mockWorkbook as any);
-      mockXLSXUtils.sheet_to_json.mockReturnValue([{}, ...mockFlipkartData] as any);
+      // XLSX.utils.sheet_to_json already processes headers correctly, so return just the data
+      mockXLSXUtils.sheet_to_json.mockReturnValue(mockFlipkartData as any);
 
       // Mock arrayBuffer method
       Object.defineProperty(mockFile, 'arrayBuffer', {
@@ -152,6 +146,7 @@ describe('ProductService', () => {
       expect(result[0]).toMatchObject({
         sku: 'TEST-SKU-3',
         name: 'Test Product 3',
+        description: 'Test Product 3', // Now uses Product Title for both name and description
         platform: 'flipkart',
         sellingPrice: 150,
       });
@@ -163,30 +158,6 @@ describe('ProductService', () => {
       await expect(service.parseProducts(mockFile)).rejects.toThrow('Unsupported file format');
     });
 
-    // Skip this test due to timing issues
-    it.skip('should handle empty Amazon file', async () => {
-      const mockFile = new File(['test'], 'test.txt', { type: 'text/plain' });
-      
-      // Mock Papa.parse to call complete with empty data, but in a way that allows the error to be caught
-      (mockPapaParse as any).mockImplementation((file: any, options: any) => {
-        // Schedule the callback to run on the next tick so the promise handling can be set up
-        setTimeout(() => {
-          if (options && options.complete) {
-            try {
-              options.complete({ data: [] });
-            } catch (error) {
-              // If complete throws (as it should with empty data), call error callback if provided
-              if (options.error) {
-                options.error(error);
-              }
-            }
-          }
-        }, 0);
-      });
-
-      // The parseProducts method should throw "File is empty" error
-      await expect(service.parseProducts(mockFile)).rejects.toThrow('File is empty');
-    }, 10000); // Increase timeout to 10 seconds
 
     it('should handle Papa parse errors', async () => {
       const mockFile = new File(['test'], 'test.txt', { type: 'text/plain' });
@@ -615,123 +586,9 @@ describe('ProductService', () => {
     });
   });
 
-  describe('updateInventory', () => {
-    it('should update inventory quantity', async () => {
-      jest.spyOn(service as any, 'getDocument').mockResolvedValue(getMockProduct());
-      const updateSpy = jest.spyOn(service as any, 'updateDocument').mockResolvedValue(undefined);
-      const updatedProduct: Product = {
-        ...getMockProduct(),
-        inventory: {
-          ...getMockProduct().inventory!,
-          quantity: 15,
-        }
-      };
-      jest.spyOn(service, 'getProductDetails')
-        .mockImplementation(async (sku: string): Promise<Product> => {
-          const isTargetSku = sku === 'TEST-SKU-1';
-          const hasBeenUpdated = updateSpy.mock.calls.length > 0;
-          if (isTargetSku && hasBeenUpdated) {
-            return updatedProduct as Product;
-          }
-          return getMockProduct();
-        });
 
-      const result = await service.updateInventory('TEST-SKU-1', 5);
 
-      expect(updateSpy).toHaveBeenCalledWith('products', 'TEST-SKU-1', {
-        inventory: {
-          quantity: 15,
-          lastUpdated: expect.any(Object),
-          lowStockThreshold: 5,
-        },
-      });
-      expect(result.inventory!.quantity).toBe(15);
-    });
 
-    it('should throw error if product not found for inventory update', async () => {
-      jest.spyOn(service as any, 'getDocument').mockResolvedValue(undefined);
-      jest.spyOn(service, 'getProductDetails').mockRejectedValue(
-        new Error('Product with SKU NON-EXISTENT not found')
-      );
-
-      await expect(service.updateInventory('NON-EXISTENT', 5)).rejects.toThrow(
-        'Product with SKU NON-EXISTENT not found'
-      );
-    });
-  });
-
-  describe('reduceInventoryForOrder', () => {
-    it('should reduce inventory for order', async () => {
-      const updatedProduct: Product = {
-        ...getMockProduct(),
-        inventory: {
-          ...getMockProduct().inventory!,
-          quantity: 7,
-        }
-      };
-      jest.spyOn(service, 'updateInventory').mockResolvedValue(updatedProduct);
-
-      const result = await service.reduceInventoryForOrder('TEST-SKU-1', 3);
-
-      expect(service.updateInventory).toHaveBeenCalledWith('TEST-SKU-1', -3);
-      expect(result?.inventory?.quantity).toBe(7);
-    });
-
-    it('should throw error if insufficient inventory', async () => {
-      jest.spyOn(service, 'hasSufficientInventory').mockResolvedValue(false);
-      jest.spyOn(service, 'updateInventory').mockImplementation(async (sku, quantity) => {
-        const hasSufficient = await service.hasSufficientInventory(sku, Math.abs(quantity));
-        if (!hasSufficient) {
-          throw new Error(`Insufficient inventory for SKU ${sku}. Available: 10, Required: 15`);
-        }
-        return getMockProduct();
-      });
-
-      await expect(service.reduceInventoryForOrder('TEST-SKU-1', 15)).rejects.toThrow(
-        'Insufficient inventory for SKU TEST-SKU-1. Available: 10, Required: 15'
-      );
-    });
-  });
-
-  describe('hasSufficientInventory', () => {
-    it('should return true for sufficient inventory', async () => {
-      jest.spyOn(service as any, 'getDocument').mockResolvedValue(getMockProduct());
-
-      const result = await service.hasSufficientInventory('TEST-SKU-1', 5);
-
-      expect(result).toBe(true);
-    });
-
-    it('should return false for insufficient inventory', async () => {
-      jest.spyOn(service as any, 'getDocument').mockResolvedValue(getMockProduct());
-
-      const result = await service.hasSufficientInventory('TEST-SKU-1', 15);
-
-      expect(result).toBe(false);
-    });
-
-    it('should return false if product not found', async () => {
-      jest.spyOn(service as any, 'getDocument').mockResolvedValue(undefined);
-
-      const result = await service.hasSufficientInventory('NON-EXISTENT', 5);
-
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('getLowInventoryProducts', () => {
-    it('should get products with low inventory', async () => {
-      const lowStockProduct = {
-        ...getMockProduct(),
-        inventory: { ...getMockProduct().inventory, quantity: 3 },
-      };
-      jest.spyOn(service as any, 'getDocuments').mockResolvedValue([lowStockProduct]);
-
-      const result = await service.getLowInventoryProducts();
-
-      expect(result).toEqual([lowStockProduct]);
-    });
-  });
 
   describe('deleteProduct', () => {
     it('should delete product by SKU', async () => {

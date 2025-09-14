@@ -15,7 +15,6 @@ const mockProducts: Product[] = [
     platform: 'amazon',
     visibility: 'visible',
     sellingPrice: 100,
-    customCostPrice: null,
     metadata: {},
     categoryId: 'cat1',
   },
@@ -26,7 +25,6 @@ const mockProducts: Product[] = [
     platform: 'amazon',
     visibility: 'visible',
     sellingPrice: 200,
-    customCostPrice: null,
     metadata: {},
     categoryId: 'cat2',
   },
@@ -38,14 +36,12 @@ const mockCategories: Category[] = [
     name: 'Category A',
     description: 'Test category A',
     tag: 'A',
-    costPrice: 50,
   },
   {
     id: 'cat2', 
     name: 'Category B',
     description: 'Test category B',
     tag: 'B',
-    costPrice: 75,
   },
 ];
 

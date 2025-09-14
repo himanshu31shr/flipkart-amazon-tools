@@ -85,12 +85,6 @@ service cloud.firestore {
       allow write: if isAuthenticated() || isEmulatorSeeding();
     }
 
-    match /inventoryOperations/{operationId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAdmin();
-    }
 
     match /batches/{batchId} {
       allow read: if isAuthenticated() || isEmulatorSeeding();
