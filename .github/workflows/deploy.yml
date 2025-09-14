@@ -152,34 +152,31 @@ jobs:
 
       - name: Deployment Success Notification
         if: steps.post-validation.outputs.validation_success == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const environment = '${{ github.event.inputs.environment || 'production' }}';
-            const url = '${{ steps.deployment.outputs.page_url || "https://himanshu31shr.github.io/flipkart-amazon-tools/" }}';
-            const version = '${{ github.event.release.tag_name || "latest" }}';
-            
-            console.log(`✅ Deployment successful to ${environment}`);
-            console.log(`🌐 URL: ${url}`);
-            console.log(`📦 Version: ${version}`);
-            
-            // Add deployment success summary
-            const fs = require('fs');
-            const summary = `## 🚀 Deployment Successful
-            
-            **Environment:** ${environment}
-            **Version:** ${version}
-            **URL:** ${url}
-            **Status:** ✅ All validations passed
-            
-            ### Validation Results
-            - ✅ Site accessibility confirmed
-            - ✅ Post-deployment smoke tests passed
-            - ✅ Build artifacts verified
-            
-            🎉 **Deployment completed successfully!**`;
-            
-            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'production' }}"
+          URL="${{ steps.deployment.outputs.page_url || 'https://himanshu31shr.github.io/flipkart-amazon-tools/' }}"
+          VERSION="${{ github.event.release.tag_name || 'latest' }}"
+          
+          echo "✅ Deployment successful to $ENVIRONMENT"
+          echo "🌐 URL: $URL"
+          echo "📦 Version: $VERSION"
+          
+          # Add deployment success summary
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## 🚀 Deployment Successful
+          
+          **Environment:** $ENVIRONMENT
+          **Version:** $VERSION
+          **URL:** $URL
+          **Status:** ✅ All validations passed
+          
+          ### Validation Results
+          - ✅ Site accessibility confirmed
+          - ✅ Post-deployment smoke tests passed
+          - ✅ Build artifacts verified
+          
+          🎉 **Deployment completed successfully!**
+          EOF
 
       - name: Rollback on Failure
         if: failure() || steps.post-validation.outputs.validation_success == 'false'
