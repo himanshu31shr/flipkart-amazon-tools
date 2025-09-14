@@ -5,13 +5,8 @@ describe('api utilities', () => {
     it('should have correct cache durations', () => {
       expect(CACHE_DURATIONS.orders).toBe(5 * 60 * 1000); // 5 minutes
       expect(CACHE_DURATIONS.products).toBe(5 * 60 * 1000); // 5 minutes
-      expect(CACHE_DURATIONS.inventory).toBe(2 * 60 * 1000); // 2 minutes
     });
 
-    it('should have inventory cache shorter than others', () => {
-      expect(CACHE_DURATIONS.inventory).toBeLessThan(CACHE_DURATIONS.orders);
-      expect(CACHE_DURATIONS.inventory).toBeLessThan(CACHE_DURATIONS.products);
-    });
   });
 
   describe('shouldFetchData', () => {

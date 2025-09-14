@@ -67,12 +67,6 @@ const CATEGORIES_SEED_DATA = [
     name: "Electronics",
     description: "Electronic devices and gadgets",
     tag: "tech",
-    inventory: {
-      totalQuantity: 80, // 50 + 30 from products
-      lowStockThreshold: 20,
-      lastUpdated: new Date(),
-      productCount: 2,
-    },
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -81,12 +75,6 @@ const CATEGORIES_SEED_DATA = [
     name: "Books",
     description: "Books and literature",
     tag: "education",
-    inventory: {
-      totalQuantity: 80, // from NOV-001
-      lowStockThreshold: 15,
-      lastUpdated: new Date(),
-      productCount: 1,
-    },
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -95,12 +83,6 @@ const CATEGORIES_SEED_DATA = [
     name: "Clothing",
     description: "Apparel and fashion items",
     tag: "fashion",
-    inventory: {
-      totalQuantity: 45, // from TSHIRT-001
-      lowStockThreshold: 10,
-      lastUpdated: new Date(),
-      productCount: 1,
-    },
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -116,11 +98,6 @@ const PRODUCTS_SEED_DATA = [
     visibility: "visible",
     sellingPrice: 42000,
     categoryId: "electronics",
-    inventory: {
-      quantity: 50,
-      lowStockThreshold: 10,
-      lastUpdated: new Date(),
-    },
     metadata: {
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -140,11 +117,6 @@ const PRODUCTS_SEED_DATA = [
     visibility: "visible",
     sellingPrice: 380,
     categoryId: "books",
-    inventory: {
-      quantity: 80,
-      lowStockThreshold: 15,
-      lastUpdated: new Date(),
-    },
     metadata: {
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -164,11 +136,6 @@ const PRODUCTS_SEED_DATA = [
     visibility: "visible",
     sellingPrice: 80000,
     categoryId: "electronics",
-    inventory: {
-      quantity: 30,
-      lowStockThreshold: 5,
-      lastUpdated: new Date(),
-    },
     metadata: {
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -188,11 +155,6 @@ const PRODUCTS_SEED_DATA = [
     visibility: "visible",
     sellingPrice: 650,
     categoryId: "clothing",
-    inventory: {
-      quantity: 45,
-      lowStockThreshold: 10,
-      lastUpdated: new Date(),
-    },
     metadata: {
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -243,10 +205,6 @@ async function seedCategories() {
     for (const category of CATEGORIES_SEED_DATA) {
       const categoryData = {
         ...category,
-        inventory: {
-          ...category.inventory,
-          lastUpdated: Timestamp.fromDate(category.inventory.lastUpdated),
-        },
         createdAt: Timestamp.fromDate(category.createdAt),
         updatedAt: Timestamp.fromDate(category.updatedAt),
       };
@@ -268,10 +226,6 @@ async function seedProducts() {
     for (const product of PRODUCTS_SEED_DATA) {
       const productData = {
         ...product,
-        inventory: {
-          ...product.inventory,
-          lastUpdated: Timestamp.fromDate(product.inventory.lastUpdated),
-        },
         metadata: {
           ...product.metadata,
           createdAt: Timestamp.fromDate(product.metadata.createdAt),

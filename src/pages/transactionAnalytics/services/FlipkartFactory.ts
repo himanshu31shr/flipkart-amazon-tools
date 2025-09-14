@@ -2,7 +2,6 @@ import * as XLSX from "xlsx";
 import { Transaction } from "../../../types/transaction.type";
 import { FlipkartOrderData } from "../../../types/types";
 import { AbstractFactory } from "./ReportExtractionFactory";
-import { Timestamp } from 'firebase/firestore';
 
 export default class FlipkartFactory implements AbstractFactory {
   public file: File;
@@ -157,7 +156,7 @@ export default class FlipkartFactory implements AbstractFactory {
         sku: order["SKU Name"],
         description: order["SKU Name"] || "",
         platform: "flipkart",
-        customCostPrice: null, // Set to null to enable category inheritance
+ // Set to null to enable category inheritance
         categoryId, // Include category ID if available
         metadata: {
           lastImportedFrom: "flipkart",
@@ -166,11 +165,6 @@ export default class FlipkartFactory implements AbstractFactory {
         },
         visibility: "visible",
         sellingPrice,
-        inventory: {
-          quantity: 0,
-          lowStockThreshold: 5,
-          lastUpdated: Timestamp.now()
-        },
       },
       metadata: {
         createdAt: new Date().toISOString(),

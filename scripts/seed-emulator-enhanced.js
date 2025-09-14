@@ -93,7 +93,6 @@ const PRODUCTS_SEED_DATA = [
     isActive: true,
     isHidden: false,
     sku: 'SPM-001',
-    inventory: 50,
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -110,7 +109,6 @@ const PRODUCTS_SEED_DATA = [
     isActive: true,
     isHidden: false,
     sku: 'LAP-001',
-    inventory: 30,
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -127,7 +125,6 @@ const PRODUCTS_SEED_DATA = [
     isActive: true,
     isHidden: false,
     sku: 'HEAD-001',
-    inventory: 70,
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -145,7 +142,6 @@ const PRODUCTS_SEED_DATA = [
     isActive: true,
     isHidden: false,
     sku: 'NOV-001',
-    inventory: 80,
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -162,7 +158,6 @@ const PRODUCTS_SEED_DATA = [
     isActive: true,
     isHidden: false,
     sku: 'TEXT-001',
-    inventory: 60,
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -179,7 +174,6 @@ const PRODUCTS_SEED_DATA = [
     isActive: true,
     isHidden: false,
     sku: 'COOK-001',
-    inventory: 60,
     createdAt: new Date(),
     updatedAt: new Date()
   }  // Clothing
@@ -196,7 +190,6 @@ const PRODUCTS_SEED_DATA = [
     isActive: true,
     isHidden: false,
     sku: 'TSHIRT-001',
-    inventory: 45,
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -213,7 +206,6 @@ const PRODUCTS_SEED_DATA = [
     isActive: true,
     isHidden: false,
     sku: 'JEANS-001',
-    inventory: 55,
     createdAt: new Date(),
     updatedAt: new Date()
   }

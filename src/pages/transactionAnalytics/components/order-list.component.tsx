@@ -1,14 +1,6 @@
 import React from "react";
 import { Column, DataTable } from "../../../components/DataTable/DataTable";
 import { Transaction } from "../../../types/transaction.type";
-import { CostPriceResolution } from "../../../services/costPrice.service";
-
-// Extend Product type to include resolved cost price
-declare module "../../../services/product.service" {
-  interface Product {
-    resolvedCostPrice?: CostPriceResolution;
-  }
-}
 
 interface OrderListProps {
   transactions: Transaction[];
@@ -30,10 +22,9 @@ const OrderList: React.FC<OrderListProps> = ({ transactions }) => {
   const formatCurrency = (value: number) => `₹${value.toFixed(2)}`;
 
   const tableData: OrderTableData[] = transactions.map(transaction => {
-    // Get cost price from the product's updated properties after analysis
-    // The TransactionAnalysisService should have added the resolved cost price
-    const resolvedCostPrice = transaction.product.resolvedCostPrice?.value || 0;
-    const costPriceSource = transaction.product.resolvedCostPrice?.source || 'default';
+    // Cost price calculation removed
+    const resolvedCostPrice = 0;
+    const costPriceSource = 'none';
     
     return {
       transactionId: transaction.transactionId || '',

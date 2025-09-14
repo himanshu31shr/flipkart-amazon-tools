@@ -1,25 +1,17 @@
 import { Timestamp, where } from "firebase/firestore";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
-import { DEFAULT_PRODUCT_PRICES } from "../constants/defaultPrices";
 import { FirebaseService } from "./firebase.service";
-import { CostPriceResolutionService } from "./costPrice.service";
 
 export interface Product {
   id?: string;
   sku: string;
   name: string;
   description: string;
-  customCostPrice: number | null; // Custom cost price, null means inherit from category
   platform: "amazon" | "flipkart";
   visibility: "visible" | "hidden";
   sellingPrice: number;
   categoryId?: string; // Reference to category document ID
-  inventory?: {
-    quantity: number;
-    lowStockThreshold: number;
-    lastUpdated: Timestamp;
-  };
   metadata: {
     createdAt?: Timestamp;
     updatedAt?: Timestamp;
@@ -51,7 +43,6 @@ export interface ProductFilter {
 interface RawFlipkartData {
   "Seller SKU Id": string;
   "Product Title": string;
-  "Product Name": string;
   "Listing Status": string;
   "Your Selling Price": string;
   "Minimum Order Quantity": string;
@@ -93,11 +84,9 @@ interface RawAmazonData {
 
 export class ProductService extends FirebaseService {
   private readonly COLLECTION_NAME = "products";
-  private costPriceService: CostPriceResolutionService;
 
   constructor() {
     super();
-    this.costPriceService = new CostPriceResolutionService();
   }
 
   async parseProducts(file: File): Promise<Product[]> {
@@ -143,13 +132,25 @@ export class ProductService extends FirebaseService {
     const workbook = XLSX.read(buffer);
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
     const rawData = XLSX.utils.sheet_to_json(worksheet);
-    rawData.shift();
 
     if (!Array.isArray(rawData) || rawData.length === 0) {
       throw new Error("File is empty");
     }
 
-    return this.flipkartAdapter(rawData as unknown as RawFlipkartData[]);
+    // Skip the first row if it contains field descriptions (not actual data)
+    // Check if first row contains description-like text
+    const firstRow = rawData[0] as Record<string, unknown>;
+    const skipFirstRow = firstRow && 
+      (firstRow["Seller SKU Id"] === "Your Identifier for a product" ||
+       String(firstRow["Product Title"]).includes("Title of your product"));
+
+    const dataRows = skipFirstRow ? rawData.slice(1) : rawData;
+
+    if (dataRows.length === 0) {
+      throw new Error("File contains no product data");
+    }
+
+    return this.flipkartAdapter(dataRows as unknown as RawFlipkartData[]);
   }
 
   private isAmazonFormat(file: File): boolean {
@@ -165,16 +166,10 @@ export class ProductService extends FirebaseService {
   }
 
   private amazonAdapter(data: RawAmazonData[]): Product[] {
-    const prices = new Map(
-      DEFAULT_PRODUCT_PRICES.map((price) => [price.sku, price])
-    );
-
     return data.map((row) => ({
       sku: row["seller-sku"],
       name: row["item-name"],
-      description:
-        prices.get(row["seller-sku"])?.description ?? row["item-description"],
-      customCostPrice: null, // Default to inheriting from category
+      description: row["item-description"],
       platform: "amazon" as const,
       sellingPrice: Number(row["price"]) || 0,
       metadata: {
@@ -187,19 +182,11 @@ export class ProductService extends FirebaseService {
   }
 
   private flipkartAdapter(data: Array<RawFlipkartData>): Product[] {
-    const prices = new Map(
-      DEFAULT_PRODUCT_PRICES.map((price) => [price.sku, price])
-    );
-
     return data.map((row) => ({
       sku: row["Seller SKU Id"],
       name: row["Product Title"],
-      description:
-        prices.get(row["Seller SKU Id"])?.description ??
-        row["Product Name"] ??
-        "",
+      description: row["Product Title"] || "", // Use Product Title for both name and description
       sellingPrice: Number(row["Your Selling Price"]) || 0,
-      customCostPrice: null, // Default to inheriting from category
       platform: "flipkart" as const,
       metadata: {
         listingStatus: row["Listing Status"],
@@ -386,130 +373,5 @@ export class ProductService extends FirebaseService {
     }
 
     return product as Product;
-  }
-
-  /**
-   * Update inventory quantity for a product
-   * @param sku Product SKU
-   * @param quantityChange Amount to change (positive to add, negative to subtract)
-   * @returns Updated product
-   */
-  async updateInventory(sku: string, quantityChange: number): Promise<Product> {
-    try {
-      // First get the current product to ensure it exists
-      const product = await this.getProductDetails(sku);
-
-      // Initialize inventory if it doesn't exist
-      if (!product.inventory) {
-        // Create a new inventory object for products that don't have one
-        await this.updateDocument(this.COLLECTION_NAME, sku, {
-          inventory: {
-            quantity: quantityChange, // Allow any value including negative
-            lowStockThreshold: 5,
-            lastUpdated: Timestamp.now(),
-          },
-        });
-      } else {
-        // Calculate the new quantity for existing inventory - allow negative values
-        const newQuantity = product.inventory.quantity + quantityChange;
-
-        // Update the product with the new inventory quantity
-        await this.updateDocument(this.COLLECTION_NAME, sku, {
-          inventory: {
-            ...product.inventory,
-            quantity: newQuantity,
-            lastUpdated: Timestamp.now(),
-          },
-        });
-      }
-
-      // Return the updated product
-      return this.getProductDetails(sku);
-    } catch {
-      return this.getProductDetails(sku);
-    }
-  }
-
-  /**
-   * Reduce inventory when an order is placed
-   * @param sku Product SKU
-   * @param quantity Quantity ordered
-   * @returns Updated product
-   */
-  async reduceInventoryForOrder(
-    sku: string,
-    quantity: number
-  ): Promise<Product> {
-    return this.updateInventory(sku, -Math.abs(quantity));
-  }
-
-  /**
-   * Check if a product has sufficient inventory for an order
-   * @param sku Product SKU
-   * @param quantity Quantity to check
-   * @returns Boolean indicating if there's enough inventory
-   */
-  async hasSufficientInventory(
-    sku: string,
-    quantity: number
-  ): Promise<boolean> {
-    try {
-      const product = await this.getProductDetails(sku);
-      // If product has no inventory field, consider it as having 0 quantity
-      if (!product.inventory) return quantity <= 0;
-      return product.inventory.quantity >= quantity;
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Get products with low inventory
-   * @returns Array of products with low inventory
-   */
-  async getLowInventoryProducts(): Promise<Product[]> {
-    try {
-      const products = await this.getProducts();
-      return products.filter(
-        (product) =>
-          // Only include products that have inventory data
-          product.inventory &&
-          product.inventory.quantity <= product.inventory.lowStockThreshold
-      );
-    } catch {
-      return [];
-    }
-  }
-
-  async checkInventory(sku: string): Promise<number> {
-    try {
-      const product = await this.getProductDetails(sku);
-      return product?.inventory?.quantity || 0;
-    } catch {
-      return 0;
-    }
-  }
-
-  /**
-   * Get the resolved cost price for a product
-   */
-  async getProductCostPrice(sku: string): Promise<number> {
-    try {
-      const resolution = await this.costPriceService.getProductCostPrice(sku);
-      return resolution.value;
-    } catch (error) {
-      console.error(`Error getting cost price for product ${sku}:`, error);
-      return 0;
-    }
-  }
-
-  /**
-   * Get all products inheriting cost price from a category
-   */
-  async getProductsInheritingCost(categoryId: string): Promise<Product[]> {
-    return this.getDocuments<Product>(
-      this.COLLECTION_NAME,
-      [where('categoryId', '==', categoryId)]
-    );
   }
 }

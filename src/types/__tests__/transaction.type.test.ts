@@ -85,7 +85,6 @@ describe('Transaction Interface with Batch Support', () => {
       categoryId: 'cat-1',
       platform: 'amazon',
       visibility: 'visible',
-      customCostPrice: null,
       metadata: {}
     },
     metadata: {

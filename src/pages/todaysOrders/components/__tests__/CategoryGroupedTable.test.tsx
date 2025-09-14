@@ -35,11 +35,9 @@ const mockGroupedData: GroupedOrderData = {
             name: 'Test Product 1',
             description: 'Test description',
             sellingPrice: 100,
-            customCostPrice: 60,
             categoryId: 'cat1',
             platform: 'amazon',
             visibility: 'visible',
-            inventory: { quantity: 10, lowStockThreshold: 5 },
             metadata: { amazonSerialNumber: 'AMZ001' }
           }
         } as ProductSummary,
@@ -54,11 +52,9 @@ const mockGroupedData: GroupedOrderData = {
             name: 'Test Product 2',
             description: 'Test description',
             sellingPrice: 150,
-            customCostPrice: 90,
             categoryId: 'cat1',
             platform: 'flipkart',
             visibility: 'visible',
-            inventory: { quantity: 15, lowStockThreshold: 5 },
             metadata: { flipkartSerialNumber: 'FLK001' }
           }
         } as ProductSummary
@@ -82,11 +78,9 @@ const mockGroupedData: GroupedOrderData = {
             name: 'Test Book',
             description: 'Test book description',
             sellingPrice: 25,
-            customCostPrice: 15,
             categoryId: 'cat2',
             platform: 'amazon',
             visibility: 'visible',
-            inventory: { quantity: 20, lowStockThreshold: 5 },
             metadata: { amazonSerialNumber: 'AMZ002' }
           }
         } as ProductSummary
@@ -111,11 +105,9 @@ const mockGroupedData: GroupedOrderData = {
           name: 'Uncategorized Product',
           description: 'Test description',
           sellingPrice: 75,
-          customCostPrice: 45,
           categoryId: '',
           platform: 'amazon',
           visibility: 'visible',
-          inventory: { quantity: 8, lowStockThreshold: 5 },
           metadata: { amazonSerialNumber: 'AMZ003' }
         }
       } as ProductSummary
