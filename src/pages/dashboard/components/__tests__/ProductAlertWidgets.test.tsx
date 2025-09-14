@@ -27,7 +27,6 @@ const createMockProduct = (overrides: Partial<Product> = {}): Product => ({
   name: 'Test Product',
   platform: 'amazon',
   sellingPrice: 100,
-  customCostPrice: 50,
   description: 'Test description',
   visibility: 'visible',
   existsOnSellerPage: true,

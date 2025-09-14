@@ -15,22 +15,19 @@ describe('CategoryDataAggregatorService', () => {
       id: '1',
       name: 'Electronics',
       description: 'Electronic products',
-      tag: 'tech',
-      costPrice: 100
+      tag: 'tech'
     },
     {
       id: '2',
       name: 'Books',
       description: 'Educational books',
-      tag: 'education',
-      costPrice: 25
+      tag: 'education'
     },
     {
       id: '3',
       name: 'Clothing',
       description: 'Fashion items',
-      tag: 'fashion',
-      costPrice: null
+      tag: 'fashion'
     }
   ];
 
@@ -160,7 +157,6 @@ describe('CategoryDataAggregatorService', () => {
           name: 'Complex Category',
           description: 'A category with all fields',
           tag: 'complex',
-          costPrice: 99.99,
           createdAt: new Date(),
           updatedAt: new Date()
         },
@@ -231,7 +227,6 @@ describe('CategoryDataAggregatorService', () => {
         name: `Category ${i}`,
         description: `Description ${i}`,
         tag: `tag${i}`,
-        costPrice: i * 10
       }));
 
       mockGetCategories.mockResolvedValue(largeList);
@@ -256,7 +251,6 @@ describe('CategoryDataAggregatorService', () => {
         name: 'Test Category',
         description: 'Test Description',
         tag: 'test-tag',
-        costPrice: 42.50,
         createdAt: new Date('2024-01-01'),
         updatedAt: new Date('2024-01-02')
       };
@@ -271,7 +265,6 @@ describe('CategoryDataAggregatorService', () => {
       expect(result.data![0]).toHaveProperty('name', 'Test Category');
       expect(result.data![0]).toHaveProperty('description', 'Test Description');
       expect(result.data![0]).toHaveProperty('tag', 'test-tag');
-      expect(result.data![0]).toHaveProperty('costPrice', 42.50);
       expect(result.data![0]).toHaveProperty('createdAt');
       expect(result.data![0]).toHaveProperty('updatedAt');
     });
@@ -283,8 +276,7 @@ describe('CategoryDataAggregatorService', () => {
           name: 'Category with "quotes" & symbols!',
           description: 'Description with émojis 🎉 and unicode',
           tag: 'tag-with-dashes_and_underscores',
-          costPrice: 123.45
-        }
+          }
       ];
 
       mockGetCategories.mockResolvedValue(specialCategories);

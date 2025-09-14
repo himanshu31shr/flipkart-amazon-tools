@@ -6,10 +6,8 @@ import {
   Checkbox,
   Snackbar,
   Alert,
-  Tooltip,
-  CircularProgress,
 } from "@mui/material";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { Column, DataTable } from "../../../components/DataTable/DataTable";
 import { FormattedCurrency } from "../../../components/FormattedCurrency";
 import { Product, ProductFilter } from "../../../services/product.service";
@@ -20,7 +18,6 @@ import {
 import { ProductTableToolbar } from "./ProductTableToolbar";
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { fetchCategories, selectCategories } from '../../../store/slices/productsSlice';
-import { CostPriceResolutionService } from '../../../services/costPrice.service';
 
 interface Props {
   products: Product[];
@@ -42,47 +39,11 @@ export const ProductTable: React.FC<Props> = ({
   const [currentFilters, setCurrentFilters] = useState<ProductFilter>({});
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
-  const [productCostPrices, setProductCostPrices] = useState<Record<string, { value: number; source: string }>>({});
-  const [loadingCostPrices, setLoadingCostPrices] = useState(false);
-
-  const costPriceService = useMemo(() => new CostPriceResolutionService(), []);
+  const [snackbarSeverity] = useState<'success' | 'error'>('success');
 
   useEffect(() => {
     dispatch(fetchCategories());
   }, [dispatch]);
-
-  // Fetch cost prices for all products
-  useEffect(() => {
-    const fetchCostPrices = async () => {
-      setLoadingCostPrices(true);
-      
-      try {
-        const resolutions = await costPriceService.initializeCostPrices(products);
-        const costPrices: Record<string, { value: number; source: string }> = {};
-        
-        resolutions.forEach((resolution, sku) => {
-          costPrices[sku] = {
-            value: resolution.value,
-            source: resolution.source
-          };
-        });
-        
-        setProductCostPrices(costPrices);
-      } catch (error) {
-        console.error('Error fetching cost prices:', error);
-        setSnackbarMessage('Failed to fetch cost prices');
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
-      } finally {
-        setLoadingCostPrices(false);
-      }
-    };
-
-    if (products.length > 0) {
-      fetchCostPrices();
-    }
-  }, [products, costPriceService]);
 
   const categories = useAppSelector(selectCategories);
 
@@ -166,34 +127,6 @@ export const ProductTable: React.FC<Props> = ({
         );
       },
       filter: true,
-    },
-    {
-      id: "costPrice",
-      label: "Cost Price",
-      align: "right",
-      format: (_, row?: Product) => {
-        if (!row?.sku) {
-          return null;
-        }
-        
-        if (loadingCostPrices) {
-          return <CircularProgress size={20} />;
-        }
-
-        const costPriceInfo = productCostPrices[row.sku];
-        
-        if (!costPriceInfo || typeof costPriceInfo.value !== 'number') {
-          return <FormattedCurrency value={0} />;
-        }
-        
-        return (
-          <Tooltip title={`Cost price ${costPriceInfo.value} (from ${costPriceInfo.source})`}>
-            <Box>
-              <FormattedCurrency value={costPriceInfo.value} />
-            </Box>
-          </Tooltip>
-        );
-      },
     },
     {
       id: "sellingPrice",

@@ -156,7 +156,7 @@ export default class FlipkartFactory implements AbstractFactory {
         sku: order["SKU Name"],
         description: order["SKU Name"] || "",
         platform: "flipkart",
-        customCostPrice: null, // Set to null to enable category inheritance
+ // Set to null to enable category inheritance
         categoryId, // Include category ID if available
         metadata: {
           lastImportedFrom: "flipkart",

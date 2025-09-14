@@ -48,7 +48,6 @@ describe('ProductService', () => {
     {
       'Seller SKU Id': 'TEST-SKU-3',
       'Product Title': 'Test Product 3',
-      'Product Name': 'Test Product 3 Name',
       'Listing Status': 'Active',
       'Your Selling Price': '150',
       'Minimum Order Quantity': '1',
@@ -62,7 +61,6 @@ describe('ProductService', () => {
       sku: 'TEST-SKU-1',
       name: 'Test Product',
       description: 'Test description',
-      customCostPrice: 50,
       platform: 'amazon',
       visibility: 'visible',
       sellingPrice: 100,
@@ -133,7 +131,8 @@ describe('ProductService', () => {
       };
 
       mockXLSXRead.mockReturnValue(mockWorkbook as any);
-      mockXLSXUtils.sheet_to_json.mockReturnValue([{}, ...mockFlipkartData] as any);
+      // XLSX.utils.sheet_to_json already processes headers correctly, so return just the data
+      mockXLSXUtils.sheet_to_json.mockReturnValue(mockFlipkartData as any);
 
       // Mock arrayBuffer method
       Object.defineProperty(mockFile, 'arrayBuffer', {
@@ -147,6 +146,7 @@ describe('ProductService', () => {
       expect(result[0]).toMatchObject({
         sku: 'TEST-SKU-3',
         name: 'Test Product 3',
+        description: 'Test Product 3', // Now uses Product Title for both name and description
         platform: 'flipkart',
         sellingPrice: 150,
       });
@@ -158,30 +158,6 @@ describe('ProductService', () => {
       await expect(service.parseProducts(mockFile)).rejects.toThrow('Unsupported file format');
     });
 
-    // Skip this test due to timing issues
-    it.skip('should handle empty Amazon file', async () => {
-      const mockFile = new File(['test'], 'test.txt', { type: 'text/plain' });
-      
-      // Mock Papa.parse to call complete with empty data, but in a way that allows the error to be caught
-      (mockPapaParse as any).mockImplementation((file: any, options: any) => {
-        // Schedule the callback to run on the next tick so the promise handling can be set up
-        setTimeout(() => {
-          if (options && options.complete) {
-            try {
-              options.complete({ data: [] });
-            } catch (error) {
-              // If complete throws (as it should with empty data), call error callback if provided
-              if (options.error) {
-                options.error(error);
-              }
-            }
-          }
-        }, 0);
-      });
-
-      // The parseProducts method should throw "File is empty" error
-      await expect(service.parseProducts(mockFile)).rejects.toThrow('File is empty');
-    }, 10000); // Increase timeout to 10 seconds
 
     it('should handle Papa parse errors', async () => {
       const mockFile = new File(['test'], 'test.txt', { type: 'text/plain' });

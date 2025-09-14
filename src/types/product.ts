@@ -6,7 +6,6 @@ export interface Product {
   platform: "amazon" | "flipkart";
   visibility: "visible" | "hidden";
   sellingPrice: number;
-  customCostPrice: number | null; // Custom cost price that overrides category cost price
   metadata: {
     createdAt?: Date | { toDate(): Date; toMillis(): number }; // Compatible with both Date and Firestore Timestamp
     updatedAt?: Date | { toDate(): Date; toMillis(): number }; // Compatible with both Date and Firestore Timestamp

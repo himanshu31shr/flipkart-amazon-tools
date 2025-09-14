@@ -21,7 +21,6 @@ const mockCategories: Category[] = [
     name: 'Electronics',
     description: 'Electronic items',
     tag: 'electronics',
-    costPrice: 1000,
     createdAt: mockTimestamp,
     updatedAt: mockTimestamp,
   },
@@ -30,7 +29,6 @@ const mockCategories: Category[] = [
     name: 'Books',
     description: 'Books and literature',
     tag: 'books',
-    costPrice: 500,
     createdAt: mockTimestamp,
     updatedAt: mockTimestamp,
   },
@@ -39,7 +37,6 @@ const mockCategories: Category[] = [
     name: 'Clothing',
     description: 'Apparel and clothing',
     tag: 'clothing',
-    costPrice: 750,
     createdAt: mockTimestamp,
     updatedAt: mockTimestamp,
   },
@@ -54,7 +51,6 @@ const mockProducts: Product[] = [
     platform: 'amazon',
     visibility: 'visible',
     sellingPrice: 15000,
-    customCostPrice: null,
     metadata: {
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -68,7 +64,6 @@ const mockProducts: Product[] = [
     platform: 'flipkart',
     visibility: 'visible',
     sellingPrice: 800,
-    customCostPrice: null,
     metadata: {
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -82,7 +77,6 @@ const mockProducts: Product[] = [
     platform: 'amazon',
     visibility: 'visible',
     sellingPrice: 50000,
-    customCostPrice: null,
     metadata: {
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -96,7 +90,6 @@ const mockProducts: Product[] = [
     platform: 'flipkart',
     visibility: 'visible',
     sellingPrice: 500,
-    customCostPrice: null,
     metadata: {
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -110,7 +103,6 @@ const mockProducts: Product[] = [
     platform: 'amazon',
     visibility: 'visible',
     sellingPrice: 1000,
-    customCostPrice: null,
     metadata: {
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -406,7 +398,6 @@ describe('pdfSorting', () => {
           platform: 'amazon',
           visibility: 'visible',
           sellingPrice: 20000,
-          customCostPrice: null,
           metadata: { createdAt: new Date(), updatedAt: new Date() },
         },
         {
@@ -417,7 +408,6 @@ describe('pdfSorting', () => {
           platform: 'flipkart',
           visibility: 'visible',
           sellingPrice: 8000,
-          customCostPrice: null,
           metadata: { createdAt: new Date(), updatedAt: new Date() },
         },
       ];
@@ -452,7 +442,6 @@ describe('pdfSorting', () => {
           platform: i % 2 === 0 ? 'amazon' : 'flipkart',
           visibility: 'visible',
           sellingPrice: Math.floor(Math.random() * 10000),
-          customCostPrice: null,
           metadata: { createdAt: new Date(), updatedAt: new Date() },
         });
       }
@@ -475,7 +464,6 @@ describe('pdfSorting', () => {
           platform: 'amazon',
           visibility: 'visible',
           sellingPrice: 0,
-          customCostPrice: null,
           metadata: {},
         },
       ];

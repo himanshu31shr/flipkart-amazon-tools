@@ -17,22 +17,19 @@ const mockCategories = [
     id: '1',
     name: 'Electronics',
     description: 'Electronic products',
-    tag: 'tech',
-    costPrice: 100
+    tag: 'tech'
   },
   {
     id: '2',
     name: 'Books',
     description: 'Educational books',
-    tag: 'education',
-    costPrice: 25
+    tag: 'education'
   },
   {
     id: '3',
     name: 'Clothing',
     description: 'Fashion items',
-    tag: 'fashion',
-    costPrice: null
+    tag: 'fashion'
   }
 ];
 
@@ -98,9 +95,6 @@ describe('SimpleCategoryTable', () => {
       expect(screen.getByText('education')).toBeInTheDocument();
       expect(screen.getByText('fashion')).toBeInTheDocument();
 
-      // Check cost prices
-      expect(screen.getByText('₹100.00')).toBeInTheDocument();
-      expect(screen.getByText('₹25.00')).toBeInTheDocument();
     });
 
     it('shows loading state', () => {
@@ -281,13 +275,10 @@ describe('SimpleCategoryTable', () => {
       const nameInput = screen.getByRole('textbox', { name: /category name/i });
       const descriptionInput = screen.getByRole('textbox', { name: /description/i });
       const tagInput = screen.getByRole('textbox', { name: /tag/i });
-      const costPriceInput = screen.getByRole('spinbutton', { name: /cost price/i });
-
       await act(async () => {
         await user.type(nameInput, 'Test Category');
         await user.type(descriptionInput, 'Test description');
         await user.type(tagInput, 'test');
-        await user.type(costPriceInput, '50');
       });
 
       // Submit
@@ -300,8 +291,7 @@ describe('SimpleCategoryTable', () => {
         expect(mockCreateCategory).toHaveBeenCalledWith({
           name: 'Test Category',
           description: 'Test description',
-          tag: 'test',
-          costPrice: 50
+          tag: 'test'
         });
       }, { timeout: 5000 });
     }, 25000);
@@ -387,8 +377,7 @@ describe('SimpleCategoryTable', () => {
         expect(mockUpdateCategory).toHaveBeenCalledWith('1', {
           name: 'Electronics Updated',
           description: 'Electronic products',
-          tag: 'tech',
-          costPrice: 100
+          tag: 'tech'
         });
       });
     });
@@ -530,27 +519,7 @@ describe('SimpleCategoryTable', () => {
   });
 
   describe('Data Validation', () => {
-    it('handles null cost price correctly', async () => {
-      renderWithTheme(<SimpleCategoryTable />);
-      
-      await waitFor(() => {
-        expect(screen.getByText('Clothing')).toBeInTheDocument();
-      });
 
-      // Check that null cost price shows as '-'
-      const rows = screen.getAllByRole('row');
-      const clothingRow = rows.find(row => row.textContent?.includes('Clothing'));
-      expect(clothingRow?.textContent).toContain('-');
-    });
-
-    it('formats cost prices correctly', async () => {
-      renderWithTheme(<SimpleCategoryTable />);
-      
-      await waitFor(() => {
-        expect(screen.getByText('₹100.00')).toBeInTheDocument();
-        expect(screen.getByText('₹25.00')).toBeInTheDocument();
-      });
-    });
 
     it('shows dash for empty description and tag', async () => {
       mockGetCategories.mockResolvedValue([
@@ -559,7 +528,6 @@ describe('SimpleCategoryTable', () => {
           name: 'Test Category',
           description: '',
           tag: '',
-          costPrice: null
         }
       ]);
 

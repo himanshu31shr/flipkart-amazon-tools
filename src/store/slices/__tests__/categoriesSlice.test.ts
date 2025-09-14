@@ -26,7 +26,6 @@ const mockCategory: Category = {
   id: 'cat-1',
   name: 'Electronics',
   description: 'Electronic devices and accessories',
-  costPrice: 100,
   createdAt: { seconds: 1672531200, nanoseconds: 0 } as Timestamp,
   updatedAt: { seconds: 1672531200, nanoseconds: 0 } as Timestamp,
 };
@@ -35,7 +34,6 @@ const mockCategory2: Category = {
   id: 'cat-2',
   name: 'Clothing',
   description: 'Apparel and fashion items',
-  costPrice: 200,
   createdAt: { seconds: 1672617600, nanoseconds: 0 } as Timestamp,
   updatedAt: { seconds: 1672617600, nanoseconds: 0 } as Timestamp,
 };

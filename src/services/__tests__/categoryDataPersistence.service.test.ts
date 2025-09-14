@@ -18,14 +18,12 @@ describe('CategoryDataPersistenceService', () => {
       name: 'Electronics',
       description: 'Electronic products',
       tag: 'tech',
-      costPrice: 100
     },
     {
       id: '2',
       name: 'Books',
       description: 'Educational books',
       tag: 'education',
-      costPrice: 25
     }
   ];
 
@@ -63,13 +61,11 @@ describe('CategoryDataPersistenceService', () => {
             name: 'New Category 1',
             description: 'Description 1',
             tag: 'tag1',
-            costPrice: 50
           },
           {
             name: 'New Category 2',
             description: 'Description 2',
             tag: 'tag2',
-            costPrice: null
           }
         ];
 
@@ -85,13 +81,11 @@ describe('CategoryDataPersistenceService', () => {
           name: 'New Category 1',
           description: 'Description 1',
           tag: 'tag1',
-          costPrice: 50
         });
         expect(mockCreateCategory).toHaveBeenNthCalledWith(2, {
           name: 'New Category 2',
           description: 'Description 2',
           tag: 'tag2',
-          costPrice: null
         });
       });
 
@@ -102,7 +96,6 @@ describe('CategoryDataPersistenceService', () => {
             name: 'Updated Electronics',
             description: 'Updated description',
             tag: 'tech-updated',
-            costPrice: 150
           }
         ];
 
@@ -117,7 +110,6 @@ describe('CategoryDataPersistenceService', () => {
           name: 'Updated Electronics',
           description: 'Updated description',
           tag: 'tech-updated',
-          costPrice: 150
         });
         expect(mockCreateCategory).not.toHaveBeenCalled();
       });
@@ -129,13 +121,11 @@ describe('CategoryDataPersistenceService', () => {
             name: 'Updated Electronics',
             description: 'Updated description',
             tag: 'tech',
-            costPrice: 150
           },
           {
             name: 'New Category',
             description: 'New description',
             tag: 'new',
-            costPrice: 75
           }
         ];
 
@@ -169,8 +159,8 @@ describe('CategoryDataPersistenceService', () => {
           .mockRejectedValueOnce(new Error('Create failed'));
 
         const categoriesToImport = [
-          { name: 'Success Category', costPrice: 50 },
-          { name: 'Failed Category', costPrice: 75 }
+          { name: 'Success Category'},
+          { name: 'Failed Category'}
         ];
 
         const result = await persistenceService.importCategories(categoriesToImport);
@@ -189,7 +179,6 @@ describe('CategoryDataPersistenceService', () => {
           {
             id: '1',
             name: 'Updated Electronics',
-            costPrice: 150
           }
         ];
 
@@ -212,11 +201,11 @@ describe('CategoryDataPersistenceService', () => {
           .mockRejectedValueOnce(new Error('Update failed'));
 
         const categoriesToImport = [
-          { name: 'Success Create 1', costPrice: 10 },
-          { name: 'Failed Create', costPrice: 20 },
-          { name: 'Success Create 2', costPrice: 30 },
-          { id: '1', name: 'Success Update', costPrice: 40 },
-          { id: '2', name: 'Failed Update', costPrice: 50 }
+          { name: 'Success Create 1'},
+          { name: 'Failed Create'},
+          { name: 'Success Create 2'},
+          { id: '1', name: 'Success Update'},
+          { id: '2', name: 'Failed Update'}
         ];
 
         const result = await persistenceService.importCategories(categoriesToImport);
@@ -231,7 +220,7 @@ describe('CategoryDataPersistenceService', () => {
         mockCreateCategory.mockRejectedValue('String error');
 
         const categoriesToImport = [
-          { name: 'Test Category', costPrice: 50 }
+          { name: 'Test Category'}
         ];
 
         const result = await persistenceService.importCategories(categoriesToImport);
@@ -247,7 +236,7 @@ describe('CategoryDataPersistenceService', () => {
         mockCreateCategory.mockRejectedValue(new Error('Service unavailable'));
 
         const categoriesToImport = [
-          { name: 'Test Category', costPrice: 50 }
+          { name: 'Test Category'}
         ];
 
         const result = await persistenceService.importCategories(categoriesToImport);
@@ -268,7 +257,7 @@ describe('CategoryDataPersistenceService', () => {
           return 'test-id';
         });
 
-        const categoriesToImport = [{ name: 'Test', costPrice: 50 }];
+        const categoriesToImport = [{ name: 'Test'}];
 
         const result = await persistenceService.importCategories(categoriesToImport);
         
@@ -307,9 +296,9 @@ describe('CategoryDataPersistenceService', () => {
     describe('Valid Data', () => {
       it('validates correct category data', async () => {
         const validCategories = [
-          { name: 'Electronics', description: 'Tech products', costPrice: 100 },
-          { name: 'Books', description: 'Educational', costPrice: 25 },
-          { name: 'Free Items', costPrice: 0 }
+          { name: 'Electronics', description: 'Tech products'},
+          { name: 'Books', description: 'Educational'},
+          { name: 'Free Items'}
         ];
 
         const errors = await persistenceService.validateCategoryData(validCategories);
@@ -327,15 +316,6 @@ describe('CategoryDataPersistenceService', () => {
         expect(errors).toEqual([]);
       });
 
-      it('validates categories with null cost price', async () => {
-        const categoriesWithNull = [
-          { name: 'Test Category', costPrice: null }
-        ];
-
-        const errors = await persistenceService.validateCategoryData(categoriesWithNull);
-
-        expect(errors).toEqual([]);
-      });
     });
 
     describe('Invalid Data', () => {
@@ -354,42 +334,8 @@ describe('CategoryDataPersistenceService', () => {
         expect(errors[2]).toBe('Category at index 2 is missing a name');
       });
 
-      it('reports errors for invalid cost prices', async () => {
-        const invalidCategories = [
-          { name: 'Negative Price', costPrice: -10 }
-        ];
 
-        const errors = await persistenceService.validateCategoryData(invalidCategories);
 
-        expect(errors).toHaveLength(1);
-        expect(errors[0]).toBe('Category "Negative Price" has invalid cost price: -10');
-      });
-
-      it('reports multiple errors for same category', async () => {
-        const invalidCategories = [
-          { name: '', costPrice: -5 }
-        ];
-
-        const errors = await persistenceService.validateCategoryData(invalidCategories);
-
-        expect(errors).toHaveLength(2);
-        expect(errors[0]).toBe('Category at index 0 is missing a name');
-        expect(errors[1]).toContain('has invalid cost price: -5');
-      });
-
-      it('handles edge case cost price values', async () => {
-        const edgeCaseCategories = [
-          { name: 'Zero Price', costPrice: 0 }, // Should be valid
-          { name: 'Undefined Price', costPrice: undefined }, // Should be valid
-          { name: 'Infinity Price', costPrice: Infinity },
-          { name: 'Object Price', costPrice: {} as unknown as number }
-        ];
-
-        const errors = await persistenceService.validateCategoryData(edgeCaseCategories);
-
-        // Current validation logic only catches negative numbers, not other invalid types
-        expect(errors).toHaveLength(0);
-      });
     });
 
     describe('Empty and Edge Cases', () => {
@@ -414,7 +360,7 @@ describe('CategoryDataPersistenceService', () => {
   describe('Integration Tests', () => {
     it('imports categories after validation', async () => {
       const validCategories = [
-        { name: 'Valid Category', costPrice: 50 }
+        { name: 'Valid Category'}
       ];
 
       // First validate
@@ -438,7 +384,7 @@ describe('CategoryDataPersistenceService', () => {
 
     it('validates data before attempting import', async () => {
       const invalidCategories = [
-        { name: '', costPrice: -10 } // Invalid
+        { name: ''} // Invalid
       ];
 
       // Validation should catch errors
@@ -456,7 +402,6 @@ describe('CategoryDataPersistenceService', () => {
       const largeDataset = Array.from({ length: 1000 }, (_, i) => ({
         name: `Category ${i}`,
         description: `Description ${i}`,
-        costPrice: i * 10
       }));
 
       mockCreateCategory.mockResolvedValue('id');
@@ -476,7 +421,6 @@ describe('CategoryDataPersistenceService', () => {
     it('validates large datasets efficiently', async () => {
       const largeDataset = Array.from({ length: 10000 }, (_, i) => ({
         name: `Valid Category ${i}`,
-        costPrice: 10
       }));
 
       const start = Date.now();
@@ -495,7 +439,6 @@ describe('CategoryDataPersistenceService', () => {
         name: 'Complete Category',
         description: 'Full description',
         tag: 'complete',
-        costPrice: 99.99
       };
 
       await persistenceService.importCategories([categoryWithAllProps]);
@@ -504,7 +447,6 @@ describe('CategoryDataPersistenceService', () => {
         name: 'Complete Category',
         description: 'Full description',
         tag: 'complete',
-        costPrice: 99.99
       });
     });
 
@@ -513,7 +455,6 @@ describe('CategoryDataPersistenceService', () => {
         name: 'Category with "quotes" & symbols!',
         description: 'Description with\nnewlines\tand\ttabs',
         tag: 'special-chars_123',
-        costPrice: 123.45
       };
 
       const result = await persistenceService.importCategories([specialCategory]);

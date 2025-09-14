@@ -6,9 +6,8 @@ import {
   Checkbox,
   Snackbar,
   Alert,
-  Tooltip,
 } from "@mui/material";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { Column, DataTable } from "../../../components/DataTable/DataTable";
 import { FormattedCurrency } from "../../../components/FormattedCurrency";
 import { Product, ProductFilter } from "../../../services/product.service";
@@ -19,7 +18,6 @@ import {
 import { ProductTableToolbar } from "../../products/components/ProductTableToolbar";
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { fetchCategories, selectCategories } from '../../../store/slices/productsSlice';
-import { CostPriceResolutionService } from '../../../services/costPrice.service';
 
 interface Props {
   products: Product[];
@@ -39,32 +37,11 @@ export const UncategorizedProductTable: React.FC<Props> = ({
   const [currentFilters, setCurrentFilters] = useState<ProductFilter>({});
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [productCostPrices, setProductCostPrices] = useState<Record<string, { value: number; source: string }>>({});
-
-  const costPriceService = useMemo(() => new CostPriceResolutionService(), []);
 
   useEffect(() => {
     dispatch(fetchCategories());
   }, [dispatch]);
 
-  // Fetch cost prices for all products
-  useEffect(() => {
-    const fetchCostPrices = async () => {
-      const costPrices: Record<string, { value: number; source: string }> = {};
-      
-      for (const product of products) {
-        const resolution = await costPriceService.getProductCostPrice(product.sku);
-        costPrices[product.sku] = {
-          value: resolution.value,
-          source: resolution.source
-        };
-      }
-      
-      setProductCostPrices(costPrices);
-    };
-
-    fetchCostPrices();
-  }, [products, costPriceService]);
 
   const categories = useAppSelector(selectCategories);
 
@@ -146,23 +123,6 @@ export const UncategorizedProductTable: React.FC<Props> = ({
         );
       },
       filter: true,
-    },
-    {
-      id: "costPrice",
-      label: "Cost Price",
-      align: "right",
-      format: (_, row?: Product) => {
-        if (!row?.sku || !productCostPrices[row.sku]) return null;
-        
-        const { value, source } = productCostPrices[row.sku];
-        return (
-          <Tooltip title={`Inherited from ${source}`}>
-            <Box>
-              <FormattedCurrency value={value} />
-            </Box>
-          </Tooltip>
-        );
-      },
     },
     {
       id: "sellingPrice",

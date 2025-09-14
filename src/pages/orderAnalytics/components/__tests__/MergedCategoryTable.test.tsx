@@ -53,7 +53,6 @@ const mockOrders: ProductSummary[] = [
       platform: 'amazon',
       visibility: 'visible',
       sellingPrice: 1000,
-      customCostPrice: null,
       metadata: {},
     },
   },
@@ -70,7 +69,6 @@ const mockOrders: ProductSummary[] = [
       platform: 'flipkart',
       visibility: 'visible',
       sellingPrice: 500,
-      customCostPrice: null,
       metadata: {},
     },
   },
@@ -96,12 +94,6 @@ const renderWithProviders = (component: React.ReactElement) => {
   );
 };
 
-// Mock the CostPriceResolutionService
-jest.mock('../../../../services/costPrice.service', () => ({
-  CostPriceResolutionService: jest.fn().mockImplementation(() => ({
-    getProductCostPrice: jest.fn().mockResolvedValue({ value: 500 }),
-  })),
-}));
 
 describe('MergedCategoryTable', () => {
   beforeEach(() => {
@@ -210,7 +202,6 @@ describe('MergedCategoryTable', () => {
           platform: 'amazon',
           visibility: 'visible',
           sellingPrice: 300,
-          customCostPrice: null,
           metadata: {},
         },
       },

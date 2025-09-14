@@ -17,12 +17,6 @@ export class ValidationService {
         errors.push(`Category at row ${index + 1} is missing a name`);
       }
 
-      // Cost price validation
-      if (category.costPrice !== null && category.costPrice !== undefined) {
-        if (typeof category.costPrice !== 'number' || category.costPrice < 0) {
-          errors.push(`Category "${category.name}" at row ${index + 1} has invalid cost price: ${category.costPrice}`);
-        }
-      }
 
       // Name length validation
       if (category.name && category.name.length > 100) {
@@ -68,7 +62,7 @@ export class ValidationService {
 
       if (lines.length > 0) {
         const headerLine = lines[0];
-        const expectedHeaders = ['name', 'description', 'tag', 'costPrice'];
+        const expectedHeaders = ['name', 'description', 'tag'];
         const actualHeaders = headerLine.split(',').map(h => h.trim().toLowerCase());
 
         if (!actualHeaders.includes('name')) {

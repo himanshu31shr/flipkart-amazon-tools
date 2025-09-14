@@ -43,7 +43,6 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
     name: '',
     description: '',
     tag: '',
-    costPrice: '',
   });
 
   const categoryService = new CategoryService();
@@ -71,7 +70,6 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
         name: category.name,
         description: category.description || '',
         tag: category.tag || '',
-        costPrice: category.costPrice?.toString() || '',
       });
     } else {
       setEditingCategory(null);
@@ -79,7 +77,6 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
         name: '',
         description: '',
         tag: '',
-        costPrice: '',
       });
     }
     setDialogOpen(true);
@@ -92,7 +89,6 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
       name: '',
       description: '',
       tag: '',
-      costPrice: '',
     });
   };
 
@@ -102,7 +98,6 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
         name: formData.name,
         description: formData.description,
         tag: formData.tag,
-        costPrice: formData.costPrice ? parseFloat(formData.costPrice) : null,
       };
 
       if (editingCategory) {
@@ -164,20 +159,19 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
               <TableCell>Name</TableCell>
               <TableCell>Description</TableCell>
               <TableCell>Tag</TableCell>
-              <TableCell align="right">Cost Price</TableCell>
               <TableCell align="center">Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} align="center">
+                <TableCell colSpan={4} align="center">
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : categories.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center">
+                <TableCell colSpan={4} align="center">
                   No categories found
                 </TableCell>
               </TableRow>
@@ -197,13 +191,6 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
                   <TableCell>
                     {category.tag ? (
                       <Chip label={category.tag} size="small" />
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell align="right">
-                    {category.costPrice ? (
-                      `₹${category.costPrice.toFixed(2)}`
                     ) : (
                       '-'
                     )}
@@ -270,16 +257,6 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
             value={formData.tag}
             onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
             sx={{ mb: 2 }}
-          />
-          <TextField
-            margin="dense"
-            label="Cost Price (₹)"
-            fullWidth
-            variant="outlined"
-            type="number"
-            value={formData.costPrice}
-            onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
-            inputProps={{ step: "0.01", min: "0" }}
           />
         </DialogContent>
         <DialogActions>

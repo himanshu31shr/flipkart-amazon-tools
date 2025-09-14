@@ -130,8 +130,8 @@ const MergedCategoryTable: React.FC<MergedCategoryTableProps> = ({
         const quantity = parseInt(order.quantity) || 1;
         const sellingPrice = order.product?.sellingPrice || 0;
         
-        // Use default cost price if not available (avoid API calls)
-        const costPrice = order.product?.customCostPrice || 0;
+        // Cost calculation removed (was using customCostPrice)
+        const costPrice = 0;
         
         data[categoryName].revenue += sellingPrice * quantity;
         data[categoryName].cost += costPrice * quantity;

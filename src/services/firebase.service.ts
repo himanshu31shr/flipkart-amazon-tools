@@ -215,29 +215,79 @@ export class FirebaseService {
     operation: "create" | "update" | "delete",
     getDocId: (item: T) => string
   ): Promise<void> {
-    const batch = writeBatch(this.db);
-    items.forEach((item) => {
-      const docRef = doc(this.db, collectionName, getDocId(item));
-      switch (operation) {
-        case "create":
-          batch.set(docRef, {
-            ...item,
-            updatedAt: Timestamp.now(),
-            createdAt: Timestamp.now(),
-          });
-          break;
-        case "update":
-          batch.update(docRef, {
-            ...item,
-            updatedAt: Timestamp.now(),
-          });
-          break;
-        case "delete":
-          batch.delete(docRef);
-          break;
+    // Firebase Firestore batch limit is 500 operations
+    const BATCH_SIZE = 500;
+    
+    if (items.length <= BATCH_SIZE) {
+      // Single batch - use original logic
+      const batch = writeBatch(this.db);
+      items.forEach((item) => {
+        const docRef = doc(this.db, collectionName, getDocId(item));
+        switch (operation) {
+          case "create":
+            batch.set(docRef, {
+              ...item,
+              updatedAt: Timestamp.now(),
+              createdAt: Timestamp.now(),
+            });
+            break;
+          case "update":
+            batch.update(docRef, {
+              ...item,
+              updatedAt: Timestamp.now(),
+            });
+            break;
+          case "delete":
+            batch.delete(docRef);
+            break;
+        }
+      });
+      return this.processBatchWithRetry(batch);
+    }
+    
+    // Multiple batches needed - chunk the items
+    const chunks = [];
+    for (let i = 0; i < items.length; i += BATCH_SIZE) {
+      chunks.push(items.slice(i, i + BATCH_SIZE));
+    }
+    
+    console.log(`Processing ${items.length} items in ${chunks.length} batches of ${BATCH_SIZE}`);
+    
+    // Process each chunk sequentially to avoid overwhelming Firestore
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      console.log(`Processing batch ${i + 1}/${chunks.length} (${chunk.length} items)`);
+      
+      const batch = writeBatch(this.db);
+      chunk.forEach((item) => {
+        const docRef = doc(this.db, collectionName, getDocId(item));
+        switch (operation) {
+          case "create":
+            batch.set(docRef, {
+              ...item,
+              updatedAt: Timestamp.now(),
+              createdAt: Timestamp.now(),
+            });
+            break;
+          case "update":
+            batch.update(docRef, {
+              ...item,
+              updatedAt: Timestamp.now(),
+            });
+            break;
+          case "delete":
+            batch.delete(docRef);
+            break;
+        }
+      });
+      
+      await this.processBatchWithRetry(batch);
+      
+      // Small delay between batches to be gentle on Firestore
+      if (i < chunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
-    });
-    return this.processBatchWithRetry(batch);
+    }
   }
 
   protected async processBatchWithRetry(

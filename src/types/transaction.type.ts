@@ -1,12 +1,4 @@
 import { Product } from "../services/product.service";
-import { CostPriceResolution } from "../services/costPrice.service";
-
-// Extend Product interface to support resolvedCostPrice
-declare module "../services/product.service" {
-  interface Product {
-    resolvedCostPrice?: CostPriceResolution;
-  }
-}
 
 /**
  * Batch information for grouping orders from the same PDF upload

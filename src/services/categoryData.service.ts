@@ -17,13 +17,12 @@ export class CategoryDataService {
       const categories = await this.categoryService.getCategories();
       
       // Generate CSV content
-      const csvHeader = 'Name,Description,Tag,Cost Price\n';
+      const csvHeader = 'Name,Description,Tag\n';
       const csvRows = categories.map(category => {
         return [
           this.escapeCSV(category.name),
           this.escapeCSV(category.description || ''),
-          this.escapeCSV(category.tag || ''),
-          category.costPrice?.toString() || ''
+          this.escapeCSV(category.tag || '')
         ].join(',');
       }).join('\n');
       

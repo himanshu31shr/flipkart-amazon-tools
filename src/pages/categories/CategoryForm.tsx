@@ -10,7 +10,6 @@ interface Category {
   name: string;
   description?: string;
   tag?: string;
-  costPrice?: number | null;
   createdAt?: Timestamp | Date | string; // Use more specific types
   updatedAt?: Timestamp | Date | string; // Use more specific types
 }
@@ -25,20 +24,12 @@ import {
   Stack,
   CircularProgress,
   Autocomplete, // Import Autocomplete
-  InputAdornment,
-  IconButton,
-  Tooltip,
 } from '@mui/material';
-import { Clear as ClearIcon } from '@mui/icons-material';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
   tag: z.string().optional(),
-  costPrice: z.union([
-    z.number().min(0, 'Cost price must be positive'),
-    z.null()
-  ]).optional(),
 });
 
 type CategoryFormData = z.infer<typeof categorySchema>;
@@ -67,7 +58,6 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     formState: { errors },
     reset,
     control, // Get control from useForm
-    setValue,
   } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
     defaultValues, // Use defaultValues directly
@@ -131,41 +121,6 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                     field.onChange(sanitizedValue);
                   }}
                   value={field.value || ''}
-                />
-              )}
-            />
-            <Controller
-              name="costPrice"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Cost Price"
-                  type="number"
-                  fullWidth
-                  error={!!errors.costPrice}
-                  helperText={errors.costPrice?.message || 'Leave empty to inherit from parent category'}
-                  disabled={isSubmitting}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                    endAdornment: field.value !== null && (
-                      <InputAdornment position="end">
-                        <Tooltip title="Clear cost price">
-                          <IconButton
-                            size="small"
-                            onClick={() => setValue('costPrice', null)}
-                          >
-                            <ClearIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </InputAdornment>
-                    ),
-                  }}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    field.onChange(value === '' ? null : parseFloat(value));
-                  }}
-                  value={field.value ?? ''}
                 />
               )}
             />

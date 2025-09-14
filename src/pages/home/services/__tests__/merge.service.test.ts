@@ -41,7 +41,6 @@ describe('PDFMergerService', () => {
         sku: 'TEST-001',
         name: 'Test Product',
         description: 'Test Description',
-        customCostPrice: 100,
         platform: 'amazon',
         visibility: 'visible',
         sellingPrice: 150,

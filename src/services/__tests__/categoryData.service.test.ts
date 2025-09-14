@@ -58,28 +58,24 @@ describe('CategoryDataService', () => {
       name: 'Electronics',
       description: 'Electronic products and gadgets',
       tag: 'tech',
-      costPrice: 100.50
     },
     {
       id: '2',
       name: 'Books',
       description: 'Educational and entertainment books',
       tag: 'education',
-      costPrice: 25.75
     },
     {
       id: '3',
       name: 'Clothing & Fashion',
       description: 'Apparel, accessories, and fashion items',
       tag: 'fashion',
-      costPrice: null
     },
     {
       id: '4',
       name: 'Test "Quoted" Category',
       description: 'Category with "quotes" in name and description',
       tag: 'test,comma',
-      costPrice: 15.99
     }
   ];
 
@@ -122,7 +118,7 @@ describe('CategoryDataService', () => {
 
       // Check that Blob was created with correct content
       expect(global.Blob).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.stringContaining('Name,Description,Tag,Cost Price')]),
+        expect.arrayContaining([expect.stringContaining('Name,Description,Tag')]),
         { type: 'text/csv' }
       );
 
@@ -131,12 +127,12 @@ describe('CategoryDataService', () => {
       const csvContent = blobCall[0][0];
 
       // Check header
-      expect(csvContent).toContain('Name,Description,Tag,Cost Price');
+      expect(csvContent).toContain('Name,Description,Tag');
       
       // Check data rows
-      expect(csvContent).toContain('Electronics,Electronic products and gadgets,tech,100.5');
-      expect(csvContent).toContain('Books,Educational and entertainment books,education,25.75');
-      expect(csvContent).toContain('Clothing & Fashion,"Apparel, accessories, and fashion items",fashion,');
+      expect(csvContent).toContain('Electronics,Electronic products and gadgets,tech');
+      expect(csvContent).toContain('Books,Educational and entertainment books,education');
+      expect(csvContent).toContain('Clothing & Fashion,"Apparel, accessories, and fashion items",fashion');
     });
 
     it('handles CSV escaping for special characters', async () => {
@@ -182,7 +178,7 @@ describe('CategoryDataService', () => {
       // Should still create CSV with header
       const blobCall = (global.Blob as jest.Mock).mock.calls[0];
       const csvContent = blobCall[0][0];
-      expect(csvContent).toContain('Name,Description,Tag,Cost Price');
+      expect(csvContent).toContain('Name,Description,Tag');
     });
 
     it('handles categories with null/undefined values', async () => {
@@ -192,7 +188,6 @@ describe('CategoryDataService', () => {
           name: 'Test Category',
           description: null,
           tag: undefined,
-          costPrice: null
         }
       ];
 
@@ -204,7 +199,7 @@ describe('CategoryDataService', () => {
       
       const blobCall = (global.Blob as jest.Mock).mock.calls[0];
       const csvContent = blobCall[0][0];
-      expect(csvContent).toContain('Test Category,,,');
+      expect(csvContent).toContain('Test Category,,');
     });
 
     it('handles service error gracefully', async () => {
@@ -240,7 +235,6 @@ describe('CategoryDataService', () => {
           name: 'Category\nWith\nNewlines',
           description: 'Description with, commas and "quotes"',
           tag: 'tag\twith\ttabs',
-          costPrice: 99.99
         }
       ];
 
@@ -307,7 +301,7 @@ describe('CategoryDataService', () => {
 
     it('passes through CategoryService data correctly', async () => {
       const customCategories = [
-        { id: '1', name: 'Custom', description: 'Test', tag: 'test', costPrice: 50 }
+        { id: '1', name: 'Custom', description: 'Test', tag: 'test'}
       ];
       
       mockGetCategories.mockResolvedValue(customCategories);

@@ -1,5 +1,5 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
-import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
+import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { productsReducer } from './slices/productsSlice';
 import { ordersReducer } from './slices/ordersSlice';
@@ -37,14 +37,7 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: {
-        // Ignore these action types
-        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER, 'auth/setUser'],
-        // Ignore these field paths in all actions
-        ignoredActionPaths: ['payload.user', 'payload.customTheme'],
-        // Ignore these paths in the state
-        ignoredPaths: ['auth.user', 'theme.customTheme'],
-      },
+      serializableCheck: false, // Disable for Firebase Timestamp objects
     }),
 });
 

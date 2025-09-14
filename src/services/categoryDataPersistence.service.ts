@@ -24,16 +24,14 @@ export class CategoryDataPersistenceService {
             await this.categoryService.updateCategory(category.id, {
               name: category.name,
               description: category.description,
-              tag: category.tag,
-              costPrice: category.costPrice
+              tag: category.tag
             });
           } else {
             // Create new category
             await this.categoryService.createCategory({
               name: category.name,
               description: category.description,
-              tag: category.tag,
-              costPrice: category.costPrice
+              tag: category.tag
             });
           }
           importedCount++;
@@ -72,9 +70,6 @@ export class CategoryDataPersistenceService {
         errors.push(`Category at index ${index} is missing a name`);
       }
       
-      if (category.costPrice !== null && category.costPrice !== undefined && category.costPrice < 0) {
-        errors.push(`Category "${category.name}" has invalid cost price: ${category.costPrice}`);
-      }
     });
 
     return errors;

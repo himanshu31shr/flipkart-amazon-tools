@@ -16,13 +16,11 @@ describe('ValidationService', () => {
             name: 'Electronics',
             description: 'Electronic products',
             tag: 'tech',
-            costPrice: 100
           },
           {
             name: 'Books',
             description: 'Educational books',
             tag: 'education',
-            costPrice: null
           }
         ];
 
@@ -46,19 +44,6 @@ describe('ValidationService', () => {
         expect(result.errors).toHaveLength(0);
       });
 
-      it('validates categories with zero cost price', () => {
-        const categories: Category[] = [
-          {
-            name: 'Free Category',
-            costPrice: 0
-          }
-        ];
-
-        const result = validationService.validateCategoryData(categories);
-
-        expect(result.isValid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
     });
 
     describe('Required Field Validation', () => {
@@ -102,61 +87,6 @@ describe('ValidationService', () => {
       });
     });
 
-    describe('Cost Price Validation', () => {
-      it('reports error for invalid cost price types', () => {
-        const categories: Category[] = [
-          {
-            name: 'Test 1',
-            // @ts-expect-error - Testing runtime validation
-            costPrice: 'invalid'
-          },
-          {
-            name: 'Test 2',
-            // @ts-expect-error - Testing runtime validation
-            costPrice: {}
-          }
-        ];
-
-        const result = validationService.validateCategoryData(categories);
-
-        expect(result.isValid).toBe(false);
-        expect(result.errors).toHaveLength(2);
-        expect(result.errors[0]).toBe('Category "Test 1" at row 1 has invalid cost price: invalid');
-        expect(result.errors[1]).toBe('Category "Test 2" at row 2 has invalid cost price: [object Object]');
-      });
-
-      it('reports error for negative cost price', () => {
-        const categories: Category[] = [
-          {
-            name: 'Negative Price Category',
-            costPrice: -10
-          }
-        ];
-
-        const result = validationService.validateCategoryData(categories);
-
-        expect(result.isValid).toBe(false);
-        expect(result.errors).toContain('Category "Negative Price Category" at row 1 has invalid cost price: -10');
-      });
-
-      it('allows null and undefined cost prices', () => {
-        const categories: Category[] = [
-          {
-            name: 'Null Price',
-            costPrice: null
-          },
-          {
-            name: 'Undefined Price',
-            costPrice: undefined
-          }
-        ];
-
-        const result = validationService.validateCategoryData(categories);
-
-        expect(result.isValid).toBe(true);
-        expect(result.errors).toHaveLength(0);
-      });
-    });
 
     describe('Warning Validations', () => {
       it('warns about long category names', () => {
@@ -302,18 +232,16 @@ describe('ValidationService', () => {
           },
           {
             name: longName, // Warning: long name
-            costPrice: -5 // Error: negative price
           }
         ];
 
         const result = validationService.validateCategoryData(categories);
 
         expect(result.isValid).toBe(false);
-        expect(result.errors).toHaveLength(2);
+        expect(result.errors).toHaveLength(1);
         expect(result.warnings).toHaveLength(2);
         
         expect(result.errors).toContain('Category at row 1 is missing a name');
-        expect(result.errors).toContain(`Category "${longName}" at row 2 has invalid cost price: -5`);
         
         expect(result.warnings).toContain('Category "" has a description longer than 500 characters');
         expect(result.warnings).toContain(`Category "${longName}" has a name longer than 100 characters`);
@@ -332,7 +260,7 @@ describe('ValidationService', () => {
   describe('validateCSVFormat', () => {
     describe('Valid CSV Format', () => {
       it('validates proper CSV with all columns', () => {
-        const csvData = 'name,description,tag,costPrice\nElectronics,Electronic products,tech,100\nBooks,Educational books,edu,25';
+        const csvData = 'name,description,tag\nElectronics,Electronic products,tech\nBooks,Educational books,education';
 
         const result = validationService.validateCSVFormat(csvData);
 
@@ -348,11 +276,11 @@ describe('ValidationService', () => {
 
         expect(result.isValid).toBe(true);
         expect(result.errors).toHaveLength(0);
-        expect(result.warnings).toHaveLength(3); // Missing optional columns
+        expect(result.warnings).toHaveLength(2); // Missing optional columns
       });
 
       it('handles case-insensitive headers', () => {
-        const csvData = 'NAME,DESCRIPTION,TAG,COSTPRICE\nElectronics,Electronic products,tech,100';
+        const csvData = 'NAME,DESCRIPTION,TAG\nElectronics,Electronic products,tech';
 
         const result = validationService.validateCSVFormat(csvData);
 
@@ -362,7 +290,7 @@ describe('ValidationService', () => {
       });
 
       it('handles headers with extra whitespace', () => {
-        const csvData = '  name  ,  description  ,  tag  ,  costPrice  \nElectronics,Electronic products,tech,100';
+        const csvData = ' name , description , tag \nElectronics,Electronic products,tech';
 
         const result = validationService.validateCSVFormat(csvData);
 
@@ -380,7 +308,7 @@ describe('ValidationService', () => {
       });
 
       it('reports error for only header row', () => {
-        const csvData = 'name,description,tag,costPrice';
+        const csvData = 'name,description,tag';
 
         const result = validationService.validateCSVFormat(csvData);
 
@@ -389,7 +317,7 @@ describe('ValidationService', () => {
       });
 
       it('reports error for missing name column', () => {
-        const csvData = 'description,tag,costPrice\nElectronic products,tech,100';
+        const csvData = 'description,tag\nElectronic products,tech';
 
         const result = validationService.validateCSVFormat(csvData);
 
@@ -415,10 +343,9 @@ describe('ValidationService', () => {
         const result = validationService.validateCSVFormat(csvData);
 
         expect(result.isValid).toBe(true);
-        expect(result.warnings).toHaveLength(3);
+        expect(result.warnings).toHaveLength(2);
         expect(result.warnings).toContain('CSV file is missing optional column: description');
         expect(result.warnings).toContain('CSV file is missing optional column: tag');
-        expect(result.warnings).toContain('CSV file is missing optional column: costPrice');
       });
 
       it('warns about some missing optional columns', () => {
@@ -427,13 +354,12 @@ describe('ValidationService', () => {
         const result = validationService.validateCSVFormat(csvData);
 
         expect(result.isValid).toBe(true);
-        expect(result.warnings).toHaveLength(2);
+        expect(result.warnings).toHaveLength(1);
         expect(result.warnings).toContain('CSV file is missing optional column: tag');
-        expect(result.warnings).toContain('CSV file is missing optional column: costPrice');
       });
 
       it('does not warn when all columns are present', () => {
-        const csvData = 'name,description,tag,costPrice\nElectronics,Electronic products,tech,100';
+        const csvData = 'name,description,tag\nElectronics,Electronic products,tech';
 
         const result = validationService.validateCSVFormat(csvData);
 
@@ -459,7 +385,7 @@ describe('ValidationService', () => {
       });
 
       it('handles CSV with extra columns', () => {
-        const csvData = 'name,description,tag,costPrice,extra1,extra2\nElectronics,Electronic products,tech,100,extra,data';
+        const csvData = 'name,description,tag,extra\nElectronics,Electronic products,tech,extra_value';
 
         const result = validationService.validateCSVFormat(csvData);
 
@@ -468,7 +394,7 @@ describe('ValidationService', () => {
       });
 
       it('handles different column order', () => {
-        const csvData = 'costPrice,name,tag,description\n100,Electronics,tech,Electronic products';
+        const csvData = 'tag,name,description\ntech,Electronics,Electronic products';
 
         const result = validationService.validateCSVFormat(csvData);
 
@@ -526,13 +452,11 @@ describe('ValidationService', () => {
           name: 'Electronics',
           description: 'Electronic products',
           tag: 'tech',
-          costPrice: 100
         },
         {
           name: 'Books',
           description: '',
           tag: '',
-          costPrice: null
         }
       ];
 
