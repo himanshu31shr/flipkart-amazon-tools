@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.4.0
+
+### Minor Changes
+
+- [#52](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/52) [`12b6b5b`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/12b6b5b99d649ecb4eeef950a02150ea3764cc51) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - Implement CategoryGroup service with CRUD operations and validation
+
 ## 9.3.0
 
 ### Minor Changes
