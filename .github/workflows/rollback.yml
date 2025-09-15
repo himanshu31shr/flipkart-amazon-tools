@@ -1,0 +1,148 @@
+name: Emergency Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      rollback_reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+      previous_commit:
+        description: 'Previous working commit SHA (optional - will use previous release if empty)'
+        required: false
+        type: string
+      notify_team:
+        description: 'Notify team via GitHub issue'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  rollback:
+    name: Emergency Rollback
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for rollback
+
+      - name: Determine Rollback Target
+        id: rollback-target
+        run: |
+          if [ -n "${{ github.event.inputs.previous_commit }}" ]; then
+            echo "target=${{ github.event.inputs.previous_commit }}" >> $GITHUB_OUTPUT
+            echo "type=commit" >> $GITHUB_OUTPUT
+          else
+            # Get the previous release tag
+            PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 2 | tail -n 1)
+            if [ -z "$PREVIOUS_TAG" ]; then
+              echo "❌ No previous release found"
+              exit 1
+            fi
+            echo "target=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+            echo "type=tag" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout Rollback Target
+        run: |
+          if [ "${{ steps.rollback-target.outputs.type }}" = "tag" ]; then
+            git checkout ${{ steps.rollback-target.outputs.target }}
+          else
+            git checkout ${{ steps.rollback-target.outputs.target }}
+          fi
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+
+      - name: Build Rollback Version
+        run: npm run build
+
+      - name: Copy index.html to 404.html
+        run: cp dist/index.html dist/404.html
+
+      - name: Deploy Rollback
+        id: rollback-deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          branch: gh-pages
+          clean: true
+          single-commit: true
+          commit-message: "🚨 EMERGENCY ROLLBACK: ${{ github.event.inputs.rollback_reason }}"
+
+      - name: Verify Rollback
+        run: |
+          echo "⏳ Waiting for deployment to propagate..."
+          sleep 30
+          
+          # Try to verify the rollback worked
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://himanshu31shr.github.io/flipkart-amazon-tools/ || echo "000")
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ Rollback verification successful"
+          else
+            echo "⚠️ Rollback deployed but verification returned HTTP $HTTP_STATUS"
+          fi
+
+      - name: Create Rollback Issue
+        if: github.event.inputs.notify_team == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const rollbackInfo = {
+              title: `🚨 Emergency Rollback Executed`,
+              body: `
+            ## Emergency Rollback Report
+            
+            **Reason:** ${{ github.event.inputs.rollback_reason }}
+            
+            **Rollback Details:**
+            - **Target:** ${{ steps.rollback-target.outputs.target }} (${{ steps.rollback-target.outputs.type }})
+            - **Executed by:** @${{ github.actor }}
+            - **Execution time:** ${new Date().toISOString()}
+            - **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            
+            **Status:** ✅ Rollback completed successfully
+            
+            ## Next Steps
+            
+            1. **Investigate** the issue that caused the rollback
+            2. **Create hotfix** branch if needed
+            3. **Test thoroughly** before next deployment
+            4. **Update monitoring** to prevent similar issues
+            
+            ## Deployment Info
+            
+            - **Site URL:** https://himanshu31shr.github.io/flipkart-amazon-tools/
+            - **Deployment Status:** Completed
+            
+            /cc @team
+            `,
+              labels: ['emergency', 'rollback', 'production']
+            };
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ...rollbackInfo
+            });
+
+      - name: Rollback Summary
+        run: |
+          echo "🚨 EMERGENCY ROLLBACK COMPLETED"
+          echo ""
+          echo "📋 Summary:"
+          echo "  - Reason: ${{ github.event.inputs.rollback_reason }}"
+          echo "  - Target: ${{ steps.rollback-target.outputs.target }}"
+          echo "  - Type: ${{ steps.rollback-target.outputs.type }}"
+          echo "  - Executed by: ${{ github.actor }}"
+          echo ""
+          echo "🌐 Site URL: https://himanshu31shr.github.io/flipkart-amazon-tools/"
+          echo "📊 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" 
