@@ -362,7 +362,6 @@ class PdfStorageService {
       const timePrefix = new Date().toISOString().replace(/[:.]/g, '-').substring(11, 19); // HH-MM-SS format
       const filePath = `${dateBasedPath}/${timePrefix}_${sanitizedFileName}`;
       
-      console.log('Generated file path:', filePath);
       
       // Calculate expiry date
       const expiryDays = Math.max(1, Math.min(90, config.expiryDays)); // 1-90 days
@@ -379,7 +378,6 @@ class PdfStorageService {
         description: stats.description || config.description || ''
       };
       
-      console.log('Uploading file with metadata:', customMetadata);
       
       // Create storage reference directly
       const storageRef = ref(storage, filePath);
@@ -390,7 +388,6 @@ class PdfStorageService {
         customMetadata
       });
       
-      console.log('File uploaded successfully, getting download URL');
       
       // Get the download URL
       const downloadUrl = await getDownloadURL(uploadTask.ref);
@@ -414,7 +411,6 @@ class PdfStorageService {
         description: stats.description || config.description
       };
       
-      console.log('Storing metadata in Firestore');
       
       // Store metadata in Firestore
       const db = getFirestore();
@@ -426,7 +422,6 @@ class PdfStorageService {
         expiresAt: Timestamp.fromMillis(expiresAt)
       });
       
-      console.log('Metadata stored, updating storage metadata with file ID');
       
       // Update storage metadata with file ID
       await updateMetadata(storageRef, {
@@ -435,7 +430,6 @@ class PdfStorageService {
         }
       });
       
-      console.log('Upload process completed successfully');
       
       return {
         fileId: docRef.id,
@@ -535,7 +529,6 @@ class PdfStorageService {
       const timePrefix = new Date().toISOString().replace(/[:.]/g, '-').substring(11, 19); // HH-MM-SS format
       const filePath = `${dateBasedPath}/${timePrefix}_${sanitizedFileName}`;
       
-      console.log('Generated file path:', filePath);
       
       // Calculate expiry date
       const expiryDays = Math.max(1, Math.min(90, config.expiryDays)); // 1-90 days
@@ -553,7 +546,6 @@ class PdfStorageService {
         selectedDate: selectedDate.toISOString().split('T')[0] // Store the selected date
       };
       
-      console.log('Uploading file with metadata:', customMetadata);
       
       // Create storage reference directly
       const storageRef = ref(storage, filePath);
@@ -564,7 +556,6 @@ class PdfStorageService {
         customMetadata
       });
       
-      console.log('File uploaded successfully, getting download URL');
       
       // Get the download URL
       const downloadUrl = await getDownloadURL(uploadTask.ref);
@@ -589,7 +580,6 @@ class PdfStorageService {
         selectedDate: selectedDate.toISOString().split('T')[0] // Store selected date in metadata
       };
       
-      console.log('Storing metadata in Firestore');
       
       // Store metadata in Firestore
       const db = getFirestore();
@@ -609,7 +599,6 @@ class PdfStorageService {
         selectedDate: selectedDate.toISOString().split('T')[0]
       });
       
-      console.log('Metadata stored successfully with ID:', docRef.id);
       
       return {
         fileId: docRef.id,
@@ -1195,7 +1184,6 @@ class PdfStorageService {
       // Wait for all deletions to complete
       await Promise.all([...fileDeletionPromises, ...folderDeletionPromises]);
       
-      console.log(`Successfully deleted folder: ${folderPath}`);
     } catch (error) {
       console.error('Error deleting folder recursively:', error);
       throw error;
@@ -1234,7 +1222,6 @@ class PdfStorageService {
       // Delete from Firebase Storage
       await storageService.deleteFile(filePath);
       
-      console.log(`Successfully deleted file: ${filePath}`);
     } catch (error) {
       console.error('Error deleting file:', error);
       throw error;
@@ -1262,7 +1249,6 @@ class PdfStorageService {
       const deletionPromises = filePaths.map(filePath => this.deleteFile(filePath));
       await Promise.all(deletionPromises);
       
-      console.log(`Successfully deleted ${filePaths.length} files`);
     } catch (error) {
       console.error('Error deleting multiple files:', error);
       throw error;

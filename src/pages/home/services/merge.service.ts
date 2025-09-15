@@ -215,10 +215,8 @@ export class PDFMergerService {
       const result = await batchService.createBatch(batchInfo);
 
       if (result.success) {
-        console.log("Batch created successfully:", result.batchId);
         return result.batchId;
       } else {
-        console.error("Failed to create batch:", result.error);
         return undefined;
       }
     } catch (error) {
@@ -235,16 +233,11 @@ export class PDFMergerService {
     orderCount: number
   ): Promise<void> {
     try {
-      const result = await batchService.updateBatchOrderCount(
+      await batchService.updateBatchOrderCount(
         batchId,
         orderCount
       );
 
-      if (result.success) {
-        console.log(`Batch ${batchId} updated with ${orderCount} orders`);
-      } else {
-        console.error("Failed to update batch order count:", result.error);
-      }
     } catch (error) {
       console.error("Error updating batch order count:", error);
     }

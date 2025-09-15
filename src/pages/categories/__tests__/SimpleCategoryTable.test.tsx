@@ -4,11 +4,28 @@ import userEvent from '@testing-library/user-event';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import SimpleCategoryTable from '../SimpleCategoryTable';
 import { CategoryService } from '../../../services/category.service';
+import { CategoryGroupService } from '../../../services/categoryGroup.service';
 
 // Mock the CategoryService
 jest.mock('../../../services/category.service');
 
+// Mock CategoryGroupService
+jest.mock('../../../services/categoryGroup.service');
+
+// Mock CategoryGroupSelector
+jest.mock('../../categoryGroups/components/CategoryGroupSelector', () => {
+  return function MockCategoryGroupSelector({ onChange }: { onChange: (value: string | null) => void }) {
+    return (
+      <div data-testid="category-group-selector">
+        <button onClick={() => onChange('group-1')}>Select Group 1</button>
+        <button onClick={() => onChange(null)}>Remove Group</button>
+      </div>
+    );
+  };
+});
+
 const mockCategoryService = CategoryService as jest.MockedClass<typeof CategoryService>;
+const mockCategoryGroupService = CategoryGroupService as jest.MockedClass<typeof CategoryGroupService>;
 
 const theme = createTheme();
 
@@ -17,7 +34,12 @@ const mockCategories = [
     id: '1',
     name: 'Electronics',
     description: 'Electronic products',
-    tag: 'tech'
+    tag: 'tech',
+    categoryGroup: {
+      id: 'group-1',
+      name: 'Tech Group',
+      color: '#1976d2'
+    }
   },
   {
     id: '2',
@@ -29,7 +51,25 @@ const mockCategories = [
     id: '3',
     name: 'Clothing',
     description: 'Fashion items',
-    tag: 'fashion'
+    tag: 'fashion',
+    categoryGroup: {
+      id: 'group-2',
+      name: 'Fashion Group',
+      color: '#d32f2f'
+    }
+  }
+];
+
+const mockGroups = [
+  {
+    id: 'group-1',
+    name: 'Tech Group',
+    color: '#1976d2',
+  },
+  {
+    id: 'group-2', 
+    name: 'Fashion Group',
+    color: '#d32f2f',
   }
 ];
 
@@ -42,23 +82,35 @@ const renderWithTheme = (component: React.ReactElement) => {
 };
 
 describe('SimpleCategoryTable', () => {
-  let mockGetCategories: jest.SpyInstance;
+  let mockGetCategoriesWithGroups: jest.SpyInstance;
   let mockCreateCategory: jest.SpyInstance;
   let mockUpdateCategory: jest.SpyInstance;
   let mockDeleteCategory: jest.SpyInstance;
+  let mockAssignCategoryToGroup: jest.SpyInstance;
+  let mockAssignMultipleCategoriesToGroup: jest.SpyInstance;
+  let mockGetCategoryGroups: jest.SpyInstance;
 
   beforeEach(() => {
-    mockGetCategories = jest.fn().mockResolvedValue(mockCategories);
+    mockGetCategoriesWithGroups = jest.fn().mockResolvedValue(mockCategories);
     mockCreateCategory = jest.fn().mockResolvedValue('new-id');
     mockUpdateCategory = jest.fn().mockResolvedValue(undefined);
     mockDeleteCategory = jest.fn().mockResolvedValue(undefined);
+    mockAssignCategoryToGroup = jest.fn().mockResolvedValue(undefined);
+    mockAssignMultipleCategoriesToGroup = jest.fn().mockResolvedValue(undefined);
+    mockGetCategoryGroups = jest.fn().mockResolvedValue(mockGroups);
 
     mockCategoryService.mockImplementation(() => ({
-      getCategories: mockGetCategories,
+      getCategoriesWithGroups: mockGetCategoriesWithGroups,
       createCategory: mockCreateCategory,
       updateCategory: mockUpdateCategory,
       deleteCategory: mockDeleteCategory,
+      assignCategoryToGroup: mockAssignCategoryToGroup,
+      assignMultipleCategoriesToGroup: mockAssignMultipleCategoriesToGroup,
     }) as jest.Mocked<CategoryService>);
+
+    mockCategoryGroupService.mockImplementation(() => ({
+      getCategoryGroups: mockGetCategoryGroups,
+    }) as jest.Mocked<CategoryGroupService>);
   });
 
   afterEach(() => {
@@ -70,7 +122,7 @@ describe('SimpleCategoryTable', () => {
       renderWithTheme(<SimpleCategoryTable />);
       
       await waitFor(() => {
-        expect(screen.getByText('Categories (3)')).toBeInTheDocument();
+        expect(screen.getByText('Categories (3 of 3)')).toBeInTheDocument();
       });
 
       expect(screen.getByText('Electronics')).toBeInTheDocument();
@@ -98,7 +150,7 @@ describe('SimpleCategoryTable', () => {
     });
 
     it('shows loading state', () => {
-      mockGetCategories.mockImplementation(() => new Promise(() => {})); // Never resolves
+      mockGetCategoriesWithGroups.mockImplementation(() => new Promise(() => {})); // Never resolves
       
       renderWithTheme(<SimpleCategoryTable />);
       
@@ -106,39 +158,43 @@ describe('SimpleCategoryTable', () => {
     });
 
     it('shows empty state when no categories', async () => {
-      mockGetCategories.mockResolvedValue([]);
+      mockGetCategoriesWithGroups.mockResolvedValue([]);
       
       renderWithTheme(<SimpleCategoryTable />);
       
       await waitFor(() => {
-        expect(screen.getByText('Categories (0)')).toBeInTheDocument();
+        expect(screen.getByText('Categories (0 of 0)')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('No categories found')).toBeInTheDocument();
+      // Wait for the table to render with empty state
+      await waitFor(() => {
+        expect(screen.getByText('No categories found')).toBeInTheDocument();
+      }, { timeout: 2000 });
     });
   });
 
   describe('Refresh Functionality', () => {
     it('refreshes data when refresh button is clicked', async () => {
+      const user = userEvent.setup();
       renderWithTheme(<SimpleCategoryTable />);
       
       await waitFor(() => {
-        expect(mockGetCategories).toHaveBeenCalledTimes(1);
+        expect(mockGetCategoriesWithGroups).toHaveBeenCalledTimes(1);
       });
 
       const refreshButton = screen.getByText('Refresh');
-      fireEvent.click(refreshButton);
+      await user.click(refreshButton);
 
       await waitFor(() => {
-        expect(mockGetCategories).toHaveBeenCalledTimes(2);
-      });
+        expect(mockGetCategoriesWithGroups).toHaveBeenCalledTimes(2);
+      }, { timeout: 3000 });
     });
 
     it('refreshes when refreshTrigger prop changes', async () => {
       const { rerender } = renderWithTheme(<SimpleCategoryTable refreshTrigger={0} />);
       
       await waitFor(() => {
-        expect(mockGetCategories).toHaveBeenCalledTimes(1);
+        expect(mockGetCategoriesWithGroups).toHaveBeenCalledTimes(1);
       });
 
       rerender(
@@ -148,7 +204,7 @@ describe('SimpleCategoryTable', () => {
       );
 
       await waitFor(() => {
-        expect(mockGetCategories).toHaveBeenCalledTimes(2);
+        expect(mockGetCategoriesWithGroups).toHaveBeenCalledTimes(2);
       });
     });
 
@@ -162,7 +218,7 @@ describe('SimpleCategoryTable', () => {
 
       // Wait for categories to load first
       await waitFor(() => {
-        expect(screen.getByText('Categories (3)')).toBeInTheDocument();
+        expect(screen.getByText('Categories (3 of 3)')).toBeInTheDocument();
       });
 
       const addButton = screen.getByText('Add Category');
@@ -245,7 +301,7 @@ describe('SimpleCategoryTable', () => {
       
       // Wait for categories to load first
       await waitFor(() => {
-        expect(screen.getByText('Categories (3)')).toBeInTheDocument();
+        expect(screen.getByText('Categories (3 of 3)')).toBeInTheDocument();
       });
 
       // Open dialog
@@ -430,7 +486,8 @@ describe('SimpleCategoryTable', () => {
   describe('Error Handling', () => {
     it('handles fetch error gracefully', async () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-      mockGetCategories.mockRejectedValue(new Error('Fetch failed'));
+      mockGetCategoriesWithGroups.mockRejectedValue(new Error('Fetch failed'));
+      mockGetCategoryGroups.mockRejectedValue(new Error('Groups fetch failed'));
       
       renderWithTheme(<SimpleCategoryTable />);
       
@@ -451,7 +508,7 @@ describe('SimpleCategoryTable', () => {
       
       // Wait for categories to load first
       await waitFor(() => {
-        expect(screen.getByText('Categories (3)')).toBeInTheDocument();
+        expect(screen.getByText('Categories (3 of 3)')).toBeInTheDocument();
       });
 
       // Open dialog and fill form
@@ -522,7 +579,7 @@ describe('SimpleCategoryTable', () => {
 
 
     it('shows dash for empty description and tag', async () => {
-      mockGetCategories.mockResolvedValue([
+      mockGetCategoriesWithGroups.mockResolvedValue([
         {
           id: '1',
           name: 'Test Category',

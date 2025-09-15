@@ -18,7 +18,8 @@ import {
   bulkUpdateProducts,
 } from "../../store/slices/productsSlice";
 import { selectIsAuthenticated } from "../../store/slices/authSlice";
-import { Product } from "../../services/product.service";
+import { Product, ProductFilter } from "../../services/product.service";
+import { CategoryService } from "../../services/category.service";
 import { ProductEditModal } from "./components/ProductEditModal";
 import { ProductImportSection } from "./components/ProductImportSection";
 import { ProductTable } from "./components/ProductTable";
@@ -34,6 +35,7 @@ export const ProductsPage: React.FC = () => {
   const [editingProduct, setEditingProduct] = React.useState<Product | null>(
     null
   );
+  const categoryService = new CategoryService();
 
   useEffect(() => {
     // Only fetch products if authenticated
@@ -72,10 +74,37 @@ export const ProductsPage: React.FC = () => {
     }
   };
 
-  const handleFilterChange = (filters: {
-    platform?: string;
-    search?: string;
-  }) => {
+  const handleBulkGroupUpdate = async (
+    skus: string[],
+    groupId: string | null
+  ) => {
+    try {
+      // Get all unique category IDs from the selected products
+      const categoryIds = new Set<string>();
+      
+      skus.forEach(sku => {
+        const product = filteredProducts.find(p => p.sku === sku);
+        if (product && product.categoryId) {
+          categoryIds.add(product.categoryId);
+        }
+      });
+
+      // Assign all categories to the group
+      if (categoryIds.size > 0) {
+        await categoryService.assignMultipleCategoriesToGroup(
+          Array.from(categoryIds),
+          groupId
+        );
+        
+        // Refresh products to show updated group assignments
+        dispatch(fetchProducts({}));
+      }
+    } catch {
+      // Error handling - could show toast notification
+    }
+  };
+
+  const handleFilterChange = (filters: ProductFilter) => {
     dispatch(setFilters(filters));
   };
 
@@ -130,6 +159,7 @@ export const ProductsPage: React.FC = () => {
                 onEdit={setEditingProduct}
                 onFilterChange={handleFilterChange}
                 onBulkCategoryUpdate={handleBulkCategoryUpdate}
+                onBulkGroupUpdate={handleBulkGroupUpdate}
               />
             </Box>
           )}

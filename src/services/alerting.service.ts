@@ -328,8 +328,6 @@ class AlertingService {
 
     // Store alerts in localStorage
     this.saveAlertsToStorage();
-
-    console.log(`Alert triggered: ${alert.ruleName}`, alert);
   }
 
   private generateAlertMessage(rule: AlertRule): string {

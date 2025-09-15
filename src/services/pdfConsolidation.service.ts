@@ -412,9 +412,10 @@ export class PDFConsolidationService {
     }
   }
   
-  private updateProgress(progress: ConsolidationProgress): void {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private updateProgress(_progress: ConsolidationProgress): void {
     // Emit progress event or update UI
-    console.log('Consolidation Progress:', progress);
+    // Parameter prefixed with _ to indicate intentionally unused
   }
   
   cancel(): void {

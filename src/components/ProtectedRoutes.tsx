@@ -51,6 +51,12 @@ const CategoriesPage = React.lazy(() =>
   }))
 );
 
+const CategoryGroupsPage = React.lazy(() =>
+  import("../pages/categoryGroups/categoryGroups.page").then((module) => ({
+    default: module.default,
+  }))
+);
+
 const OrderAnalytics = React.lazy(() =>
   import("../pages/orderAnalytics").then((module) => ({
     default: module.default,
@@ -106,6 +112,7 @@ export const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({
         <Route path="/activeOrders/" element={<ActiveOrders />} />
         <Route path="/hidden-products/" element={<HiddenProductsPage />} />
         <Route path="/categories/" element={<CategoriesPage />} />
+        <Route path="/category-groups/" element={<CategoryGroupsPage />} />
         <Route path="/order-analytics/" element={<OrderAnalytics />} />
         <Route path="/uncategorized-products/" element={<UncategorizedProductsPage />} />
         <Route path="/storage-management/" element={<StorageManagementPage />} />

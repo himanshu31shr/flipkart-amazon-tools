@@ -10,6 +10,7 @@ interface Category {
   name: string;
   description?: string;
   tag?: string;
+  categoryGroupId?: string;
   createdAt?: Timestamp | Date | string; // Use more specific types
   updatedAt?: Timestamp | Date | string; // Use more specific types
 }
@@ -25,11 +26,13 @@ import {
   CircularProgress,
   Autocomplete, // Import Autocomplete
 } from '@mui/material';
+import CategoryGroupSelector from '../categoryGroups/components/CategoryGroupSelector';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
   tag: z.string().optional(),
+  categoryGroupId: z.string().optional().nullable(),
 });
 
 type CategoryFormData = z.infer<typeof categorySchema>;
@@ -99,6 +102,19 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
               disabled={isSubmitting}
             />
             <Controller
+              name="categoryGroupId"
+              control={control}
+              render={({ field }) => (
+                <CategoryGroupSelector
+                  value={field.value}
+                  onChange={(groupId) => field.onChange(groupId)}
+                  error={!!errors.categoryGroupId}
+                  helperText={errors.categoryGroupId?.message}
+                  disabled={isSubmitting}
+                />
+              )}
+            />
+            <Controller
               name="tag"
               control={control}
               render={({ field }) => (
@@ -108,10 +124,10 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Tag"
+                      label="Tag (Legacy)"
                       fullWidth
                       error={!!errors.tag}
-                      helperText={errors.tag?.message}
+                      helperText={errors.tag?.message || 'Legacy tag field - consider using Category Groups instead'}
                       disabled={isSubmitting}
                     />
                   )}
