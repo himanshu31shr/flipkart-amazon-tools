@@ -103,18 +103,6 @@ export const TodaysOrderPage: React.FC = () => {
   const isFiltered = platformFilter !== 'all' || (batchFilter && batchFilter !== 'all');
   const totalOrdersCount = orders.length;
   const filteredOrdersCount = filteredOrders.length;
-  
-  // Debug logging
-  console.log('🔍 Filter Status:', {
-    totalOrders: totalOrdersCount,
-    filteredOrders: filteredOrdersCount,
-    platformFilter,
-    batchFilter,
-    isFiltered,
-    ordersExist: orders.length > 0,
-    filteredOrdersExist: filteredOrders.length > 0
-  });
-  
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>

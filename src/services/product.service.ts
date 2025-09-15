@@ -2,6 +2,7 @@ import { Timestamp, where } from "firebase/firestore";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { FirebaseService } from "./firebase.service";
+import { CategoryService } from "./category.service";
 
 export interface Product {
   id?: string;
@@ -33,11 +34,25 @@ export interface Product {
   existsOnSellerPage?: boolean;
 }
 
+export interface ProductWithCategoryGroup extends Product {
+  category?: {
+    id: string;
+    name: string;
+    categoryGroup?: {
+      id: string;
+      name: string;
+      color: string;
+    };
+  };
+}
+
 export interface ProductFilter {
   platform?: "amazon" | "flipkart";
   search?: string;
   visibility?: "visible" | "hidden";
   categoryId?: string;
+  groupId?: string;
+  groupFilter?: 'all' | 'assigned' | 'unassigned' | string;
 }
 
 interface RawFlipkartData {
@@ -84,9 +99,11 @@ interface RawAmazonData {
 
 export class ProductService extends FirebaseService {
   private readonly COLLECTION_NAME = "products";
+  private categoryService: CategoryService;
 
   constructor() {
     super();
+    this.categoryService = new CategoryService();
   }
 
   async parseProducts(file: File): Promise<Product[]> {
@@ -373,5 +390,70 @@ export class ProductService extends FirebaseService {
     }
 
     return product as Product;
+  }
+
+  /**
+   * Get products with category and group information populated
+   */
+  async getProductsWithCategoryGroups(filters?: ProductFilter): Promise<ProductWithCategoryGroup[]> {
+    // First get all products with base filters (excluding group filters)
+    const baseFilters: ProductFilter = { ...filters };
+    delete baseFilters.groupId;
+    delete baseFilters.groupFilter;
+    
+    const products = await this.getProducts(baseFilters);
+    
+    // Get all categories with group information
+    const categoriesWithGroups = await this.categoryService.getCategoriesWithGroups();
+    
+    // Create a map for faster lookup
+    const categoryMap = new Map();
+    categoriesWithGroups.forEach(category => {
+      if (category.id) {
+        categoryMap.set(category.id, {
+          id: category.id,
+          name: category.name,
+          categoryGroup: category.categoryGroup
+        });
+      }
+    });
+
+    // Enrich products with category and group information
+    const enrichedProducts: ProductWithCategoryGroup[] = products.map(product => ({
+      ...product,
+      category: product.categoryId ? categoryMap.get(product.categoryId) : undefined
+    }));
+
+    // Apply group-based filtering
+    if (filters?.groupFilter && filters.groupFilter !== 'all') {
+      return enrichedProducts.filter(product => {
+        if (filters.groupFilter === 'assigned') {
+          return product.category?.categoryGroup;
+        } else if (filters.groupFilter === 'unassigned') {
+          return !product.category?.categoryGroup;
+        } else if (filters.groupId) {
+          return product.category?.categoryGroup?.id === filters.groupId;
+        } else {
+          // Specific group ID passed as groupFilter
+          return product.category?.categoryGroup?.id === filters.groupFilter;
+        }
+      });
+    }
+
+    return enrichedProducts;
+  }
+
+  /**
+   * Get products by category group
+   */
+  async getProductsByGroup(groupId: string): Promise<ProductWithCategoryGroup[]> {
+    return this.getProductsWithCategoryGroups({ groupFilter: groupId });
+  }
+
+  /**
+   * Get products without any group assignment
+   */
+  async getUnassignedProducts(): Promise<ProductWithCategoryGroup[]> {
+    return this.getProductsWithCategoryGroups({ groupFilter: 'unassigned' });
   }
 }

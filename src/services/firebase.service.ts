@@ -251,12 +251,9 @@ export class FirebaseService {
       chunks.push(items.slice(i, i + BATCH_SIZE));
     }
     
-    console.log(`Processing ${items.length} items in ${chunks.length} batches of ${BATCH_SIZE}`);
-    
     // Process each chunk sequentially to avoid overwhelming Firestore
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
-      console.log(`Processing batch ${i + 1}/${chunks.length} (${chunk.length} items)`);
       
       const batch = writeBatch(this.db);
       chunk.forEach((item) => {

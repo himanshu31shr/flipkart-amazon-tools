@@ -6,6 +6,7 @@ import ManagementIcon from "@mui/icons-material/Warehouse";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import CategoryIcon from "@mui/icons-material/Category";
+import GroupIcon from "@mui/icons-material/Group";
 import WarningIcon from "@mui/icons-material/Warning";
 import StorageIcon from "@mui/icons-material/Storage";
 import ExpandLess from "@mui/icons-material/ExpandLess";
@@ -114,6 +115,7 @@ export const DefaultContainer = ({
   const [open, setOpen] = React.useState(!isMobile);
   const [ordersOpen, setOrdersOpen] = React.useState(false);
   const [productsOpen, setProductsOpen] = React.useState(false);
+  const [categoriesOpen, setCategoriesOpen] = React.useState(false);
   const [managementOpen, setManagementOpen] = React.useState(false);
 
   // Update drawer state when screen size changes
@@ -126,7 +128,8 @@ export const DefaultContainer = ({
     const path = location.pathname;
     setOrdersOpen(path.includes('/home/') || path.includes('/activeOrders/'));
     setProductsOpen(path.includes('/products/') || path.includes('/hidden-products/') || path.includes('/uncategorized-products/'));
-    setManagementOpen(path.includes('/categories/') || path.includes('/storage-management/'));
+    setCategoriesOpen(path.includes('/categories/') || path.includes('/category-groups/'));
+    setManagementOpen(path.includes('/storage-management/'));
   }, [location.pathname]);
 
   const toggleDrawer = (newOpen: boolean) => () => {
@@ -295,6 +298,53 @@ export const DefaultContainer = ({
           </List>
         </Collapse>
 
+        {/* Categories Section */}
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => setCategoriesOpen(!categoriesOpen)}>
+            <StyledListItemIcon>
+              <CategoryIcon />
+            </StyledListItemIcon>
+            <StyledListItemText primary="Categories" />
+            {categoriesOpen ? <ExpandLess /> : <ExpandMore />}
+          </ListItemButton>
+        </ListItem>
+        <Collapse in={categoriesOpen} timeout="auto" unmountOnExit>
+          <List component="div" disablePadding sx={{ pl: 1 }}>
+            <Link
+              component={RouterLink}
+              to={"/flipkart-amazon-tools/categories/"}
+              data-testid="all-categories"
+              style={{ textDecoration: 'none', color: 'inherit' }}
+              onClick={handleNavigation}
+            >
+              <ListItem key={"All Categories"} disablePadding>
+                <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/categories/")}>
+                  <StyledListItemIcon>
+                    <CategoryIcon />
+                  </StyledListItemIcon>
+                  <StyledListItemText primary={"All Categories"} />
+                </StyledListItemButton>
+              </ListItem>
+            </Link>
+            <Link
+              component={RouterLink}
+              to={"/flipkart-amazon-tools/category-groups/"}
+              data-testid="category-groups"
+              style={{ textDecoration: 'none', color: 'inherit' }}
+              onClick={handleNavigation}
+            >
+              <ListItem key={"Category Groups"} disablePadding>
+                <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/category-groups/")}>
+                  <StyledListItemIcon>
+                    <GroupIcon />
+                  </StyledListItemIcon>
+                  <StyledListItemText primary={"Category Groups"} />
+                </StyledListItemButton>
+              </ListItem>
+            </Link>
+          </List>
+        </Collapse>
+
         {/* Management Section */}
         <ListItem disablePadding>
           <ListItemButton onClick={() => setManagementOpen(!managementOpen)}>
@@ -307,22 +357,6 @@ export const DefaultContainer = ({
         </ListItem>
         <Collapse in={managementOpen} timeout="auto" unmountOnExit>
           <List component="div" disablePadding sx={{ pl: 1 }}>
-            <Link
-              component={RouterLink}
-              to={"/flipkart-amazon-tools/categories/"}
-              data-testid="categories"
-              style={{ textDecoration: 'none', color: 'inherit' }}
-              onClick={handleNavigation}
-            >
-              <ListItem key={"Categories"} disablePadding>
-                <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/categories/")}>
-                  <StyledListItemIcon>
-                    <CategoryIcon />
-                  </StyledListItemIcon>
-                  <StyledListItemText primary={"Categories"} />
-                </StyledListItemButton>
-              </ListItem>
-            </Link>
             <Link
               component={RouterLink}
               to={"/flipkart-amazon-tools/storage-management/"}

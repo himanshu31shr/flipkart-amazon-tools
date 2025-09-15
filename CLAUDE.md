@@ -51,6 +51,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run version` - Apply changesets and version packages
 - `npm run release` - Publish releases
 
+### Testing Requirements
+
+**Task Completion Criteria**
+Before marking any task as complete, ensure:
+
+1. **All Tests Pass**
+   - Run full test suite: `npm test`
+   - Integration tests pass: `npm run test:ci`
+   - Coverage report shows ≥80%: `npm run test:coverage`
+
+2. **Code Quality Checks**
+   - TypeScript compilation: `npm run type-check`
+   - ESLint validation: `npm run lint`
+   - Full quality check: `npm run lint-full`
+
+3. **Test Coverage Requirements**
+   - Unit tests for all business logic
+   - Component tests for UI elements
+   - Integration tests for PDF processing
+   - Edge cases and error conditions covered
+   - Async operations properly tested
+
+4. **Testing Guidelines**
+   - No skipped or pending tests
+   - Clear test descriptions
+   - Both positive and negative cases included
+   - Performance tests for large operations
+   - All Firebase emulator tests passing
+
 ## Architecture Overview
 
 ### Core Technologies
