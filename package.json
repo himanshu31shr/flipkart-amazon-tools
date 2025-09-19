@@ -46,7 +46,11 @@
     "version": "changeset version",
     "release": "changeset publish",
     "smoke-test": "node scripts/smoke-tests.js",
-    "smoke-test:prod": "SMOKE_TEST_URL=https://himanshu31shr.github.io/flipkart-amazon-tools node scripts/smoke-tests.js"
+    "smoke-test:prod": "SMOKE_TEST_URL=https://himanshu31shr.github.io/flipkart-amazon-tools node scripts/smoke-tests.js",
+    "migrate:inventory:dry-run": "node scripts/migrations/add-inventory-fields.js --dry-run",
+    "migrate:inventory:run": "node scripts/migrations/add-inventory-fields.js",
+    "migrate:inventory:rollback": "node scripts/migrations/add-inventory-fields.js --rollback",
+    "migrate:inventory:help": "node scripts/migrations/add-inventory-fields.js --help"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx,js,jsx}": [

@@ -5,6 +5,8 @@ import { Product } from "../../../services/product.service";
 import { Category } from "../../../services/category.service";
 import { CategorySortConfig } from "../../../utils/pdfSorting";
 import { BatchInfo } from "../../../types/transaction.type";
+import { InventoryService } from "../../../services/inventory.service";
+import { InventoryDeductionItem, InventoryDeductionResult } from "../../../types/inventory";
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export class FlipkartPageTransformer extends BaseTransformer {
@@ -234,5 +236,161 @@ export class FlipkartPageTransformer extends BaseTransformer {
     }
 
     return this.outputPdf;
+  }
+
+  /**
+   * Process Flipkart PDF pages for inventory deduction
+   * 
+   * This method extracts order information from Flipkart PDF pages and performs
+   * inventory deductions through the InventoryService. It leverages the existing
+   * PDF processing logic to extract product data and maps it to inventory format.
+   * 
+   * Process:
+   * 1. Process PDF pages using existing transform logic
+   * 2. Extract order items from product summaries
+   * 3. Map products to category groups for inventory deduction
+   * 4. Call InventoryService.deductInventoryFromOrder()
+   * 5. Return enhanced results with inventory status
+   * 
+   * @param pages - PDFPageProxy array from pdfjs-dist (not directly used, processes via this.pdf)
+   * @returns Promise<{ orderItems: ProductSummary[], inventoryResult: InventoryDeductionResult }>
+   * 
+   * Requirements Coverage:
+   * - R4: Order Processing Integration - integrates Flipkart PDF processing with inventory
+   * - R6: Integration with Existing Architecture - leverages existing PDF processing
+   */
+  async processOrdersWithInventory(): Promise<{
+    orderItems: ProductSummary[];
+    inventoryResult: InventoryDeductionResult;
+  }> {
+    await this.initialize();
+
+    if (!this.pdfDoc || !this.outputPdf) {
+      throw new Error("PDF document is not loaded. Call initialize() first.");
+    }
+
+    const pdfPages = this.pdfDoc.getPages();
+    const orderItems: ProductSummary[] = [];
+    const inventoryService = new InventoryService();
+
+    // Process all pages using existing Flipkart-specific logic
+    for (let i = 0; i < pdfPages.length; i++) {
+      const currPage = await this.pdf.getPage(i + 1);
+      const textContent = await currPage.getTextContent();
+      const items = textContent.items as TextItem[];
+
+      const sortedItems = this.sortTextItems(items);
+      const lines = this.combineTextIntoLines(sortedItems);
+
+      let j = 1;
+      const currentSummary: ProductSummary = {
+        name: "",
+        quantity: "0",
+        type: "flipkart",
+        batchInfo: this.batchInfo,
+      };
+
+      // Extract order ID (following existing logic)
+      if (lines.length > 0) {
+        if (lines[1] && lines[1].toLowerCase().includes("od")) {
+          currentSummary.orderId = lines[1].split(" ").at(0) || undefined;
+        }
+        const qtyLine = lines.find((line) =>
+          line.toLowerCase().includes("total qty")
+        );
+        if (qtyLine) {
+          const qty = qtyLine.split(" ");
+          currentSummary.quantity = qty.at(2) || "0";
+        }
+      }
+
+      // Extract product information (following existing logic)
+      for (let k = 0; k < lines.length; ) {
+        if (lines[k].startsWith("SKU") && /^\d {3}/.test(lines[k + j])) {
+          const line = lines[k + j];
+          const [skuInfo, ...rest] = line.split("|");
+          const qty = rest.join(" ").split(" ");
+
+          const skuSplit = skuInfo.split(" ").filter((str) => !!str);
+
+          const sku = skuSplit.length
+            ? skuSplit[skuSplit.length - 1].trim()
+            : "";
+
+          const name = qty
+            .filter((item) => !!item)
+            .reduce((acc, curr) => acc.trim() + " " + curr.trim(), "");
+
+          if (currentSummary.SKU !== sku && currentSummary.SKU) {
+            currentSummary.name += " && " + name;
+            currentSummary.SKU += " && " + sku;
+          } else {
+            currentSummary.name = name;
+            currentSummary.SKU = sku;
+          }
+
+          j++;
+        } else {
+          k++;
+        }
+      }
+
+      // Find product and category information for inventory mapping
+      const skuProduct = this.products.find(
+        (p) => p.sku === currentSummary.SKU
+      );
+      const category = this.categories.find(
+        (c) => c.id === skuProduct?.categoryId
+      );
+
+      // Store enhanced product information
+      currentSummary.categoryId = skuProduct?.categoryId;
+      currentSummary.category = category?.name;
+      currentSummary.product = skuProduct;
+
+      // Only add items with valid SKU and quantity
+      if (currentSummary.SKU && currentSummary.quantity && parseInt(currentSummary.quantity) > 0) {
+        orderItems.push({ ...currentSummary });
+      }
+    }
+
+    // Map order items to inventory deduction format
+    const inventoryDeductionItems: InventoryDeductionItem[] = [];
+
+    for (const item of orderItems) {
+      // Find the product to get category group mapping
+      const product = this.products.find(p => p.sku === item.SKU);
+      
+      if (product && product.categoryGroupId) {
+        // Handle multiple SKUs/quantities in a single item (Flipkart specific)
+        const skus = item.SKU?.split(" && ") || [];
+        const quantities = item.quantity?.split(" && ") || [item.quantity || "1"];
+        
+        // Process each SKU individually
+        skus.forEach((sku, index) => {
+          const quantity = parseInt(quantities[index] || quantities[0] || "1");
+          
+          if (quantity > 0) {
+            inventoryDeductionItems.push({
+              categoryGroupId: product.categoryGroupId!,
+              quantity: quantity,
+              unit: 'pcs', // Default to pieces for Flipkart orders
+              productSku: sku.trim(),
+              orderReference: item.orderId,
+              transactionReference: item.batchInfo?.batchId,
+              platform: 'flipkart'
+            });
+          }
+        });
+      }
+    }
+
+    // Perform inventory deduction
+    const inventoryResult = await inventoryService.deductInventoryFromOrder(inventoryDeductionItems);
+
+    return {
+      orderItems,
+      inventoryResult
+    };
   }
 }

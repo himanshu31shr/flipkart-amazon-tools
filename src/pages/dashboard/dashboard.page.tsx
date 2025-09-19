@@ -23,8 +23,16 @@ import { fetchOrderHistory } from '../../store/slices/orderHistorySlice';
 import { fetchOrders } from '../../store/slices/ordersSlice';
 import { fetchProducts } from '../../store/slices/productsSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
+import { 
+    fetchInventoryLevels,
+    fetchInventoryAlerts,
+    selectInventoryLevels,
+    selectInventoryLoading 
+} from '../../store/slices/inventorySlice';
 import { HiddenProductsWidget, HighPricedProductsWidget } from './components/ProductAlertWidgets';
 import UncategorizedProductsWidget from './components/UncategorizedProductsWidget';
+import InventoryAlertsWidget from './components/InventoryAlertsWidget';
+import InventorySummaryWidget from './components/InventorySummaryWidget';
 
 export const DashboardPage = () => {
     const dispatch = useAppDispatch();
@@ -32,6 +40,8 @@ export const DashboardPage = () => {
     const { items: orders } = useAppSelector(state => state.orders);
     const { dailyOrders } = useAppSelector(state => state.orderHistory);
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
+    const inventoryLevels = useAppSelector(selectInventoryLevels);
+    const inventoryLoading = useAppSelector(selectInventoryLoading);
 
     useEffect(() => {
         // Only fetch data if authenticated
@@ -39,6 +49,8 @@ export const DashboardPage = () => {
             dispatch(fetchProducts({}));
             dispatch(fetchOrders());
             dispatch(fetchOrderHistory());
+            dispatch(fetchInventoryLevels());
+            dispatch(fetchInventoryAlerts());
         }
     }, [dispatch, isAuthenticated]);
 
@@ -177,6 +189,32 @@ export const DashboardPage = () => {
                     </Paper>
                 </Grid>
 
+            </Grid>
+
+            {/* Inventory Widgets */}
+            <Grid container spacing={3} sx={{ mt: 1 }}>
+                {/* Inventory Summary Widget */}
+                <Grid item xs={12} md={8}>
+                    <InventorySummaryWidget
+                        inventoryLevels={inventoryLevels}
+                        loading={inventoryLoading.inventoryLevels}
+                    />
+                </Grid>
+
+                {/* Inventory Alerts Widget */}
+                <Grid item xs={12} md={4}>
+                    <InventoryAlertsWidget
+                        maxAlertsInWidget={5}
+                        onManualAdjustment={(categoryGroupId) => {
+                            // TODO: Navigate to manual adjustment page with category group
+                            console.log('Manual adjustment for category group:', categoryGroupId);
+                        }}
+                        onViewCategoryGroup={(categoryGroupId) => {
+                            // TODO: Navigate to category group details
+                            console.log('View category group:', categoryGroupId);
+                        }}
+                    />
+                </Grid>
             </Grid>
 
             {/* Additional Alert Widgets */}

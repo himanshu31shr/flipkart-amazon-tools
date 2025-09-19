@@ -108,6 +108,12 @@ describe('productsSlice', () => {
     categoryProducts: [],
     categoryProductsLoading: false,
     categoryProductsError: null,
+    inventoryLevels: {},
+    inventoryLoading: false,
+    inventoryError: null,
+    productInventoryStatus: {},
+    lowStockProducts: [],
+    zeroStockProducts: [],
   };
 
   beforeEach(() => {
@@ -144,6 +150,12 @@ describe('productsSlice', () => {
         categoryProducts: [],
         categoryProductsLoading: false,
         categoryProductsError: null,
+        inventoryLevels: {},
+        inventoryLoading: false,
+        inventoryError: null,
+        productInventoryStatus: {},
+        lowStockProducts: [],
+        zeroStockProducts: [],
       };
 
       const storeWithData = configureStore<{ products: RootState['products'] }>({
@@ -175,6 +187,12 @@ describe('productsSlice', () => {
         categoryProducts: [],
         categoryProductsLoading: false,
         categoryProductsError: null,
+        inventoryLevels: {},
+        inventoryLoading: false,
+        inventoryError: null,
+        productInventoryStatus: {},
+        lowStockProducts: [],
+        zeroStockProducts: [],
       };
 
       const storeWithData = configureStore({
@@ -208,6 +226,12 @@ describe('productsSlice', () => {
         categoryProducts: [],
         categoryProductsLoading: false,
         categoryProductsError: null,
+        inventoryLevels: {},
+        inventoryLoading: false,
+        inventoryError: null,
+        productInventoryStatus: {},
+        lowStockProducts: [],
+        zeroStockProducts: [],
       };
 
       const storeWithData = configureStore({
@@ -598,6 +622,12 @@ describe('productsSlice', () => {
           categoryProducts: [],
           categoryProductsLoading: false,
           categoryProductsError: null,
+          inventoryLevels: {},
+          inventoryLoading: false,
+          inventoryError: null,
+          productInventoryStatus: {},
+          lowStockProducts: [],
+          zeroStockProducts: [],
         };
 
         const updatedData = { name: 'Updated Product' };
@@ -629,6 +659,12 @@ describe('productsSlice', () => {
         categoryProducts: [],
         categoryProductsLoading: false,
         categoryProductsError: null,
+        inventoryLevels: {},
+        inventoryLoading: false,
+        inventoryError: null,
+        productInventoryStatus: {},
+        lowStockProducts: [],
+        zeroStockProducts: [],
       };
 
       const storeWithData = configureStore({

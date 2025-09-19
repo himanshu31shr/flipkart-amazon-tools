@@ -64,6 +64,10 @@ const CategoryGroupForm: React.FC<CategoryGroupFormProps> = ({
       name: '',
       description: '',
       color: CATEGORY_GROUP_COLORS[0],
+      currentInventory: 0,
+      inventoryUnit: 'pcs',
+      inventoryType: 'qty',
+      minimumThreshold: 10,
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -93,6 +97,10 @@ const CategoryGroupForm: React.FC<CategoryGroupFormProps> = ({
           name: editingGroup.name,
           description: editingGroup.description,
           color: editingGroup.color,
+          currentInventory: editingGroup.currentInventory,
+          inventoryUnit: editingGroup.inventoryUnit,
+          inventoryType: editingGroup.inventoryType,
+          minimumThreshold: editingGroup.minimumThreshold,
         });
         setCustomColor(editingGroup.color);
       } else {

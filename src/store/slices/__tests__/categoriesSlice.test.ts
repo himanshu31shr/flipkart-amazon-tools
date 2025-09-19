@@ -58,6 +58,23 @@ describe('categoriesSlice', () => {
         loading: false,
         error: null,
         selectedCategory: null,
+        
+        // Inventory-related state
+        categoryInventoryLevels: {},
+        categoryGroupInventoryLevels: {},
+        categoryInventoryAlerts: [],
+        inventoryLoading: false,
+        inventoryError: null,
+        categoryGroupsLoading: false,
+        categoryGroupsError: null,
+        
+        // Aggregated inventory data
+        categoriesWithLowStock: [],
+        categoriesWithZeroStock: [],
+        categoryInventoryStatus: {},
+        
+        // Category groups for inventory management
+        categoryGroups: [],
       });
     });
   });
@@ -102,6 +119,17 @@ describe('categoriesSlice', () => {
             loading: false,
             error: 'Some error',
             selectedCategory: null,
+            categoryInventoryLevels: {},
+            categoryGroupInventoryLevels: {},
+            categoryInventoryAlerts: [],
+            inventoryLoading: false,
+            inventoryError: null,
+            categoryGroupsLoading: false,
+            categoryGroupsError: null,
+            categoriesWithLowStock: [],
+            categoriesWithZeroStock: [],
+            categoryInventoryStatus: {},
+            categoryGroups: [],
           },
         },
       });

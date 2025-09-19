@@ -1,0 +1,1 @@
+export { InventoryDashboard, default as InventoryDashboardComponent } from './InventoryDashboard';

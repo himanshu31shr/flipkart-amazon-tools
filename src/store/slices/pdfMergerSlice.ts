@@ -4,12 +4,14 @@ import { ProductSummary } from '../../pages/home/services/base.transformer';
 import { store } from '..';
 import { CategorySortConfig } from "../../utils/pdfSorting";
 import { PDFConsolidationService, ConsolidationProgress, ConsolidationError } from '../../services/pdfConsolidation.service';
+import { InventoryDeductionResult } from '../../types/inventory';
 
 export interface PdfMergerState {
   amazonFiles: File[];
   flipkartFiles: File[];
   finalPdf: string | null;
   summary: ProductSummary[];
+  inventoryResults: InventoryDeductionResult[];
   loading: boolean;
   error: string | null;
   selectedDate: Date;
@@ -22,6 +24,7 @@ const initialState: PdfMergerState = {
   flipkartFiles: [],
   finalPdf: null,
   summary: [],
+  inventoryResults: [],
   loading: false,
   error: null,
   selectedDate: new Date(),
@@ -136,6 +139,7 @@ export const mergePDFs = createAsyncThunk(
       return {
         pdfUrl,
         summary: mergePdfs.summary,
+        inventoryResults: mergePdfs.inventoryDeductionResults,
       };
     } catch (error) {
       // Handle consolidation errors
@@ -188,6 +192,7 @@ const pdfMergerSlice = createSlice({
       state.flipkartFiles = [];
       state.finalPdf = null;
       state.summary = [];
+      state.inventoryResults = [];
       state.selectedDate = new Date();
       state.consolidationProgress = null;
       state.isConsolidating = false;
@@ -212,6 +217,7 @@ const pdfMergerSlice = createSlice({
         state.loading = false;
         state.finalPdf = action.payload.pdfUrl;
         state.summary = action.payload.summary;
+        state.inventoryResults = action.payload.inventoryResults || [];
         state.consolidationProgress = null;
         state.isConsolidating = false;
       })

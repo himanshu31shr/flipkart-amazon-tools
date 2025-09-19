@@ -13,6 +13,7 @@ export interface Product {
   visibility: "visible" | "hidden";
   sellingPrice: number;
   categoryId?: string; // Reference to category document ID
+  categoryGroupId?: string; // Reference to category group document ID
   metadata: {
     createdAt?: Timestamp;
     updatedAt?: Timestamp;

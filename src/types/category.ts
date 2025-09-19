@@ -6,6 +6,9 @@ export interface Category {
   color?: string;
   categoryGroupId?: string; // Reference to CategoryGroup
   costPrice?: number; // Cost price for the category (used for inheritance)
+  inventoryType?: 'weight' | 'qty'; // Inventory management type
+  inventoryUnit?: 'kg' | 'g' | 'pcs'; // Unit of measurement
+  unitConversionRate?: number; // Conversion rate for weight units (e.g., g to kg)
   createdAt?: Date | number | string | { toDate(): Date; toMillis(): number };
   updatedAt?: Date | number | string | { toDate(): Date; toMillis(): number };
 }

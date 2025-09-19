@@ -16,7 +16,8 @@ export default [
       "jest.setup.js",
       "scripts/test-setup.js",
       "scripts/seed-emulator-enhanced.js",
-      "scripts/seed-emulator-fixed.js"
+      "scripts/seed-emulator-fixed.js",
+      "src/__tests__/performance-benchmarks.disabled/**"
     ]
   },
   {files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"]},

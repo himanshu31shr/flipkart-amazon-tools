@@ -24,6 +24,10 @@ describe('CategoryGroup Types', () => {
         name: 'Electronics',
         description: 'Electronic products and accessories',
         color: '#FF5722',
+        currentInventory: 100,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 10,
         createdAt: mockTimestamp,
         updatedAt: mockTimestamp,
       };
@@ -41,6 +45,10 @@ describe('CategoryGroup Types', () => {
         name: 'Test Group',
         description: 'Test description',
         color: '#2196F3',
+        currentInventory: 50,
+        inventoryUnit: 'kg',
+        inventoryType: 'weight',
+        minimumThreshold: 5,
         createdAt: mockTimestamp,
         updatedAt: mockTimestamp,
       };
@@ -56,6 +64,10 @@ describe('CategoryGroup Types', () => {
         name: 'Required Name',
         description: 'Required Description',
         color: '#FF5722',
+        currentInventory: 25,
+        inventoryUnit: 'g',
+        inventoryType: 'weight',
+        minimumThreshold: 2,
         createdAt: mockTimestamp,
         updatedAt: mockTimestamp,
       };
@@ -74,6 +86,10 @@ describe('CategoryGroup Types', () => {
         name: 'New Group',
         description: 'New group for testing',
         color: '#4CAF50',
+        currentInventory: 30,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 3,
       };
 
       expect(formData.name).toBe('New Group');
@@ -86,9 +102,13 @@ describe('CategoryGroup Types', () => {
         name: 'Minimal',
         description: 'Minimal description',
         color: '#000000',
+        currentInventory: 0,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 0,
       };
 
-      expect(Object.keys(minimalFormData)).toHaveLength(3);
+      expect(Object.keys(minimalFormData)).toHaveLength(7);
       expect(minimalFormData.name).toBeTruthy();
       expect(minimalFormData.description).toBeTruthy();
       expect(minimalFormData.color).toBeTruthy();
@@ -102,6 +122,10 @@ describe('CategoryGroup Types', () => {
         name: 'Electronics',
         description: 'Electronic products',
         color: '#FF5722',
+        currentInventory: 100,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 10,
         createdAt: mockTimestamp,
         updatedAt: mockTimestamp,
         categoryCount: 15,
@@ -121,6 +145,10 @@ describe('CategoryGroup Types', () => {
         name: 'Empty Group',
         description: 'Group with no categories',
         color: '#9E9E9E',
+        currentInventory: 0,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 0,
         createdAt: mockTimestamp,
         updatedAt: mockTimestamp,
         categoryCount: 0,
@@ -217,6 +245,10 @@ describe('CategoryGroup Types', () => {
         name: 'Test Group',
         description: 'Test description',
         color: '#FF5722',
+        currentInventory: 75,
+        inventoryUnit: 'kg',
+        inventoryType: 'weight',
+        minimumThreshold: 7,
         createdAt: mockTimestamp,
         updatedAt: mockTimestamp,
       };
@@ -236,6 +268,10 @@ describe('CategoryGroup Types', () => {
         name: 'Updated Name',
         description: 'Updated description',
         color: '#4CAF50',
+        currentInventory: 20,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 2,
       };
 
       const partialUpdate: Partial<CategoryGroupFormData> = {
@@ -254,6 +290,10 @@ describe('CategoryGroup Types', () => {
         name: '',
         description: '',
         color: '',
+        currentInventory: 0,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 0,
       };
 
       expect(formData.name).toBe('');
@@ -266,6 +306,10 @@ describe('CategoryGroup Types', () => {
         name: 'Test & Special "Characters" (Group)',
         description: 'Description with special chars: @#$%^&*()[]{}|;:,.<>?',
         color: '#FF5722',
+        currentInventory: 15,
+        inventoryUnit: 'g',
+        inventoryType: 'weight',
+        minimumThreshold: 1,
       };
 
       expect(specialCharacterData.name).toContain('&');
@@ -281,6 +325,10 @@ describe('CategoryGroup Types', () => {
         name: longName,
         description: longDescription,
         color: '#FF5722',
+        currentInventory: 1000,
+        inventoryUnit: 'kg',
+        inventoryType: 'weight',
+        minimumThreshold: 100,
       };
 
       expect(longStringData.name.length).toBe(1000);

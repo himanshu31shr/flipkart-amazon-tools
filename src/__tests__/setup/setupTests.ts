@@ -31,6 +31,14 @@ jest.mock('firebase/firestore', () => ({
   where: jest.fn(),
   orderBy: jest.fn(),
   limit: jest.fn(),
+  Timestamp: {
+    now: jest.fn(() => ({ seconds: 1234567890, nanoseconds: 0 })),
+    fromDate: jest.fn((date: Date) => ({ seconds: Math.floor(date.getTime() / 1000), nanoseconds: 0 })),
+  },
+  writeBatch: jest.fn(),
+  runTransaction: jest.fn(),
+  enableIndexedDbPersistence: jest.fn(),
+  setDoc: jest.fn(),
 }));
 
 // Mock window.matchMedia

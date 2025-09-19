@@ -31,6 +31,10 @@ describe('CategoryGroupService', () => {
     name: 'Electronics',
     description: 'Electronic products',
     color: '#FF5722',
+    currentInventory: 100,
+    inventoryUnit: 'pcs',
+    inventoryType: 'qty',
+    minimumThreshold: 10,
     createdAt: { seconds: 1234567890, nanoseconds: 0 } as Timestamp,
     updatedAt: { seconds: 1234567890, nanoseconds: 0 } as Timestamp,
   };
@@ -118,6 +122,10 @@ describe('CategoryGroupService', () => {
       name: 'New Group',
       description: 'New group description',
       color: '#2196F3',
+      currentInventory: 50,
+      inventoryUnit: 'kg',
+      inventoryType: 'weight',
+      minimumThreshold: 5,
     };
 
     it('should create a new category group with valid data', async () => {
@@ -135,6 +143,10 @@ describe('CategoryGroupService', () => {
           name: validFormData.name.trim(),
           description: validFormData.description.trim(),
           color: validFormData.color,
+          currentInventory: 50, // Should match the input data
+          inventoryUnit: 'kg', // Should match the input data
+          inventoryType: 'weight', // Should match the input data
+          minimumThreshold: 5, // Should match the input data
           createdAt: mockTimestamp,
           updatedAt: mockTimestamp,
         }
@@ -142,7 +154,15 @@ describe('CategoryGroupService', () => {
     });
 
     it('should validate required fields', async () => {
-      const invalidData = { name: '', description: '', color: '' } as CategoryGroupFormData;
+      const invalidData = { 
+        name: '', 
+        description: '', 
+        color: '',
+        currentInventory: 0,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 0
+      } as CategoryGroupFormData;
       mockFirebaseService.getDocuments.mockResolvedValue([]);
 
       await expect(service.createCategoryGroup(invalidData)).rejects.toThrow('Validation failed');
@@ -286,6 +306,10 @@ describe('CategoryGroupService', () => {
         name: 'Valid Group',
         description: 'Valid description',
         color: '#2196F3',
+        currentInventory: 50,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 5,
       };
       
       mockFirebaseService.getDocuments.mockResolvedValue([]);
@@ -299,6 +323,10 @@ describe('CategoryGroupService', () => {
         name: '',
         description: '',
         color: '',
+        currentInventory: 0,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 0,
       };
       
       mockFirebaseService.getDocuments.mockResolvedValue([]);
@@ -311,6 +339,10 @@ describe('CategoryGroupService', () => {
         name: 'Test',
         description: 'Test description',
         color: 'invalid-color',
+        currentInventory: 10,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 2,
       };
       
       mockFirebaseService.getDocuments.mockResolvedValue([]);
@@ -324,6 +356,10 @@ describe('CategoryGroupService', () => {
         name: longName,
         description: 'Test description',
         color: '#2196F3',
+        currentInventory: 10,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 2,
       };
       
       mockFirebaseService.getDocuments.mockResolvedValue([]);
@@ -337,6 +373,10 @@ describe('CategoryGroupService', () => {
         name: 'Test',
         description: longDescription,
         color: '#2196F3',
+        currentInventory: 10,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 2,
       };
       
       mockFirebaseService.getDocuments.mockResolvedValue([]);
@@ -350,6 +390,10 @@ describe('CategoryGroupService', () => {
         name: 'existing group', // Case insensitive check
         description: 'Test description',
         color: '#2196F3',
+        currentInventory: 10,
+        inventoryUnit: 'pcs',
+        inventoryType: 'qty',
+        minimumThreshold: 2,
       };
       
       mockFirebaseService.getDocuments.mockResolvedValue([existingGroup]);
@@ -364,6 +408,10 @@ describe('CategoryGroupService', () => {
         name: 'Test Group',
         description: 'Test description',
         color,
+        currentInventory: 10,
+        inventoryUnit: 'pcs' as const,
+        inventoryType: 'qty' as const,
+        minimumThreshold: 2,
       });
       
       mockFirebaseService.getDocuments.mockResolvedValue([]);
@@ -379,6 +427,10 @@ describe('CategoryGroupService', () => {
         name: 'Test Group',
         description: 'Test description',
         color,
+        currentInventory: 10,
+        inventoryUnit: 'pcs' as const,
+        inventoryType: 'qty' as const,
+        minimumThreshold: 2,
       });
       
       mockFirebaseService.getDocuments.mockResolvedValue([]);
@@ -387,6 +439,102 @@ describe('CategoryGroupService', () => {
       await expect(service.createCategoryGroup(testData('#GG5722'))).rejects.toThrow('Color must be a valid hex color'); // Invalid characters
       await expect(service.createCategoryGroup(testData('#FF57'))).rejects.toThrow('Color must be a valid hex color'); // Wrong length
       await expect(service.createCategoryGroup(testData('blue'))).rejects.toThrow('Color must be a valid hex color'); // Color name
+    });
+  });
+
+  describe('getInventoryHistory', () => {
+    const mockInventoryMovements = [
+      {
+        id: 'movement-1',
+        categoryGroupId: 'group-1',
+        movementType: 'addition' as const,
+        quantity: 100,
+        unit: 'pcs' as const,
+        previousInventory: 0,
+        newInventory: 100,
+        reason: 'Initial stock',
+        createdAt: { seconds: 1234567890, nanoseconds: 0 } as any,
+        updatedAt: { seconds: 1234567890, nanoseconds: 0 } as any
+      },
+      {
+        id: 'movement-2',
+        categoryGroupId: 'group-1',
+        movementType: 'deduction' as const,
+        quantity: 25,
+        unit: 'pcs' as const,
+        previousInventory: 100,
+        newInventory: 75,
+        transactionReference: 'tx-123',
+        orderReference: 'order-456',
+        platform: 'amazon' as const,
+        createdAt: { seconds: 1234567890, nanoseconds: 0 } as any,
+        updatedAt: { seconds: 1234567890, nanoseconds: 0 } as any
+      }
+    ];
+
+    it('should fetch inventory history for a category group with default limit', async () => {
+      mockFirebaseService.getDocuments.mockResolvedValue(mockInventoryMovements);
+
+      const result = await service.getInventoryHistory('group-1');
+
+      expect(result).toEqual(mockInventoryMovements);
+      expect(mockFirebaseService.getDocuments).toHaveBeenCalledWith(
+        'inventoryMovements',
+        [
+          expect.objectContaining({
+            _type: 'where'
+          }),
+          expect.objectContaining({
+            _type: 'orderBy'
+          })
+        ]
+      );
+    });
+
+    it('should fetch inventory history with custom limit', async () => {
+      mockFirebaseService.getDocuments.mockResolvedValue(mockInventoryMovements);
+
+      const result = await service.getInventoryHistory('group-1', 1);
+
+      expect(result).toEqual(mockInventoryMovements.slice(0, 1));
+      expect(result).toHaveLength(1);
+      expect(mockFirebaseService.getDocuments).toHaveBeenCalledWith(
+        'inventoryMovements',
+        [
+          expect.objectContaining({
+            _type: 'where'
+          }),
+          expect.objectContaining({
+            _type: 'orderBy'
+          })
+        ]
+      );
+    });
+
+    it('should return empty array when no movements exist', async () => {
+      mockFirebaseService.getDocuments.mockResolvedValue([]);
+
+      const result = await service.getInventoryHistory('group-1');
+
+      expect(result).toEqual([]);
+      expect(mockFirebaseService.getDocuments).toHaveBeenCalled();
+    });
+
+    it('should handle errors gracefully', async () => {
+      const error = new Error('Firestore error');
+      mockFirebaseService.getDocuments.mockRejectedValue(error);
+
+      await expect(service.getInventoryHistory('group-1')).rejects.toThrow(
+        'Failed to retrieve inventory history: Firestore error'
+      );
+    });
+
+    it('should handle unknown errors', async () => {
+      mockFirebaseService.getDocuments.mockRejectedValue('unknown error');
+
+      await expect(service.getInventoryHistory('group-1')).rejects.toThrow(
+        'Failed to retrieve inventory history: Unknown error'
+      );
     });
   });
 });

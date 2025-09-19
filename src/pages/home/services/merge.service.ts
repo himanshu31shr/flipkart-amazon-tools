@@ -11,10 +11,12 @@ import { batchService } from "../../../services/batch.service";
 import { createBatchInfo } from "../../../utils/batchUtils";
 import { getAuth } from "firebase/auth";
 import { BatchInfo } from "../../../types/transaction.type";
+import { InventoryDeductionResult } from "../../../types/inventory";
 
 export class PDFMergerService {
   private outpdf: PDFDocument | undefined;
   private summaryText: ProductSummary[] = [];
+  private inventoryResults: InventoryDeductionResult[] = [];
 
   constructor(private products: Product[], private categories: Category[]) {
     this.products = products;
@@ -118,6 +120,12 @@ export class PDFMergerService {
       sortConfig,
       batchInfo
     );
+
+    // Process orders with inventory deduction
+    const inventoryProcessingResult = await amz.processOrdersWithInventory();
+    this.inventoryResults.push(inventoryProcessingResult.inventoryResult);
+
+    // Generate PDF pages for printing
     const pages = await amz.transform();
     for (let i = 0; i < pages.getPageIndices().length; i++) {
       const [page] = await this.outpdf.copyPages(pages, [i]);
@@ -141,6 +149,12 @@ export class PDFMergerService {
       sortConfig,
       batchInfo
     );
+
+    // Process orders with inventory deduction
+    const inventoryProcessingResult = await flipkartService.processOrdersWithInventory();
+    this.inventoryResults.push(inventoryProcessingResult.inventoryResult);
+
+    // Generate PDF pages for printing
     const pages = await flipkartService.transformPages();
     for (let i = 0; i < pages.getPageIndices().length; i++) {
       const [page] = await this.outpdf.copyPages(pages, [i]);
@@ -151,6 +165,10 @@ export class PDFMergerService {
 
   get summary(): ProductSummary[] {
     return this.summaryText;
+  }
+
+  get inventoryDeductionResults(): InventoryDeductionResult[] {
+    return this.inventoryResults;
   }
 
   /**

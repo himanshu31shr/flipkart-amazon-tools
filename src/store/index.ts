@@ -11,12 +11,14 @@ import categoriesReducer from './slices/categoriesSlice';
 import categoryGroupsReducer from './slices/categoryGroupsSlice';
 import orderAnalyticsReducer from './slices/orderAnalyticsSlice';
 import allOrdersForAnalyticsReducer from './slices/allOrdersForAnalyticsSlice';
+import inventoryReducer from './slices/inventorySlice';
+import { inventorySyncMiddleware } from './middleware/inventorySync.middleware';
 
 const persistConfig = {
   key: 'root',
   version: 1,
   storage,
-  whitelist: [], // Temporarily disable all persistence
+  whitelist: ['inventory'], // Enable inventory persistence
   blacklist: ['auth', 'pdfMerger', 'products', 'orders', 'transactions', 'orderHistory', 'orderAnalytics', 'allOrdersForAnalytics', 'categoryGroups'], // Don't persist these reducers
 };
 
@@ -31,6 +33,7 @@ const rootReducer = combineReducers({
   categoryGroups: categoryGroupsReducer,
   orderAnalytics: orderAnalyticsReducer,
   allOrdersForAnalytics: allOrdersForAnalyticsReducer,
+  inventory: inventoryReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -40,7 +43,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false, // Disable for Firebase Timestamp objects
-    }),
+    }).prepend(inventorySyncMiddleware.middleware),
 });
 
 export const persistor = persistStore(store);
