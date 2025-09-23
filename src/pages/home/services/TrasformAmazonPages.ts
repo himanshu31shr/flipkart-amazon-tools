@@ -7,8 +7,8 @@ import {
 } from "../../../utils/pdfSorting";
 import { BaseTransformer, ProductSummary, TextItem } from "./base.transformer";
 import { BatchInfo } from "../../../types/transaction.type";
-import { InventoryService } from "../../../services/inventory.service";
-import { InventoryDeductionItem, InventoryDeductionResult } from "../../../types/inventory";
+import { InventoryOrderProcessor, InventoryDeductionPreview } from "../../../services/inventoryOrderProcessor.service";
+import { InventoryDeductionResult } from "../../../types/inventory";
 
 export class AmazonPDFTransformer extends BaseTransformer {
   protected filePath: Uint8Array;
@@ -256,7 +256,7 @@ export class AmazonPDFTransformer extends BaseTransformer {
 
         // Extract the sorted productsData, ensuring we maintain all original data
         const sortedProductsData = enrichedData.map(({ ...rest }) => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+           
           const { originalIndex, categoryName, categoryId, matchedProduct, ...cleanData } = rest;
           return cleanData;
         });
@@ -317,22 +317,24 @@ export class AmazonPDFTransformer extends BaseTransformer {
   }
 
   /**
-   * Process Amazon PDF pages for inventory deduction
+   * Process Amazon PDF pages for inventory deduction with category-based quantities
    * 
    * This method extracts order information from Amazon PDF pages and performs
-   * inventory deductions through the InventoryService. It leverages the existing
-   * PDF processing logic to extract product data and maps it to inventory format.
+   * automatic inventory deductions based on category configuration through the 
+   * InventoryOrderProcessor. It leverages the existing PDF processing logic to 
+   * extract product data and applies category-based deduction rules.
    * 
    * Process:
    * 1. Process PDF pages using existing transform logic
    * 2. Extract order items from product summaries  
-   * 3. Map products to category groups for inventory deduction
-   * 4. Call InventoryService.deductInventoryFromOrder()
-   * 5. Return enhanced results with inventory status
+   * 3. Use InventoryOrderProcessor for category-based deduction calculation
+   * 4. Apply automatic deductions based on category configuration
+   * 5. Return enhanced results with inventory status and deduction details
    * 
    * @returns Promise<{ orderItems: ProductSummary[], inventoryResult: InventoryDeductionResult }>
    * 
    * Requirements Coverage:
+   * - R2: Automatic Deduction - applies category-based deduction quantities
    * - R4: Order Processing Integration - integrates Amazon PDF processing with inventory
    * - R6: Integration with Existing Architecture - leverages existing PDF processing
    */
@@ -346,7 +348,6 @@ export class AmazonPDFTransformer extends BaseTransformer {
     // Track processed pages to prevent duplication
     const processedPages = new Set<number>();
     const orderItems: ProductSummary[] = [];
-    const inventoryService = new InventoryService();
 
     // Process all even pages (0-indexed) that contain data for scraping
     for (let i = 0; i < pages.length; i++) {
@@ -371,57 +372,87 @@ export class AmazonPDFTransformer extends BaseTransformer {
         const lines = this.combineTextIntoLines(sortedItems);
         const product = this.extractProductInfo(lines);
 
-        // Find product and category information for inventory mapping
-        const skuProduct = this.products.find(p => p.sku === product.SKU);
-        const category = this.categories.find(c => c.id === skuProduct?.categoryId);
-
-        // Store enhanced product information  
-        const enhancedProduct: ProductSummary = {
-          ...product,
-          categoryId: skuProduct?.categoryId,
-          category: category?.name,
-          product: skuProduct
-        };
-
         // Only add items with valid SKU and quantity
         if (product.SKU && product.quantity && parseInt(product.quantity) > 0) {
-          orderItems.push(enhancedProduct);
+          orderItems.push(product);
         }
 
         processedPages.add(labelPageIndex);
       }
     }
 
-    // Map order items to inventory deduction format
-    const inventoryDeductionItems: InventoryDeductionItem[] = [];
+    // Use InventoryOrderProcessor for category-based automatic deduction
+    const inventoryOrderProcessor = new InventoryOrderProcessor();
+    
+    // Create order reference from batch info if available
+    const orderReference = this.batchInfo?.batchId;
+    
+    // Process orders with automatic category-based deduction
+    const result = await inventoryOrderProcessor.processOrderWithCategoryDeduction(
+      orderItems, 
+      orderReference
+    );
 
-    for (const item of orderItems) {
-      // Find the product to get category group mapping
-      const product = this.products.find(p => p.sku === item.SKU);
-      
-      if (product && product.categoryGroupId) {
-        const quantity = parseInt(item.quantity || "1");
+    return {
+      orderItems: result.orderItems,
+      inventoryResult: result.inventoryResult
+    };
+  }
+
+  /**
+   * Preview inventory deductions for Amazon PDF without actually performing them
+   * 
+   * This method extracts order information from Amazon PDF pages and calculates
+   * what inventory deductions would occur based on category configuration, but
+   * does not actually perform the deductions. Useful for validation and review.
+   * 
+   * @returns Promise<InventoryDeductionPreview> Preview of deductions that would occur
+   * 
+   * Requirements Coverage:
+   * - R6: Management Tools - provides preview capabilities for validation
+   */
+  async previewInventoryDeductions(): Promise<InventoryDeductionPreview> {
+    await this.initialize();
+    const pages = this.pdfDoc.getPages();
+    
+    // Track processed pages to prevent duplication
+    const processedPages = new Set<number>();
+    const orderItems: ProductSummary[] = [];
+
+    // Process all even pages (0-indexed) that contain data for scraping
+    for (let i = 0; i < pages.length; i++) {
+      if (i % 2 === 1) { // Even pages (0-indexed) contain data for scraping
+        const labelPageIndex = i - 1; // Odd pages contain labels
         
-        if (quantity > 0) {
-          inventoryDeductionItems.push({
-            categoryGroupId: product.categoryGroupId,
-            quantity: quantity,
-            unit: 'pcs', // Default to pieces for Amazon orders
-            productSku: item.SKU || '',
-            orderReference: item.orderId,
-            transactionReference: item.batchInfo?.batchId,
-            platform: 'amazon'
-          });
+        // Validate that we haven't processed this label page yet
+        if (processedPages.has(labelPageIndex)) {
+          continue;
         }
+
+        // Validate that the label page exists
+        if (labelPageIndex < 0 || labelPageIndex >= pages.length) {
+          continue;
+        }
+
+        const page = await this.pdf.getPage(i + 1);
+        const textContent = await page.getTextContent();
+        const items = textContent.items as TextItem[];
+
+        const sortedItems = this.sortTextItems(items);
+        const lines = this.combineTextIntoLines(sortedItems);
+        const product = this.extractProductInfo(lines);
+
+        // Only add items with valid SKU and quantity
+        if (product.SKU && product.quantity && parseInt(product.quantity) > 0) {
+          orderItems.push(product);
+        }
+
+        processedPages.add(labelPageIndex);
       }
     }
 
-    // Perform inventory deduction
-    const inventoryResult = await inventoryService.deductInventoryFromOrder(inventoryDeductionItems);
-
-    return {
-      orderItems,
-      inventoryResult
-    };
+    // Use InventoryOrderProcessor to preview deductions
+    const inventoryOrderProcessor = new InventoryOrderProcessor();
+    return await inventoryOrderProcessor.previewCategoryDeductions(orderItems);
   }
 }

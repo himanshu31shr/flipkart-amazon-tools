@@ -6,3 +6,4 @@ export { default as InventoryAlertsPanel } from './InventoryAlertsPanel';
 export { default as QuickActionsPanel } from './QuickActionsPanel';
 export { default as InventoryShortcutsWidget } from './InventoryShortcutsWidget';
 export { default as BulkActionsToolbar } from './BulkActionsToolbar';
+export { default as InventoryDeductionOverview } from './InventoryDeductionOverview';

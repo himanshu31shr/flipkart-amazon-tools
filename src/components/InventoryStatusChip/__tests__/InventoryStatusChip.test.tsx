@@ -23,29 +23,29 @@ describe('InventoryStatusChip', () => {
       
       expect(screen.getByText('Healthy')).toBeInTheDocument();
       expect(screen.getByLabelText('Inventory status: Healthy')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('renders with low_stock status', () => {
       renderWithTheme(<InventoryStatusChip status="low_stock" />);
       
       expect(screen.getByText('Low Stock')).toBeInTheDocument();
       expect(screen.getByLabelText('Inventory status: Low Stock')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('renders with zero_stock status', () => {
       renderWithTheme(<InventoryStatusChip status="zero_stock" />);
       
       expect(screen.getByText('Out of Stock')).toBeInTheDocument();
       expect(screen.getByLabelText('Inventory status: Out of Stock')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('renders with negative_stock status', () => {
       renderWithTheme(<InventoryStatusChip status="negative_stock" />);
       
       expect(screen.getByText('Negative Stock')).toBeInTheDocument();
       expect(screen.getByLabelText('Inventory status: Negative Stock')).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Size Variants', () => {
     it('renders with small size', () => {
@@ -53,22 +53,22 @@ describe('InventoryStatusChip', () => {
       
       const chip = screen.getByLabelText('Inventory status: Healthy');
       expect(chip).toHaveClass('MuiChip-sizeSmall');
-    });
+    }) as any;
 
     it('renders with medium size (default)', () => {
       renderWithTheme(<InventoryStatusChip status="healthy" size="medium" />);
       
       const chip = screen.getByLabelText('Inventory status: Healthy');
       expect(chip).toHaveClass('MuiChip-sizeMedium');
-    });
+    }) as any;
 
     it('defaults to medium size when not specified', () => {
       renderWithTheme(<InventoryStatusChip status="healthy" />);
       
       const chip = screen.getByLabelText('Inventory status: Healthy');
       expect(chip).toHaveClass('MuiChip-sizeMedium');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Visual Variants', () => {
     it('renders with filled variant (default)', () => {
@@ -76,15 +76,15 @@ describe('InventoryStatusChip', () => {
       
       const chip = screen.getByLabelText('Inventory status: Healthy');
       expect(chip).toHaveClass('MuiChip-filled');
-    });
+    }) as any;
 
     it('renders with outlined variant', () => {
       renderWithTheme(<InventoryStatusChip status="healthy" variant="outlined" />);
       
       const chip = screen.getByLabelText('Inventory status: Healthy');
       expect(chip).toHaveClass('MuiChip-outlined');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Icon Display', () => {
     it('does not show icon by default', () => {
@@ -93,7 +93,7 @@ describe('InventoryStatusChip', () => {
       const chip = screen.getByLabelText('Inventory status: Healthy');
       const icon = chip.querySelector('.MuiChip-icon');
       expect(icon).toBeNull();
-    });
+    }) as any;
 
     it('shows icon when showIcon is true', () => {
       renderWithTheme(<InventoryStatusChip status="healthy" showIcon />);
@@ -101,7 +101,7 @@ describe('InventoryStatusChip', () => {
       const chip = screen.getByLabelText('Inventory status: Healthy');
       const icon = chip.querySelector('.MuiChip-icon');
       expect(icon).toBeInTheDocument();
-    });
+    }) as any;
 
     it('shows correct icons for each status', () => {
       const statuses: InventoryStatus[] = ['healthy', 'low_stock', 'zero_stock', 'negative_stock'];
@@ -121,9 +121,9 @@ describe('InventoryStatusChip', () => {
         expect(icon).toBeInTheDocument();
         
         unmount();
-      });
-    });
-  });
+      }) as any;
+    }) as any;
+  }) as any;
 
   describe('Tooltip Functionality', () => {
     it('does not show tooltip by default', () => {
@@ -131,7 +131,7 @@ describe('InventoryStatusChip', () => {
       
       // Tooltip should not be present in DOM initially
       expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('shows auto-generated tooltip when tooltip is true', async () => {
       const user = userEvent.setup();
@@ -141,7 +141,7 @@ describe('InventoryStatusChip', () => {
       await user.hover(chip);
       
       expect(await screen.findByRole('tooltip')).toHaveTextContent('Inventory levels are adequate');
-    });
+    }) as any;
 
     it('shows custom tooltip text', async () => {
       const user = userEvent.setup();
@@ -154,7 +154,7 @@ describe('InventoryStatusChip', () => {
       await user.hover(chip);
       
       expect(await screen.findByRole('tooltip')).toHaveTextContent(customTooltip);
-    });
+    }) as any;
 
     it('shows correct auto-generated tooltips for each status', async () => {
       const user = userEvent.setup();
@@ -177,8 +177,8 @@ describe('InventoryStatusChip', () => {
         
         unmount();
       }
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Interactive Functionality', () => {
     it('handles click events', async () => {
@@ -193,7 +193,7 @@ describe('InventoryStatusChip', () => {
       await user.click(chip);
       
       expect(handleClick).toHaveBeenCalledTimes(1);
-    });
+    }) as any;
 
     it('handles keyboard navigation (Enter key)', () => {
       const handleClick = jest.fn();
@@ -203,10 +203,10 @@ describe('InventoryStatusChip', () => {
       );
       
       const chip = screen.getByLabelText('Inventory status: Healthy');
-      fireEvent.keyDown(chip, { key: 'Enter' });
+      fireEvent.keyDown(chip, { key: 'Enter' }) as any;
       
       expect(handleClick).toHaveBeenCalled();
-    });
+    }) as any;
 
     it('handles keyboard navigation (Space key)', () => {
       const handleClick = jest.fn();
@@ -216,10 +216,10 @@ describe('InventoryStatusChip', () => {
       );
       
       const chip = screen.getByLabelText('Inventory status: Healthy');
-      fireEvent.keyDown(chip, { key: ' ' });
+      fireEvent.keyDown(chip, { key: ' ' }) as any;
       
       expect(handleClick).toHaveBeenCalledTimes(1);
-    });
+    }) as any;
 
     it('does not handle other keys', () => {
       const handleClick = jest.fn();
@@ -229,10 +229,10 @@ describe('InventoryStatusChip', () => {
       );
       
       const chip = screen.getByLabelText('Inventory status: Healthy');
-      fireEvent.keyDown(chip, { key: 'Escape' });
+      fireEvent.keyDown(chip, { key: 'Escape' }) as any;
       
       expect(handleClick).not.toHaveBeenCalled();
-    });
+    }) as any;
 
     it('sets proper accessibility attributes for interactive chips', () => {
       renderWithTheme(
@@ -242,7 +242,7 @@ describe('InventoryStatusChip', () => {
       const chip = screen.getByLabelText('Inventory status: Healthy');
       expect(chip).toHaveAttribute('role', 'button');
       expect(chip).toHaveAttribute('tabIndex', '0');
-    });
+    }) as any;
 
     it('does not set interactive attributes for non-interactive chips', () => {
       renderWithTheme(<InventoryStatusChip status="healthy" />);
@@ -250,8 +250,8 @@ describe('InventoryStatusChip', () => {
       const chip = screen.getByLabelText('Inventory status: Healthy');
       expect(chip).not.toHaveAttribute('role', 'button');
       expect(chip).not.toHaveAttribute('tabIndex', '0');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Custom Styling', () => {
     it('applies custom className', () => {
@@ -262,7 +262,7 @@ describe('InventoryStatusChip', () => {
       
       const chip = screen.getByLabelText('Inventory status: Healthy');
       expect(chip).toHaveClass(customClass);
-    });
+    }) as any;
 
     it('applies correct color classes for different statuses', () => {
       const { unmount: unmount1 } = renderWithTheme(
@@ -287,8 +287,8 @@ describe('InventoryStatusChip', () => {
       renderWithTheme(<InventoryStatusChip status="negative_stock" />);
       const negativeChip = screen.getByLabelText('Inventory status: Negative Stock');
       expect(negativeChip).not.toHaveClass('MuiChip-colorError');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Accessibility', () => {
     it('has proper ARIA labels for all statuses', () => {
@@ -308,8 +308,8 @@ describe('InventoryStatusChip', () => {
         expect(screen.getByLabelText(expectedLabels[index])).toBeInTheDocument();
         
         unmount();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('is keyboard accessible when interactive', () => {
       renderWithTheme(
@@ -322,15 +322,15 @@ describe('InventoryStatusChip', () => {
       // Should be focusable
       chip.focus();
       expect(document.activeElement).toBe(chip);
-    });
+    }) as any;
 
     it('is not focusable when not interactive', () => {
       renderWithTheme(<InventoryStatusChip status="healthy" />);
       
       const chip = screen.getByLabelText('Inventory status: Healthy');
       expect(chip).not.toHaveAttribute('tabIndex', '0');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Edge Cases', () => {
     it('handles all status types without errors', () => {
@@ -340,8 +340,8 @@ describe('InventoryStatusChip', () => {
         expect(() => {
           renderWithTheme(<InventoryStatusChip status={status} />);
         }).not.toThrow();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('works with all combinations of props', () => {
       expect(() => {
@@ -357,6 +357,6 @@ describe('InventoryStatusChip', () => {
           />
         );
       }).not.toThrow();
-    });
-  });
-});
+    }) as any;
+  }) as any;
+}) as any;

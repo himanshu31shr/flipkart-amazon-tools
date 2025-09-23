@@ -145,7 +145,7 @@ const SimpleTestComponent: React.FC<{ onMount?: () => void; onUnmount?: () => vo
 
 // Test helper to create Redux store
 const createTestStore = (): Store => {
-  return configureStore({
+  return configureStore({ 
     reducer: {
       inventory: inventoryReducer,
       categories: categoriesReducer,
@@ -155,7 +155,7 @@ const createTestStore = (): Store => {
       getDefaultMiddleware({
         serializableCheck: false, // Disable for testing
       }),
-  });
+  }) as any;
 };
 
 // Test helper to render component with store
@@ -216,11 +216,11 @@ describe('Memory Leak Detection Test Suite', () => {
       deductions: [],
       warnings: [],
       errors: [],
-    });
+    }) as any;
 
     mockAlertingService.getInventoryAlerts.mockResolvedValue([]);
     mockCategoryGroupService.getCategoryGroups.mockResolvedValue([]);
-  });
+  }) as any;
 
   afterEach(() => {
     cleanup();
@@ -231,7 +231,7 @@ describe('Memory Leak Detection Test Suite', () => {
     
     // Force final garbage collection
     memoryMonitor.forceGarbageCollection();
-  });
+  }) as any;
 
   describe('Component Lifecycle Memory Management', () => {
     it('should properly clean up simple test components on unmount', async () => {
@@ -255,19 +255,19 @@ describe('Memory Leak Detection Test Suite', () => {
       // Simulate component usage
       await act(async () => {
         await new Promise(resolve => setTimeout(resolve, 100));
-      });
+      }) as any;
 
       memoryMonitor.takeSnapshot('component-used');
 
       // Unmount component
       act(() => {
         unmount();
-      });
+      }) as any;
 
       // Allow cleanup to complete
       await act(async () => {
         await new Promise(resolve => setTimeout(resolve, 50));
-      });
+      }) as any;
 
       expect(mountCallbacks).toBe(1);
       expect(unmountCallbacks).toBe(1);
@@ -281,7 +281,7 @@ describe('Memory Leak Detection Test Suite', () => {
       expect(result.memoryIncreaseKB).toBeLessThan(2000); // Less than 2MB increase
 
       console.log(`✓ Simple component cleanup: ${result.details}`);
-    });
+    }) as any;
 
     it('should handle rapid component mount/unmount cycles without memory accumulation', async () => {
       memoryMonitor.takeSnapshot('cycle-initial');
@@ -301,17 +301,17 @@ describe('Memory Leak Detection Test Suite', () => {
         // Brief usage
         await act(async () => {
           await new Promise(resolve => setTimeout(resolve, 10));
-        });
+        }) as any;
 
         // Unmount
         act(() => {
           unmount();
-        });
+        }) as any;
 
         // Allow cleanup
         await act(async () => {
           await new Promise(resolve => setTimeout(resolve, 5));
-        });
+        }) as any;
 
         // Periodic garbage collection
         if (i % 5 === 0) {
@@ -332,8 +332,8 @@ describe('Memory Leak Detection Test Suite', () => {
       expect(result.memoryIncreaseKB).toBeLessThan(1000); // Less than 1MB for 20 cycles
 
       console.log(`✓ Rapid mount/unmount cycles (${mountCycles}x): ${result.details}`);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Redux State Management Memory Monitoring', () => {
     it('should not leak memory during multiple Redux dispatches', async () => {
@@ -353,29 +353,29 @@ describe('Memory Leak Detection Test Suite', () => {
           store.dispatch({ 
             type: 'inventory/setSelectedInventoryLevel', 
             payload: `level-${i}` 
-          });
+          }) as any;
           store.dispatch({ 
             type: 'inventory/setSelectedInventoryLevel', 
             payload: null 
-          });
+          }) as any;
           
           // Periodic memory monitoring
           if (i % 50 === 0) {
             memoryMonitor.takeSnapshot(`redux-action-${i}`);
           }
         }
-      });
+      }) as any;
 
       memoryMonitor.takeSnapshot('redux-actions-complete');
 
       // Clean up component
       act(() => {
         unmount();
-      });
+      }) as any;
 
       await act(async () => {
         await new Promise(resolve => setTimeout(resolve, 50));
-      });
+      }) as any;
 
       memoryMonitor.forceGarbageCollection();
       memoryMonitor.takeSnapshot('redux-cleanup');
@@ -386,7 +386,7 @@ describe('Memory Leak Detection Test Suite', () => {
       expect(result.memoryIncreaseKB).toBeLessThan(3000); // Less than 3MB for 200 actions
 
       console.log(`✓ Redux state management (${actionCount} actions): ${result.details}`);
-    });
+    }) as any;
 
     it('should handle large state objects without memory leaks', async () => {
       memoryMonitor.takeSnapshot('large-state-initial');
@@ -413,10 +413,10 @@ describe('Memory Leak Detection Test Suite', () => {
         store.dispatch({
           type: 'inventory/fetchInventoryLevels/fulfilled',
           payload: largeInventoryLevels,
-        });
+        }) as any;
 
         await new Promise(resolve => setTimeout(resolve, 100));
-      });
+      }) as any;
 
       memoryMonitor.takeSnapshot('large-state-loaded');
 
@@ -425,21 +425,21 @@ describe('Memory Leak Detection Test Suite', () => {
         store.dispatch({
           type: 'inventory/fetchInventoryLevels/fulfilled',
           payload: [],
-        });
+        }) as any;
 
         await new Promise(resolve => setTimeout(resolve, 50));
-      });
+      }) as any;
 
       memoryMonitor.takeSnapshot('large-state-cleared');
 
       // Clean up component
       act(() => {
         unmount();
-      });
+      }) as any;
 
       await act(async () => {
         await new Promise(resolve => setTimeout(resolve, 50));
-      });
+      }) as any;
 
       memoryMonitor.forceGarbageCollection();
       memoryMonitor.takeSnapshot('large-state-cleanup');
@@ -450,8 +450,8 @@ describe('Memory Leak Detection Test Suite', () => {
       expect(result.memoryIncreaseKB).toBeLessThan(3000); // Less than 3MB for large dataset
 
       console.log(`✓ Large state management (1000 items): ${result.details}`);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Service Subscription Disposal', () => {
     it('should properly dispose InventoryService subscriptions and cleanup resources', async () => {
@@ -503,7 +503,7 @@ describe('Memory Leak Detection Test Suite', () => {
       expect(result.memoryIncreaseKB).toBeLessThan(1500); // Less than 1.5MB for service operations
 
       console.log(`✓ InventoryService cleanup (${operations} operations): ${result.details}`);
-    });
+    }) as any;
 
     it('should properly dispose AlertingService with interval cleanup', async () => {
       memoryMonitor.takeSnapshot('alerting-service-initial');
@@ -516,7 +516,7 @@ describe('Memory Leak Detection Test Suite', () => {
       await act(async () => {
         // Let the service run for a bit to simulate real usage
         await new Promise(resolve => setTimeout(resolve, 200));
-      });
+      }) as any;
 
       memoryMonitor.takeSnapshot('alerting-service-used');
 
@@ -535,7 +535,7 @@ describe('Memory Leak Detection Test Suite', () => {
       expect(result.memoryIncreaseKB).toBeLessThan(1000); // Less than 1MB for alerting service
 
       console.log(`✓ AlertingService cleanup with intervals: ${result.details}`);
-    });
+    }) as any;
 
     it('should handle service instance creation and destruction cycles', async () => {
       memoryMonitor.takeSnapshot('service-cycle-initial');
@@ -576,8 +576,8 @@ describe('Memory Leak Detection Test Suite', () => {
       expect(result.memoryIncreaseKB).toBeLessThan(2000); // Less than 2MB for 20 cycles
 
       console.log(`✓ Service lifecycle cycles (${cycles}x): ${result.details}`);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Real-time Connection Cleanup', () => {
     it('should clean up simulated WebSocket connections for real-time inventory alerts', async () => {
@@ -656,7 +656,7 @@ describe('Memory Leak Detection Test Suite', () => {
       expect(result.memoryIncreaseKB).toBeLessThan(500); // Less than 500KB for WebSocket simulation
 
       console.log(`✓ WebSocket connection cleanup (${connectionCount} connections): ${result.details}`);
-    });
+    }) as any;
 
     it('should handle event listener cleanup for inventory monitoring', async () => {
       memoryMonitor.takeSnapshot('event-listener-initial');
@@ -674,7 +674,7 @@ describe('Memory Leak Detection Test Suite', () => {
         const cleanup = () => {
           element.removeEventListener(event, listener);
         };
-        eventListeners.push({ element, event, listener, cleanup });
+        eventListeners.push({ element, event, listener, cleanup }) as any;
         return cleanup;
       };
 
@@ -690,9 +690,9 @@ describe('Memory Leak Detection Test Suite', () => {
         const element = mockElements[i];
         
         // Add multiple listeners per element
-        addEventListenerWithCleanup(element, 'inventoryUpdate', () => {});
-        addEventListenerWithCleanup(element, 'thresholdAlert', () => {});
-        addEventListenerWithCleanup(element, 'stockChange', () => {});
+        addEventListenerWithCleanup(element, 'inventoryUpdate', () => {}) as any;
+        addEventListenerWithCleanup(element, 'thresholdAlert', () => {}) as any;
+        addEventListenerWithCleanup(element, 'stockChange', () => {}) as any;
         
         if (i % 10 === 0) {
           memoryMonitor.takeSnapshot(`event-listener-${i}`);
@@ -725,8 +725,8 @@ describe('Memory Leak Detection Test Suite', () => {
       expect(result.memoryIncreaseKB).toBeLessThan(1000); // Less than 1MB for event listeners
 
       console.log(`✓ Event listener cleanup (${eventListeners.length} listeners): ${result.details}`);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Long-running Operation Memory Efficiency', () => {
     it('should maintain memory efficiency during extended inventory processing', async () => {
@@ -787,7 +787,7 @@ describe('Memory Leak Detection Test Suite', () => {
       expect(result.memoryIncreaseKB).toBeLessThan(4000); // Less than 4MB for extended processing
 
       console.log(`✓ Long-running operations (${processingRounds} rounds, ${processingRounds * itemsPerRound} items): ${result.details}`);
-    });
+    }) as any;
 
     it('should handle memory efficiently during bulk data operations', async () => {
       memoryMonitor.takeSnapshot('bulk-data-initial');
@@ -819,7 +819,7 @@ describe('Memory Leak Detection Test Suite', () => {
           store.dispatch({
             type: 'inventory/fetchInventoryLevels/fulfilled',
             payload: inventoryData,
-          });
+          }) as any;
 
           // Process the data
           await new Promise(resolve => setTimeout(resolve, 10));
@@ -828,8 +828,8 @@ describe('Memory Leak Detection Test Suite', () => {
           store.dispatch({
             type: 'inventory/fetchInventoryLevels/fulfilled',
             payload: [],
-          });
-        });
+          }) as any;
+        }) as any;
 
         // Periodic memory monitoring
         if (operation % 5 === 0) {
@@ -846,11 +846,11 @@ describe('Memory Leak Detection Test Suite', () => {
       // Clean up component
       act(() => {
         unmount();
-      });
+      }) as any;
 
       await act(async () => {
         await new Promise(resolve => setTimeout(resolve, 50));
-      });
+      }) as any;
 
       memoryMonitor.forceGarbageCollection();
       memoryMonitor.takeSnapshot('bulk-data-cleanup');
@@ -861,8 +861,8 @@ describe('Memory Leak Detection Test Suite', () => {
       expect(result.memoryIncreaseKB).toBeLessThan(5000); // Less than 5MB for bulk operations
 
       console.log(`✓ Bulk data operations (${bulkOperations} operations, ${bulkOperations * itemsPerOperation} items): ${result.details}`);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Memory Leak Regression Prevention', () => {
     it('should maintain consistent memory usage across multiple test scenarios', async () => {
@@ -876,8 +876,8 @@ describe('Memory Leak Detection Test Suite', () => {
             const { unmount } = renderWithStore(<SimpleTestComponent />);
             await act(async () => {
               await new Promise(resolve => setTimeout(resolve, 50));
-            });
-            act(() => { unmount(); });
+            }) as any;
+            act(() => { unmount(); }) as any;
           },
         },
         {
@@ -889,13 +889,13 @@ describe('Memory Leak Detection Test Suite', () => {
                 store.dispatch({ 
                   type: 'inventory/setSelectedInventoryLevel', 
                   payload: `test-${i}` 
-                });
+                }) as any;
                 store.dispatch({ 
                   type: 'inventory/setSelectedInventoryLevel', 
                   payload: null 
-                });
+                }) as any;
               }
-            });
+            }) as any;
           },
         },
         {
@@ -946,7 +946,7 @@ describe('Memory Leak Detection Test Suite', () => {
       expect(result.memoryIncreaseKB).toBeLessThan(6000); // Less than 6MB for comprehensive scenarios
 
       console.log(`✓ Memory leak regression prevention (${scenarios.length} scenarios x 3 cycles): ${result.details}`);
-    });
+    }) as any;
 
     it('should demonstrate memory stability under stress conditions', async () => {
       memoryMonitor.takeSnapshot('stress-initial');
@@ -959,7 +959,7 @@ describe('Memory Leak Detection Test Suite', () => {
         // Rapid component mount/unmount
         if (i % 5 === 0) {
           const { unmount } = renderWithStore(<SimpleTestComponent />);
-          act(() => { unmount(); });
+          act(() => { unmount(); }) as any;
         }
 
         // Rapid Redux operations
@@ -969,8 +969,8 @@ describe('Memory Leak Detection Test Suite', () => {
             store.dispatch({ 
               type: 'inventory/setSelectedInventoryLevel', 
               payload: `stress-${i}` 
-            });
-          });
+            }) as any;
+          }) as any;
         }
 
         // Service operations
@@ -1003,5 +1003,5 @@ describe('Memory Leak Detection Test Suite', () => {
 
       console.log(`✓ Stress test stability (${stressOperations} operations): ${result.details}`);
     }, 30000); // Extended timeout for stress test
-  });
-});
+  }) as any;
+}) as any;

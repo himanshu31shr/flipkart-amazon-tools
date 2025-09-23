@@ -63,8 +63,9 @@ describe('Inventory Slice Enhancements', () => {
       categoryId: 'cat1',
       categoryGroupId: 'cg1',
       description: 'Test product 1',
-      costPrice: 10,
-      sellingPrice: 15
+      visibility: 'visible',
+      sellingPrice: 15,
+      metadata: {}
     },
     {
       sku: 'PROD2',
@@ -73,8 +74,9 @@ describe('Inventory Slice Enhancements', () => {
       categoryId: 'cat2',
       categoryGroupId: 'cg2',
       description: 'Test product 2',
-      costPrice: 20,
-      sellingPrice: 30
+      visibility: 'visible',
+      sellingPrice: 30,
+      metadata: {}
     },
     {
       sku: 'PROD3',
@@ -83,8 +85,9 @@ describe('Inventory Slice Enhancements', () => {
       categoryId: 'cat3',
       categoryGroupId: 'cg3',
       description: 'Test product 3',
-      costPrice: 15,
-      sellingPrice: 25
+      visibility: 'visible',
+      sellingPrice: 25,
+      metadata: {}
     }
   ];
 
@@ -131,7 +134,7 @@ describe('Inventory Slice Enhancements', () => {
     let store: ReturnType<typeof configureStore>;
 
     beforeEach(() => {
-      store = configureStore({
+      store = configureStore({ 
         reducer: {
           products: productsReducer
         },
@@ -166,7 +169,7 @@ describe('Inventory Slice Enhancements', () => {
     it('should update inventory levels mapping correctly', () => {
       store.dispatch(updateInventoryLevelsMapping(mockInventoryLevels));
       
-      const state = store.getState();
+      const state = store.getState() as { products: any };
       const inventoryLevels = selectProductInventoryLevels(state);
       
       expect(Object.keys(inventoryLevels)).toHaveLength(3);
@@ -178,7 +181,7 @@ describe('Inventory Slice Enhancements', () => {
     it('should update product inventory status based on category group mapping', () => {
       store.dispatch(updateInventoryLevelsMapping(mockInventoryLevels));
       
-      const state = store.getState();
+      const state = store.getState() as any;
       
       expect(state.products.productInventoryStatus['PROD1']).toBe('healthy');
       expect(state.products.productInventoryStatus['PROD2']).toBe('low_stock');
@@ -188,7 +191,7 @@ describe('Inventory Slice Enhancements', () => {
     it('should categorize products by inventory status', () => {
       store.dispatch(updateInventoryLevelsMapping(mockInventoryLevels));
       
-      const state = store.getState();
+      const state = store.getState() as { products: any };
       const lowStockProducts = selectLowStockProducts(state);
       const zeroStockProducts = selectZeroStockProducts(state);
       
@@ -205,7 +208,7 @@ describe('Inventory Slice Enhancements', () => {
         status: 'low_stock' 
       }));
       
-      const state = store.getState();
+      const state = store.getState() as any;
       
       expect(state.products.productInventoryStatus['PROD1']).toBe('low_stock');
     });
@@ -215,7 +218,7 @@ describe('Inventory Slice Enhancements', () => {
     let store: ReturnType<typeof configureStore>;
 
     beforeEach(() => {
-      store = configureStore({
+      store = configureStore({ 
         reducer: {
           categories: categoriesReducer
         },
@@ -235,7 +238,11 @@ describe('Inventory Slice Enhancements', () => {
             categoriesWithLowStock: [],
             categoriesWithZeroStock: [],
             categoryInventoryStatus: {},
-            categoryGroups: mockCategoryGroups
+            categoryGroups: mockCategoryGroups,
+            categoriesWithDeduction: [],
+            deductionConfiguration: {},
+            deductionLoading: false,
+            deductionError: null
           }
         },
         middleware: (getDefaultMiddleware) => 
@@ -246,7 +253,7 @@ describe('Inventory Slice Enhancements', () => {
     it('should update category group inventory levels correctly', () => {
       store.dispatch(updateCategoryInventoryLevels(mockInventoryLevels));
       
-      const state = store.getState();
+      const state = store.getState() as { categories: any };
       const inventoryLevels = selectCategoryInventoryLevels(state);
       
       expect(Object.keys(inventoryLevels)).toHaveLength(3);
@@ -258,7 +265,7 @@ describe('Inventory Slice Enhancements', () => {
     it('should update category inventory status based on related groups', () => {
       store.dispatch(updateCategoryInventoryLevels(mockInventoryLevels));
       
-      const state = store.getState();
+      const state = store.getState() as any;
       
       expect(state.categories.categoryInventoryStatus['cat1']).toBe('healthy');
       expect(state.categories.categoryInventoryStatus['cat2']).toBe('low_stock');
@@ -268,7 +275,7 @@ describe('Inventory Slice Enhancements', () => {
     it('should categorize categories by inventory status', () => {
       store.dispatch(updateCategoryInventoryLevels(mockInventoryLevels));
       
-      const state = store.getState();
+      const state = store.getState() as { categories: any };
       const lowStockCategories = selectCategoriesWithLowStock(state);
       const zeroStockCategories = selectCategoriesWithZeroStock(state);
       
@@ -282,13 +289,32 @@ describe('Inventory Slice Enhancements', () => {
 
     const mockTransaction: Transaction = {
       id: 'txn1',
-      orderNumber: 'ORDER1',
+      transactionId: 'ORDER1',
       platform: 'amazon',
-      customerName: 'John Doe',
-      items: [],
-      totalAmount: 100,
-      createdAt: '2025-09-16T10:00:00.000Z',
-      status: 'completed'
+      orderDate: '2025-09-16',
+      sku: 'SKU123',
+      quantity: 1,
+      sellingPrice: 100,
+      expenses: {
+        shippingFee: 5,
+        marketplaceFee: 10,
+        otherFees: 2
+      },
+      product: {
+        sku: 'SKU123',
+        name: 'Test Product',
+        description: 'Test product description',
+        categoryId: 'cat1',
+        platform: 'amazon',
+        visibility: 'visible',
+        sellingPrice: 100,
+        metadata: {}
+      },
+      metadata: {
+        createdAt: '2025-09-16T10:00:00.000Z',
+        updatedAt: '2025-09-16T10:00:00.000Z'
+      },
+      hash: 'testhash123'
     };
 
     const mockInventoryDeductionResult: InventoryDeductionResult = {
@@ -306,7 +332,7 @@ describe('Inventory Slice Enhancements', () => {
     };
 
     beforeEach(() => {
-      store = configureStore({
+      store = configureStore({ 
         reducer: {
           transactions: transactionsReducer
         },
@@ -338,7 +364,7 @@ describe('Inventory Slice Enhancements', () => {
         deductionResult: mockInventoryDeductionResult
       }));
       
-      const state = store.getState();
+      const state = store.getState() as { transactions: any };
       const impacts = selectTransactionInventoryImpacts(state);
       
       expect(impacts['txn1']).toEqual(mockInventoryDeductionResult);
@@ -350,7 +376,7 @@ describe('Inventory Slice Enhancements', () => {
         deductionResult: mockInventoryDeductionResult
       }));
       
-      const state = store.getState();
+      const state = store.getState() as { transactions: any };
       const transactionWithImpact = selectTransactionWithInventoryImpact(state, 'txn1');
       
       expect(transactionWithImpact).toBeTruthy();
@@ -365,7 +391,7 @@ describe('Inventory Slice Enhancements', () => {
         payload: { transactionId: 'txn1', isProcessing: true }
       });
       
-      const state = store.getState();
+      const state = store.getState() as { transactions: any };
       const transactionWithImpact = selectTransactionWithInventoryImpact(state, 'txn1');
       
       expect(transactionWithImpact?.isProcessingInventory).toBe(true);
@@ -379,7 +405,7 @@ describe('Inventory Slice Enhancements', () => {
         payload: { transactionId: 'txn1', error: errorMessage }
       });
       
-      const state = store.getState();
+      const state = store.getState() as { transactions: any };
       const transactionWithImpact = selectTransactionWithInventoryImpact(state, 'txn1');
       
       expect(transactionWithImpact?.inventoryError).toBe(errorMessage);
@@ -391,7 +417,7 @@ describe('Inventory Slice Enhancements', () => {
     let store: ReturnType<typeof configureStore>;
 
     beforeEach(() => {
-      store = configureStore({
+      store = configureStore({ 
         reducer: {
           products: productsReducer,
           categories: categoriesReducer,
@@ -434,7 +460,11 @@ describe('Inventory Slice Enhancements', () => {
             categoriesWithLowStock: [],
             categoriesWithZeroStock: [],
             categoryInventoryStatus: {},
-            categoryGroups: mockCategoryGroups
+            categoryGroups: mockCategoryGroups,
+            categoriesWithDeduction: [],
+            deductionConfiguration: {},
+            deductionLoading: false,
+            deductionError: null
           },
           transactions: {
             items: [],
@@ -462,7 +492,7 @@ describe('Inventory Slice Enhancements', () => {
       store.dispatch(updateInventoryLevelsMapping(mockInventoryLevels));
       store.dispatch(updateCategoryInventoryLevels(mockInventoryLevels));
       
-      const state = store.getState();
+      const state = store.getState() as { products: any; categories: any };
       const productInventoryLevels = selectProductInventoryLevels(state);
       const categoryInventoryLevels = selectCategoryInventoryLevels(state);
       
@@ -480,7 +510,7 @@ describe('Inventory Slice Enhancements', () => {
       store.dispatch(updateInventoryLevelsMapping(mockInventoryLevels));
       store.dispatch(updateCategoryInventoryLevels(mockInventoryLevels));
       
-      const state = store.getState();
+      const state = store.getState() as any;
       
       // Product with category group 'cg2' should have low_stock status
       expect(state.products.productInventoryStatus['PROD2']).toBe('low_stock');

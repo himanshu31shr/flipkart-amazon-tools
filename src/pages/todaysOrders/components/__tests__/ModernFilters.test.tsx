@@ -48,14 +48,14 @@ const defaultProps = {
 describe('ModernFilters', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
+  }) as any;
 
   it('renders correctly with default props', () => {
     render(<ModernFilters {...defaultProps} />);
     
     expect(screen.getByText('100 orders')).toBeInTheDocument();
     expect(screen.getByText('Filters')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('shows filtered count when filters are applied', () => {
     render(
@@ -69,7 +69,7 @@ describe('ModernFilters', () => {
     
     expect(screen.getByText('50 of 100 orders')).toBeInTheDocument();
     expect(screen.getByText('Filtered')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('displays active filters as chips', () => {
     render(
@@ -82,7 +82,7 @@ describe('ModernFilters', () => {
     
     expect(screen.getByText('Amazon')).toBeInTheDocument();
     expect(screen.getByText('Test_File_1.pdf')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('shows clear filters button when filters are active', () => {
     render(
@@ -93,7 +93,7 @@ describe('ModernFilters', () => {
     );
     
     expect(screen.getByText('Clear')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('calls onClearAllFilters when clear button is clicked', () => {
     render(
@@ -107,7 +107,7 @@ describe('ModernFilters', () => {
     fireEvent.click(clearButton);
     
     expect(defaultProps.onClearAllFilters).toHaveBeenCalledTimes(1);
-  });
+  }) as any;
 
   it('toggles view mode correctly', () => {
     render(<ModernFilters {...defaultProps} viewMode="individual" />);
@@ -116,7 +116,7 @@ describe('ModernFilters', () => {
     fireEvent.click(categoryViewButton);
     
     expect(defaultProps.onViewModeChange).toHaveBeenCalledWith('grouped');
-  });
+  }) as any;
 
   it('expands and collapses filter details', () => {
     render(<ModernFilters {...defaultProps} />);
@@ -127,7 +127,7 @@ describe('ModernFilters', () => {
     // Check that the filter components are visible when expanded
     expect(screen.getByLabelText('platform filter')).toBeInTheDocument();
     expect(screen.getByLabelText('Filter by Batch')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('calls onFilesClick when files button is clicked', () => {
     render(<ModernFilters {...defaultProps} />);
@@ -136,7 +136,7 @@ describe('ModernFilters', () => {
     fireEvent.click(filesButton);
     
     expect(defaultProps.onFilesClick).toHaveBeenCalledTimes(1);
-  });
+  }) as any;
 
   it('truncates long batch names in chips', () => {
     const longBatchName = {
@@ -153,5 +153,5 @@ describe('ModernFilters', () => {
     );
     
     expect(screen.getByText('This_Is_A_Very_Long_...')).toBeInTheDocument();
-  });
-});
+  }) as any;
+}) as any;

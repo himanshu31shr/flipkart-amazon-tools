@@ -44,7 +44,7 @@ jest.mock('@mui/material', () => {
       />
     ))
   };
-});
+}) as any;
 
 // Mock services
 jest.mock('../../../services/pdfStorageService');
@@ -113,7 +113,7 @@ describe('StorageManagementPage Multi-User View', () => {
       totalCount: 2,
       page: 1,
       pageSize: 50
-    });
+    }) as any;
 
     (pdfStorageService.getUserDetailsForPdfs as jest.Mock).mockResolvedValue(mockUserDetails);
 
@@ -123,18 +123,18 @@ describe('StorageManagementPage Multi-User View', () => {
 
     // Mock admin access
     (roleAccessService.hasAdminAccess as jest.Mock).mockResolvedValue(true);
-  });
+  }) as any;
 
   it('should render admin toggle when user has admin access', async () => {
     await act(async () => {
       render(<StorageManagementPage />);
-    });
+    }) as any;
 
     await waitFor(() => {
       const adminToggle = screen.getByTestId('toggle-group');
       expect(adminToggle).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   it('should not render admin toggle when user lacks admin access', async () => {
     // Mock no admin access
@@ -142,30 +142,30 @@ describe('StorageManagementPage Multi-User View', () => {
 
     await act(async () => {
       render(<StorageManagementPage />);
-    });
+    }) as any;
 
     await waitFor(() => {
       const adminToggle = screen.queryByTestId('toggle-group');
       expect(adminToggle).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   it('should switch to admin view and display PDFs from all users', async () => {
     await act(async () => {
       render(<StorageManagementPage />);
-    });
+    }) as any;
 
     // Wait for initial render
     await waitFor(() => {
       const myFilesButton = screen.getAllByText(/My Files/i)[0];
       expect(myFilesButton).toBeInTheDocument();
-    });
+    }) as any;
 
     // Switch to admin view
     await act(async () => {
       const adminToggle = screen.getByTestId('toggle-button-true');
       fireEvent.click(adminToggle);
-    });
+    }) as any;
 
     // Wait for admin view to load
     await waitFor(() => {
@@ -174,14 +174,14 @@ describe('StorageManagementPage Multi-User View', () => {
       const pdf2 = screen.queryByText('document2.pdf');
       
       expect(pdf1 || pdf2).toBeTruthy();
-    });
+    }) as any;
 
     // Verify user details are displayed
     const userOne = screen.queryByText('User One');
     const userTwo = screen.queryByText('User Two');
     
     expect(userOne || userTwo).toBeTruthy();
-  });
+  }) as any;
 
   it('should handle errors when loading admin view', async () => {
     // Mock service error
@@ -189,13 +189,13 @@ describe('StorageManagementPage Multi-User View', () => {
 
     await act(async () => {
       render(<StorageManagementPage />);
-    });
+    }) as any;
 
     // Switch to admin view
     await act(async () => {
       const adminToggle = screen.getByTestId('toggle-button-true');
       fireEvent.click(adminToggle);
-    });
+    }) as any;
 
     // Wait for error to be displayed
     await waitFor(() => {
@@ -204,39 +204,39 @@ describe('StorageManagementPage Multi-User View', () => {
         alert.textContent?.match(/Load failed/i)
       );
       expect(loadFailedAlert).toBeTruthy();
-    });
-  });
+    }) as any;
+  }) as any;
 
   it('should download PDF when download button is clicked', async () => {
     // Mock window.open
     const mockOpen = jest.fn();
-    Object.defineProperty(window, 'open', { value: mockOpen });
+    Object.defineProperty(window, 'open', { value: mockOpen }) as any;
 
     await act(async () => {
       render(<StorageManagementPage />);
-    });
+    }) as any;
 
     // Switch to admin view
     await act(async () => {
       const adminToggle = screen.getByTestId('toggle-button-true');
       fireEvent.click(adminToggle);
-    });
+    }) as any;
 
     // Wait for PDFs to load
     await waitFor(() => {
       const downloadButtons = screen.getAllByTestId('DownloadIcon');
       expect(downloadButtons.length).toBeGreaterThan(0);
-    });
+    }) as any;
 
     // Click first download button
     const downloadButtons = screen.getAllByTestId('DownloadIcon');
     await act(async () => {
       fireEvent.click(downloadButtons[0].closest('button')!);
-    });
+    }) as any;
 
     // Verify download URL was opened
     expect(mockOpen).toHaveBeenCalledWith('http://example.com/pdf1', '_blank');
-  });
+  }) as any;
 
   it('should display user avatars with fallback', async () => {
     // Modify user details to test avatar fallback
@@ -252,19 +252,19 @@ describe('StorageManagementPage Multi-User View', () => {
 
     await act(async () => {
       render(<StorageManagementPage />);
-    });
+    }) as any;
 
     // Switch to admin view
     await act(async () => {
       const adminToggle = screen.getByTestId('toggle-button-true');
       fireEvent.click(adminToggle);
-    });
+    }) as any;
 
     // Wait for avatars to load
     await waitFor(() => {
       // Check that both user avatars are displayed
-      const avatars = screen.getAllByRole('img', { hidden: true });
+      const avatars = screen.getAllByRole('img', { hidden: true }) as any;
       expect(avatars.length).toBeGreaterThan(0);
-    });
-  });
-}); 
+    }) as any;
+  }) as any;
+}) as any; 

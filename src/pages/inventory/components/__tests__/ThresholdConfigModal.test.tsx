@@ -56,7 +56,7 @@ const mockInventoryLevels: InventoryLevel[] = [
 ];
 
 const createTestStore = () => {
-  return configureStore({
+  return configureStore({ 
     reducer: {
       inventory: inventorySlice,
       categoryGroups: categoryGroupsSlice,
@@ -122,10 +122,16 @@ const createTestStore = () => {
         selectedInventoryLevel: null,
         selectedMovement: null,
         selectedAlert: null,
-        lastDeductionResult: null,
+      categoryDeduction: {
+        isProcessing: false,
+        preview: null,
+        categoriesWithDeduction: [],
+        deductionConfigurationSummary: [],
+        lastProcessedOrderItems: [],
+      },        lastDeductionResult: null,
       },
     },
-  });
+  }) as any;
 };
 
 const renderThresholdConfigModal = (props = {}) => {
@@ -149,13 +155,13 @@ describe('ThresholdConfigModal', () => {
     
     expect(screen.getByText('Configure Inventory Thresholds')).toBeInTheDocument();
     expect(screen.getByText('Set minimum inventory thresholds that trigger automatic alerts when stock levels are low')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('does not render when closed', () => {
-    renderThresholdConfigModal({ open: false });
+    renderThresholdConfigModal({ open: false }) as any;
     
     expect(screen.queryByText('Configure Inventory Thresholds')).not.toBeInTheDocument();
-  });
+  }) as any;
 
   it('displays category group selection in single mode', () => {
     renderThresholdConfigModal();
@@ -163,68 +169,68 @@ describe('ThresholdConfigModal', () => {
     // Check that at least one Category Group selector exists
     expect(screen.getAllByText('Category Group *').length).toBeGreaterThan(0);
     expect(screen.getByText('Bulk Update Mode')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('switches to bulk mode when checkbox is checked', async () => {
     renderThresholdConfigModal();
     
-    const bulkModeCheckbox = screen.getByRole('checkbox', { name: 'Bulk Update Mode' });
+    const bulkModeCheckbox = screen.getByRole('checkbox', { name: 'Bulk Update Mode' }) as any;
     fireEvent.click(bulkModeCheckbox);
     
     // Just verify the text is present without wait
     expect(screen.getAllByText('Select Category Groups *').length).toBeGreaterThan(0);
-  });
+  }) as any;
 
   it('validates threshold input', async () => {
     renderThresholdConfigModal();
     
     // Enter invalid threshold (negative)
     const thresholdInput = screen.getByLabelText('New Minimum Threshold');
-    fireEvent.change(thresholdInput, { target: { value: '-5' } });
+    fireEvent.change(thresholdInput, { target: { value: '-5' } }) as any;
     fireEvent.blur(thresholdInput);
     
     await waitFor(() => {
       expect(screen.getByText('Threshold must be non-negative')).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   it('shows preview impact button', () => {
     renderThresholdConfigModal();
     
     expect(screen.getByText('Preview Impact')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('has update threshold button', () => {
     renderThresholdConfigModal();
     
     expect(screen.getByText('Update Threshold')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('calls onClose when cancel button is clicked', () => {
     const onClose = jest.fn();
-    renderThresholdConfigModal({ onClose });
+    renderThresholdConfigModal({ onClose }) as any;
     
     const cancelButton = screen.getByText('Cancel');
     fireEvent.click(cancelButton);
     
     expect(onClose).toHaveBeenCalled();
-  });
+  }) as any;
 
   it('has new minimum threshold input', () => {
     renderThresholdConfigModal();
     
     expect(screen.getByLabelText('New Minimum Threshold')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('handles bulk mode with multiple category groups', async () => {
     renderThresholdConfigModal();
     
     // Enable bulk mode
-    const bulkModeCheckbox = screen.getByRole('checkbox', { name: 'Bulk Update Mode' });
+    const bulkModeCheckbox = screen.getByRole('checkbox', { name: 'Bulk Update Mode' }) as any;
     fireEvent.click(bulkModeCheckbox);
     
     // Check if bulk mode elements are present
     expect(screen.getAllByText('Select Category Groups *').length).toBeGreaterThan(0);
     expect(screen.getByText(/Update Threshold/)).toBeInTheDocument();
-  });
-});
+  }) as any;
+}) as any;

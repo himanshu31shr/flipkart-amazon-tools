@@ -14,6 +14,7 @@ interface Category {
   inventoryType?: 'weight' | 'qty';
   inventoryUnit?: 'kg' | 'g' | 'pcs';
   unitConversionRate?: number;
+  inventoryDeductionQuantity?: number; // Quantity to deduct per product order
   createdAt?: Timestamp | Date | string; // Use more specific types
   updatedAt?: Timestamp | Date | string; // Use more specific types
 }
@@ -29,16 +30,13 @@ import {
   CircularProgress,
   Autocomplete,
   FormControl,
-  FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
   Select,
   MenuItem,
   InputLabel,
   Box,
   Typography,
   Divider,
+  Alert,
 } from '@mui/material';
 import CategoryGroupSelector from '../categoryGroups/components/CategoryGroupSelector';
 
@@ -47,9 +45,8 @@ const categorySchema = z.object({
   description: z.string().optional(),
   tag: z.string().optional(),
   categoryGroupId: z.string().optional().nullable(),
-  inventoryType: z.enum(['weight', 'qty']).optional(),
-  inventoryUnit: z.enum(['kg', 'g', 'pcs']).optional(),
-  unitConversionRate: z.number().positive().optional(),
+  inventoryUnit: z.enum(['pcs', 'kg', 'g']).optional(),
+  inventoryDeductionQuantity: z.number().min(0, 'Deduction quantity must be 0 or greater').optional(),
 });
 
 type CategoryFormData = z.infer<typeof categorySchema>;
@@ -72,6 +69,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   isSubmitting,
   existingTags,
 }) => {
+
   const {
     register,
     handleSubmit,
@@ -82,14 +80,14 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
     defaultValues: {
-      inventoryType: 'qty',
       inventoryUnit: 'pcs',
       ...defaultValues,
     },
   });
 
-  // Watch inventory type to show appropriate units
-  const inventoryType = watch('inventoryType');
+  // Watch inventory unit and deduction quantity to show appropriate labels and examples
+  const inventoryUnit = watch('inventoryUnit');
+  const inventoryDeductionQuantity = watch('inventoryDeductionQuantity');
 
   const handleFormSubmit = async (data: CategoryFormData) => {
     await onSubmit(data);
@@ -170,46 +168,18 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
             
             <Box>
               <Typography variant="h6" gutterBottom color="text.secondary">
-                Inventory Configuration
+                Category Inventory Settings
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Configure how inventory is tracked for products in this category
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Configure how inventory is managed for products in this category
               </Typography>
               
               <Stack spacing={3}>
                 <Controller
-                  name="inventoryType"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl component="fieldset">
-                      <FormLabel component="legend">Inventory Type</FormLabel>
-                      <RadioGroup
-                        row
-                        {...field}
-                        aria-labelledby="inventory-type-label"
-                      >
-                        <FormControlLabel
-                          value="qty"
-                          control={<Radio />}
-                          label="Quantity (pieces)"
-                          disabled={isSubmitting}
-                        />
-                        <FormControlLabel
-                          value="weight"
-                          control={<Radio />}
-                          label="Weight (kg/g)"
-                          disabled={isSubmitting}
-                        />
-                      </RadioGroup>
-                    </FormControl>
-                  )}
-                />
-
-                <Controller
                   name="inventoryUnit"
                   control={control}
                   render={({ field }) => (
-                    <FormControl fullWidth>
+                    <FormControl fullWidth sx={{ maxWidth: 300 }}>
                       <InputLabel>Inventory Unit</InputLabel>
                       <Select
                         {...field}
@@ -217,14 +187,9 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                         disabled={isSubmitting}
                         error={!!errors.inventoryUnit}
                       >
-                        {inventoryType === 'weight' ? (
-                          <>
-                            <MenuItem value="kg">Kilograms (kg)</MenuItem>
-                            <MenuItem value="g">Grams (g)</MenuItem>
-                          </>
-                        ) : (
-                          <MenuItem value="pcs">Pieces (pcs)</MenuItem>
-                        )}
+                        <MenuItem value="pcs">Pieces (pcs)</MenuItem>
+                        <MenuItem value="kg">Kilograms (kg)</MenuItem>
+                        <MenuItem value="g">Grams (g)</MenuItem>
                       </Select>
                       {errors.inventoryUnit && (
                         <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
@@ -235,20 +200,40 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                   )}
                 />
 
-                {inventoryType === 'weight' && (
-                  <TextField
-                    {...register('unitConversionRate', { valueAsNumber: true })}
-                    label="Unit Conversion Rate"
-                    type="number"
-                    fullWidth
-                    error={!!errors.unitConversionRate}
-                    helperText={
-                      errors.unitConversionRate?.message || 
-                      'Conversion rate to base unit (e.g., 1000 for g to kg conversion)'
-                    }
-                    disabled={isSubmitting}
-                    inputProps={{ min: 0, step: 0.01 }}
-                  />
+                <TextField
+                  {...register('inventoryDeductionQuantity', { valueAsNumber: true })}
+                  label={`Deduction Quantity per Order (${inventoryUnit || 'pcs'})`}
+                  type="number"
+                  error={!!errors.inventoryDeductionQuantity}
+                  helperText={
+                    errors.inventoryDeductionQuantity?.message || 
+                    `How much inventory to deduct from the category group when an order is placed for a product in this category`
+                  }
+                  disabled={isSubmitting}
+                  inputProps={{ 
+                    min: 0, 
+                    step: inventoryUnit === 'pcs' ? 1 : 0.01 
+                  }}
+                  sx={{ maxWidth: 400 }}
+                />
+
+                {inventoryDeductionQuantity && inventoryDeductionQuantity > 0 && (
+                  <Alert severity="success" sx={{ maxWidth: 500 }}>
+                    <Typography variant="body2">
+                      <strong>Example:</strong> When an order is placed for a product in this category, 
+                      <strong> {inventoryDeductionQuantity} {inventoryUnit || 'pcs'}</strong> will be 
+                      automatically deducted from the associated category group&apos;s inventory.
+                    </Typography>
+                  </Alert>
+                )}
+
+                {(!inventoryDeductionQuantity || inventoryDeductionQuantity === 0) && (
+                  <Alert severity="info" sx={{ maxWidth: 500 }}>
+                    <Typography variant="body2">
+                      <strong>No automatic deduction:</strong> Orders for products in this category will not 
+                      automatically reduce category group inventory. You can manually adjust inventory levels as needed.
+                    </Typography>
+                  </Alert>
                 )}
               </Stack>
             </Box>

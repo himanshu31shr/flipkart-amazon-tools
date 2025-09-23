@@ -27,6 +27,12 @@ export interface CategoriesState {
   
   // Category groups for inventory management
   categoryGroups: CategoryGroup[];
+  
+  // Deduction-related state
+  categoriesWithDeduction: string[]; // categoryIds with deduction enabled
+  deductionConfiguration: Record<string, number>; // categoryId -> deduction quantity
+  deductionLoading: boolean;
+  deductionError: string | null;
 }
 
 const initialState: CategoriesState = {
@@ -51,6 +57,12 @@ const initialState: CategoriesState = {
   
   // Category groups initial state
   categoryGroups: [],
+  
+  // Deduction-related initial state
+  categoriesWithDeduction: [],
+  deductionConfiguration: {},
+  deductionLoading: false,
+  deductionError: null,
 };
 
 const categoryService = new CategoryService();
@@ -174,6 +186,37 @@ export const deleteCategoryWithInventorySync = createAsyncThunk(
   }
 );
 
+// Deduction-related async thunks
+export const fetchCategoriesWithDeduction = createAsyncThunk(
+  'categories/fetchCategoriesWithDeduction',
+  async (_, { rejectWithValue }) => {
+    try {
+      const categories = await categoryService.getCategoriesWithInventoryDeduction();
+      return categories;
+    } catch (error: unknown) {
+      return rejectWithValue((error as Error).message || 'Failed to fetch categories with deduction');
+    }
+  }
+);
+
+export const updateCategoryDeductionQuantity = createAsyncThunk(
+  'categories/updateCategoryDeductionQuantity',
+  async ({ 
+    categoryId, 
+    quantity 
+  }: { 
+    categoryId: string; 
+    quantity: number | undefined;
+  }, { rejectWithValue }) => {
+    try {
+      await categoryService.updateInventoryDeductionQuantity(categoryId, quantity ?? null);
+      return { categoryId, quantity };
+    } catch (error: unknown) {
+      return rejectWithValue((error as Error).message || 'Failed to update category deduction quantity');
+    }
+  }
+);
+
 const categoriesSlice = createSlice({
   name: 'categories',
   initialState,
@@ -264,6 +307,45 @@ const categoriesSlice = createSlice({
     
     updateCategoryGroups: (state, action: PayloadAction<CategoryGroup[]>) => {
       state.categoryGroups = action.payload;
+    },
+    
+    // Deduction-related reducers
+    updateCategoriesWithDeduction: (state, action: PayloadAction<Category[]>) => {
+      const categoriesWithDeduction = action.payload
+        .filter(category => category.inventoryDeductionQuantity && category.inventoryDeductionQuantity > 0)
+        .map(category => category.id!)
+        .filter(Boolean);
+      
+      state.categoriesWithDeduction = categoriesWithDeduction;
+      
+      // Update deduction configuration mapping
+      const deductionConfig: Record<string, number> = {};
+      action.payload.forEach(category => {
+        if (category.id && category.inventoryDeductionQuantity && category.inventoryDeductionQuantity > 0) {
+          deductionConfig[category.id] = category.inventoryDeductionQuantity;
+        }
+      });
+      state.deductionConfiguration = deductionConfig;
+    },
+    
+    updateCategoryDeductionConfig: (state, action: PayloadAction<{categoryId: string; quantity: number | undefined}>) => {
+      const { categoryId, quantity } = action.payload;
+      
+      if (quantity && quantity > 0) {
+        // Add or update deduction configuration
+        state.deductionConfiguration[categoryId] = quantity;
+        if (!state.categoriesWithDeduction.includes(categoryId)) {
+          state.categoriesWithDeduction.push(categoryId);
+        }
+      } else {
+        // Remove deduction configuration
+        delete state.deductionConfiguration[categoryId];
+        state.categoriesWithDeduction = state.categoriesWithDeduction.filter(id => id !== categoryId);
+      }
+    },
+    
+    clearDeductionError: (state) => {
+      state.deductionError = null;
     },
   },
   extraReducers: (builder) => {
@@ -444,6 +526,63 @@ const categoriesSlice = createSlice({
     builder.addCase(deleteCategoryWithInventorySync.rejected, (state, action) => {
       state.error = action.payload as string;
     });
+    
+    // Fetch Categories With Deduction
+    builder.addCase(fetchCategoriesWithDeduction.pending, (state) => {
+      state.deductionLoading = true;
+      state.deductionError = null;
+    });
+    builder.addCase(fetchCategoriesWithDeduction.fulfilled, (state, action) => {
+      state.deductionLoading = false;
+      
+      const categoriesWithDeduction = action.payload
+        .filter(category => category.inventoryDeductionQuantity && category.inventoryDeductionQuantity > 0)
+        .map(category => category.id!)
+        .filter(Boolean);
+      
+      state.categoriesWithDeduction = categoriesWithDeduction;
+      
+      // Update deduction configuration mapping
+      const deductionConfig: Record<string, number> = {};
+      action.payload.forEach(category => {
+        if (category.id && category.inventoryDeductionQuantity && category.inventoryDeductionQuantity > 0) {
+          deductionConfig[category.id] = category.inventoryDeductionQuantity;
+        }
+      });
+      state.deductionConfiguration = deductionConfig;
+    });
+    builder.addCase(fetchCategoriesWithDeduction.rejected, (state, action) => {
+      state.deductionLoading = false;
+      state.deductionError = action.payload as string;
+    });
+    
+    // Update Category Deduction Quantity
+    builder.addCase(updateCategoryDeductionQuantity.fulfilled, (state, action) => {
+      const { categoryId, quantity } = action.payload;
+      
+      // Update the category in the items array
+      const categoryIndex = state.items.findIndex(cat => cat.id === categoryId);
+      if (categoryIndex !== -1) {
+        state.items[categoryIndex] = {
+          ...state.items[categoryIndex],
+          inventoryDeductionQuantity: quantity
+        };
+      }
+      
+      // Update deduction state
+      if (quantity && quantity > 0) {
+        state.deductionConfiguration[categoryId] = quantity;
+        if (!state.categoriesWithDeduction.includes(categoryId)) {
+          state.categoriesWithDeduction.push(categoryId);
+        }
+      } else {
+        delete state.deductionConfiguration[categoryId];
+        state.categoriesWithDeduction = state.categoriesWithDeduction.filter(id => id !== categoryId);
+      }
+    });
+    builder.addCase(updateCategoryDeductionQuantity.rejected, (state, action) => {
+      state.deductionError = action.payload as string;
+    });
   },
 });
 
@@ -454,7 +593,10 @@ export const {
   updateCategoryInventoryAlerts,
   clearInventoryError,
   clearCategoryGroupsError,
-  updateCategoryGroups
+  updateCategoryGroups,
+  updateCategoriesWithDeduction,
+  updateCategoryDeductionConfig,
+  clearDeductionError
 } = categoriesSlice.actions;
 
 // Inventory-related selectors
@@ -515,6 +657,37 @@ export const selectCategoriesByInventoryStatus = (state: { categories: Categorie
   return state.categories.items.filter(category => 
     category.id && state.categories.categoryInventoryStatus[category.id] === status
   );
+};
+
+// Deduction-related selectors
+export const selectCategoriesWithDeduction = (state: { categories: CategoriesState }) => 
+  state.categories.categoriesWithDeduction;
+
+export const selectDeductionConfiguration = (state: { categories: CategoriesState }) => 
+  state.categories.deductionConfiguration;
+
+export const selectDeductionLoading = (state: { categories: CategoriesState }) => 
+  state.categories.deductionLoading;
+
+export const selectDeductionError = (state: { categories: CategoriesState }) => 
+  state.categories.deductionError;
+
+// Helper selector to get category deduction quantity
+export const selectCategoryDeductionQuantity = (state: { categories: CategoriesState }, categoryId: string) => 
+  state.categories.deductionConfiguration[categoryId] || undefined;
+
+// Helper selector to check if category has deduction enabled
+export const selectIsCategoryDeductionEnabled = (state: { categories: CategoriesState }, categoryId: string) => 
+  state.categories.categoriesWithDeduction.includes(categoryId);
+
+// Helper selector to get categories with deduction details
+export const selectCategoriesWithDeductionDetails = (state: { categories: CategoriesState }) => {
+  return state.categories.items.filter(category => 
+    category.id && state.categories.categoriesWithDeduction.includes(category.id)
+  ).map(category => ({
+    ...category,
+    deductionQuantity: category.id ? state.categories.deductionConfiguration[category.id] : undefined
+  }));
 };
 
 export default categoriesSlice.reducer;

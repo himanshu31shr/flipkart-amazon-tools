@@ -30,6 +30,8 @@ import {
   fetchInventoryLevels,
   selectInventoryLevels,
   exportInventoryData,
+  fetchCategoriesWithDeduction,
+  // selectCategoryDeduction, // For future use
 } from '../../store/slices/inventorySlice';
 import { InventoryLevelsList } from './components/InventoryLevelsList';
 import { InventoryMovementsTable } from './components/InventoryMovementsTable';
@@ -41,6 +43,7 @@ import { InventoryLevel, InventoryStatus } from '../../types/inventory';
 export const InventoryDashboard: React.FC = () => {
   const dispatch = useAppDispatch();
   const inventoryLevels = useAppSelector(selectInventoryLevels);
+  // const categoryDeduction = useAppSelector(selectCategoryDeduction); // For future use
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
@@ -51,6 +54,7 @@ export const InventoryDashboard: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchInventoryLevels());
+    dispatch(fetchCategoriesWithDeduction());
   }, [dispatch]);
 
   const handleOpenManualAdjustment = (inventory?: InventoryLevel) => {
@@ -116,6 +120,7 @@ export const InventoryDashboard: React.FC = () => {
   const lowStockItems = inventoryLevels.filter(item => item.status === 'low_stock');
   const zeroStockItems = inventoryLevels.filter(item => item.status === 'zero_stock');
   const negativeStockItems = inventoryLevels.filter(item => item.status === 'negative_stock');
+
 
   const getStatusIcon = (status: InventoryStatus) => {
     switch (status) {
@@ -271,6 +276,7 @@ export const InventoryDashboard: React.FC = () => {
         </Grid>
       )}
 
+
       {/* Inventory Alerts */}
       {alertItems.length > 0 && (
         <Paper sx={{ 
@@ -311,6 +317,7 @@ export const InventoryDashboard: React.FC = () => {
           </Box>
         </Paper>
       )}
+
 
       {/* Tabbed Interface for Inventory Data */}
       <Paper sx={{ p: 0 }}>
@@ -364,6 +371,7 @@ export const InventoryDashboard: React.FC = () => {
             <InventoryMovementsTable />
           </Box>
         )}
+
       </Paper>
 
       {/* Manual Adjustment Modal */}

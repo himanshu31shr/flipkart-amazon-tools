@@ -30,7 +30,7 @@ describe('DateRangeFilter', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-  });
+  }) as any;
 
   it('renders date range filter with all preset buttons', () => {
     renderWithProviders(
@@ -50,7 +50,7 @@ describe('DateRangeFilter', () => {
     expect(screen.getByText('Last Month')).toBeInTheDocument();
     expect(screen.getByText('Last 3 Months')).toBeInTheDocument();
     expect(screen.getByText('Reset to Current Month')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('handles Today button click correctly', () => {
     renderWithProviders(
@@ -69,7 +69,7 @@ describe('DateRangeFilter', () => {
       startOfDay(new Date()),
       endOfDay(new Date())
     );
-  });
+  }) as any;
 
   it('handles Yesterday button click correctly', () => {
     renderWithProviders(
@@ -89,7 +89,7 @@ describe('DateRangeFilter', () => {
       startOfDay(yesterday),
       endOfDay(yesterday)
     );
-  });
+  }) as any;
 
   it('handles Month to Date button click correctly', () => {
     renderWithProviders(
@@ -107,7 +107,7 @@ describe('DateRangeFilter', () => {
     expect(mockOnDateRangeChange).toHaveBeenCalled();
     // Verify the call was made (exact dates depend on current date)
     expect(mockOnDateRangeChange).toHaveBeenCalledTimes(1);
-  });
+  }) as any;
 
   it('handles Last 30 Days button click correctly', () => {
     renderWithProviders(
@@ -125,7 +125,7 @@ describe('DateRangeFilter', () => {
     expect(mockOnDateRangeChange).toHaveBeenCalled();
     // Verify the call was made (exact dates depend on current date)
     expect(mockOnDateRangeChange).toHaveBeenCalledTimes(1);
-  });
+  }) as any;
 
   it('handles Last Month button click correctly', () => {
     renderWithProviders(
@@ -143,7 +143,7 @@ describe('DateRangeFilter', () => {
     expect(mockOnDateRangeChange).toHaveBeenCalled();
     // Verify the call was made (exact dates depend on current date)
     expect(mockOnDateRangeChange).toHaveBeenCalledTimes(1);
-  });
+  }) as any;
 
   it('handles Last 3 Months button click correctly', () => {
     renderWithProviders(
@@ -161,7 +161,7 @@ describe('DateRangeFilter', () => {
     expect(mockOnDateRangeChange).toHaveBeenCalled();
     // Verify the call was made (exact dates depend on current date)
     expect(mockOnDateRangeChange).toHaveBeenCalledTimes(1);
-  });
+  }) as any;
 
   it('handles Reset to Current Month button click correctly', () => {
     renderWithProviders(
@@ -179,7 +179,7 @@ describe('DateRangeFilter', () => {
     expect(mockOnDateRangeChange).toHaveBeenCalled();
     // Verify the call was made (exact dates depend on current date)
     expect(mockOnDateRangeChange).toHaveBeenCalledTimes(1);
-  });
+  }) as any;
 
   it('displays date picker fields', () => {
     renderWithProviders(
@@ -196,7 +196,7 @@ describe('DateRangeFilter', () => {
     const endDateElements = screen.getAllByText('End Date');
     expect(startDateElements.length).toBeGreaterThan(0);
     expect(endDateElements.length).toBeGreaterThan(0);
-  });
+  }) as any;
 
   it('displays date range title', () => {
     renderWithProviders(
@@ -209,5 +209,5 @@ describe('DateRangeFilter', () => {
     );
 
     expect(screen.getByText('Date Range')).toBeInTheDocument();
-  });
-}); 
+  }) as any;
+}) as any; 

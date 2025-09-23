@@ -289,10 +289,10 @@ const CategoryGroupForm: React.FC<CategoryGroupFormProps> = ({
                   }}
                 >
                   <Typography variant="subtitle1" fontWeight="bold">
-                    {formik.values.name || 'Sample Group'}
+                    {formik.values.name || 'New Category Group'}
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    {formik.values.description || 'Group description'}
+                    {formik.values.description || 'Enter a description for this group'}
                   </Typography>
                 </Paper>
               </Box>

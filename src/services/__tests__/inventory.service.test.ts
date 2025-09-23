@@ -17,9 +17,23 @@ describe('InventoryService', () => {
     mockCategoryGroupService = {
       getCategoryGroup: jest.fn(),
       getCategoryGroups: jest.fn(),
+      getCategoryGroupsWithStats: jest.fn(),
+      createCategoryGroup: jest.fn(),
+      updateCategoryGroup: jest.fn(),
+      deleteCategoryGroup: jest.fn(),
+      addCategoryToCategoryGroup: jest.fn(),
+      removeCategoryFromCategoryGroup: jest.fn(),
+      updateCategoryGroupWithStats: jest.fn(),
+      getCategoryGroupById: jest.fn(),
+      getCategoryGroupByName: jest.fn(),
+      searchCategoryGroups: jest.fn(),
+      getCategoryGroupCategories: jest.fn(),
+      bulkUpdateCategoryGroups: jest.fn(),
       updateInventory: jest.fn(),
       checkThresholdAlerts: jest.fn(),
-    } as jest.Mocked<Partial<InstanceType<typeof CategoryGroupService>>>;
+      exportCategoryGroups: jest.fn(),
+      importCategoryGroups: jest.fn(),
+    } as unknown as jest.Mocked<InstanceType<typeof CategoryGroupService>>;
 
     MockCategoryGroupService.mockImplementation(() => mockCategoryGroupService);
     
@@ -378,7 +392,7 @@ describe('InventoryService', () => {
     it('should throw error for invalid adjustment type', async () => {
       const adjustment = {
         categoryGroupId: 'group-1',
-        adjustmentType: 'invalid' as unknown as 'addition' | 'deduction' | 'correction',
+        adjustmentType: 'invalid' as unknown as 'increase' | 'decrease' | 'set',
         quantity: 20,
         reason: 'stock_received' as const,
         notes: 'Invalid adjustment',

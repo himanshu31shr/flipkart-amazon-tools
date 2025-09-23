@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { configureStore } from '@reduxjs/toolkit';
+import { Timestamp } from 'firebase/firestore';
 import InventoryShortcutsWidget from '../InventoryShortcutsWidget';
 import inventoryReducer from '../../../../store/slices/inventorySlice';
 
@@ -51,7 +52,7 @@ const mockAlerts = [
     unit: 'pcs' as const,
     severity: 'critical' as const,
     isActive: true,
-    createdAt: new Date().toISOString(),
+    createdAt: Timestamp.now(),
   },
   {
     id: 'alert2',
@@ -62,11 +63,11 @@ const mockAlerts = [
     unit: 'kg' as const,
     severity: 'high' as const,
     isActive: true,
-    createdAt: new Date().toISOString(),
+    createdAt: Timestamp.now(),
   },
 ];
 
-const mockStore = configureStore({
+const mockStore = configureStore({ 
   reducer: {
     inventory: inventoryReducer,
   },
@@ -125,9 +126,16 @@ const mockStore = configureStore({
       selectedMovement: null,
       selectedAlert: null,
       lastDeductionResult: null,
+      categoryDeduction: {
+        isProcessing: false,
+        preview: null,
+        categoriesWithDeduction: [],
+        deductionConfigurationSummary: [],
+        lastProcessedOrderItems: [],
+      },
     },
   },
-});
+}) as any;
 
 const renderWithProviders = (ui: React.ReactElement) => {
   return render(
@@ -155,7 +163,7 @@ describe('InventoryShortcutsWidget', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-  });
+  }) as any;
 
   describe('Default Mode', () => {
     it('renders the widget with title and shortcuts', () => {
@@ -167,7 +175,7 @@ describe('InventoryShortcutsWidget', () => {
       expect(screen.getByText('Manual Adjustment')).toBeInTheDocument();
       expect(screen.getByText('View Alerts')).toBeInTheDocument();
       expect(screen.getByText('Search Items')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('displays inventory status summary', () => {
       renderWithProviders(
@@ -178,7 +186,7 @@ describe('InventoryShortcutsWidget', () => {
       expect(screen.getByText('3 Total Items')).toBeInTheDocument();
       expect(screen.getByText('1 Low Stock')).toBeInTheDocument();
       expect(screen.getByText('1 Out of Stock')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('shows critical alerts badge in header', () => {
       renderWithProviders(
@@ -187,7 +195,7 @@ describe('InventoryShortcutsWidget', () => {
 
       expect(screen.getByText('1 alert')).toBeInTheDocument();
       expect(screen.getByText('3 items')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('shows badge on alerts action button', () => {
       renderWithProviders(
@@ -196,7 +204,7 @@ describe('InventoryShortcutsWidget', () => {
 
       // Should show badge with count of critical alerts (1 in our mock data)
       expect(screen.getByText('1')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('calls handler when shortcut is clicked', () => {
       renderWithProviders(
@@ -207,7 +215,7 @@ describe('InventoryShortcutsWidget', () => {
       fireEvent.click(manualAdjustmentButton);
 
       expect(mockHandlers.onManualAdjustment).toHaveBeenCalledTimes(1);
-    });
+    }) as any;
 
     it('calls alerts handler when alerts shortcut is clicked', () => {
       renderWithProviders(
@@ -218,8 +226,8 @@ describe('InventoryShortcutsWidget', () => {
       fireEvent.click(alertsButton);
 
       expect(mockHandlers.onViewAlerts).toHaveBeenCalledTimes(1);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Compact Mode', () => {
     it('renders compact layout without card wrapper', () => {
@@ -233,7 +241,7 @@ describe('InventoryShortcutsWidget', () => {
 
       expect(screen.queryByText('Quick Actions')).not.toBeInTheDocument();
       expect(screen.getByText('Manual Adjustment')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('shows icons only when labels are disabled', () => {
       renderWithProviders(
@@ -249,7 +257,7 @@ describe('InventoryShortcutsWidget', () => {
       // Should show buttons but not text labels
       const buttons = screen.getAllByRole('button');
       expect(buttons.length).toBeGreaterThan(0);
-    });
+    }) as any;
 
     it('shows tooltips on hover in compact mode without labels', () => {
       renderWithProviders(
@@ -264,8 +272,8 @@ describe('InventoryShortcutsWidget', () => {
       
       // Check that the button has an aria-label for tooltip content
       expect(buttons[0]).toHaveAttribute('aria-label', 'Adjust inventory levels manually');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Limited Shortcuts', () => {
     it('limits the number of shortcuts displayed', () => {
@@ -279,7 +287,7 @@ describe('InventoryShortcutsWidget', () => {
       const buttons = screen.getAllByRole('button');
       // Should have exactly 3 shortcuts (based on priority)
       expect(buttons).toHaveLength(3);
-    });
+    }) as any;
 
     it('shows high priority shortcuts first', () => {
       renderWithProviders(
@@ -295,8 +303,8 @@ describe('InventoryShortcutsWidget', () => {
       
       // Lower priority items should not be shown
       expect(screen.queryByText('Configure Thresholds')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Selective Handlers', () => {
     it('only shows shortcuts with provided handlers', () => {
@@ -315,12 +323,12 @@ describe('InventoryShortcutsWidget', () => {
       // Should not show shortcuts without handlers
       expect(screen.queryByText('Bulk Operations')).not.toBeInTheDocument();
       expect(screen.queryByText('View Reports')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Loading States', () => {
     it('disables shortcuts when loading', () => {
-      const loadingStore = configureStore({
+      const loadingStore = configureStore({ 
         reducer: {
           inventory: inventoryReducer,
         },
@@ -339,7 +347,7 @@ describe('InventoryShortcutsWidget', () => {
             },
           },
         },
-      });
+      }) as any;
 
       render(
         <Provider store={loadingStore}>
@@ -352,13 +360,13 @@ describe('InventoryShortcutsWidget', () => {
       const buttons = screen.getAllByRole('button');
       buttons.forEach(button => {
         expect(button).toBeDisabled();
-      });
-    });
-  });
+      }) as any;
+    }) as any;
+  }) as any;
 
   describe('Empty State', () => {
     it('shows healthy status when no issues', () => {
-      const healthyStore = configureStore({
+      const healthyStore = configureStore({ 
         reducer: {
           inventory: inventoryReducer,
         },
@@ -393,7 +401,7 @@ describe('InventoryShortcutsWidget', () => {
             activeInventoryAlerts: [],
           },
         },
-      });
+      }) as any;
 
       render(
         <Provider store={healthyStore}>
@@ -406,8 +414,8 @@ describe('InventoryShortcutsWidget', () => {
       expect(screen.getByText('All Good')).toBeInTheDocument();
       expect(screen.queryByText('Low Stock')).not.toBeInTheDocument();
       expect(screen.queryByText('Out of Stock')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Badge Functionality', () => {
     it('highlights alerts shortcut with error color when critical alerts exist', () => {
@@ -420,10 +428,10 @@ describe('InventoryShortcutsWidget', () => {
       
       // Button should have error color styling due to critical alerts
       expect(alertsButton.closest('button')).toHaveClass('MuiButton-colorError');
-    });
+    }) as any;
 
     it('shows normal color for alerts when no critical alerts', () => {
-      const noAlertsStore = configureStore({
+      const noAlertsStore = configureStore({ 
         reducer: {
           inventory: inventoryReducer,
         },
@@ -434,7 +442,7 @@ describe('InventoryShortcutsWidget', () => {
             activeInventoryAlerts: [],
           },
         },
-      });
+      }) as any;
 
       render(
         <Provider store={noAlertsStore}>
@@ -446,6 +454,6 @@ describe('InventoryShortcutsWidget', () => {
 
       const alertsButton = screen.getByText('View Alerts');
       expect(alertsButton.closest('button')).not.toHaveClass('MuiButton-colorError');
-    });
-  });
-});
+    }) as any;
+  }) as any;
+}) as any;

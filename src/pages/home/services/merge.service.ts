@@ -276,4 +276,38 @@ export class PDFMergerService {
     const timestamp = Date.now();
     return `Batch_${selectedDate}_${timestamp}.pdf`;
   }
+
+  /**
+   * Preview Amazon deductions without actually processing orders
+   */
+  async previewAmazonDeductions(
+    amazonFile: Uint8Array,
+    sortConfig?: CategorySortConfig
+  ) {
+    const amz = new AmazonPDFTransformer(
+      amazonFile,
+      this.products,
+      this.categories,
+      sortConfig
+    );
+
+    return await amz.previewInventoryDeductions();
+  }
+
+  /**
+   * Preview Flipkart deductions without actually processing orders
+   */
+  async previewFlipkartDeductions(
+    flipkartFile: Uint8Array,
+    sortConfig?: CategorySortConfig
+  ) {
+    const flipkartService = new FlipkartPageTransformer(
+      flipkartFile,
+      this.products,
+      this.categories,
+      sortConfig
+    );
+
+    return await flipkartService.previewInventoryDeductions();
+  }
 }

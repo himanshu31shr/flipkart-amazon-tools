@@ -1,6 +1,7 @@
 import { FirebaseService } from './firebase.service';
 import { CategoryGroupService } from './categoryGroup.service';
 import { CategoryGroup } from '../types/categoryGroup';
+import { where, QueryConstraint } from 'firebase/firestore';
 import { 
   InventoryDeductionItem,
   InventoryDeductionResult,
@@ -709,50 +710,50 @@ export class InventoryService extends FirebaseService {
   async getInventoryMovements(filters: MovementFilters): Promise<InventoryMovement[]> {
     try {
       // Build Firestore query constraints
-      const constraints: unknown[] = []; // TODO: Improve type safety - should be QueryConstraint[]
+      const constraints: QueryConstraint[] = [];
 
       // Add category group filter
       if (filters.categoryGroupId) {
-        constraints.push(['categoryGroupId', '==', filters.categoryGroupId]);
+        constraints.push(where('categoryGroupId', '==', filters.categoryGroupId));
       }
 
       // Add movement type filter
       if (filters.movementType) {
-        constraints.push(['movementType', '==', filters.movementType]);
+        constraints.push(where('movementType', '==', filters.movementType));
       }
 
       // Add date range filters
       if (filters.startDate) {
-        constraints.push(['createdAt', '>=', filters.startDate]);
+        constraints.push(where('createdAt', '>=', filters.startDate));
       }
       if (filters.endDate) {
-        constraints.push(['createdAt', '<=', filters.endDate]);
+        constraints.push(where('createdAt', '<=', filters.endDate));
       }
 
       // Add platform filter for order-related movements
       if (filters.platform) {
-        constraints.push(['platform', '==', filters.platform]);
+        constraints.push(where('platform', '==', filters.platform));
       }
 
       // Add user filter for manual adjustments
       if (filters.adjustedBy) {
-        constraints.push(['adjustedBy', '==', filters.adjustedBy]);
+        constraints.push(where('adjustedBy', '==', filters.adjustedBy));
       }
 
       // Add order context filters
       if (filters.transactionReference) {
-        constraints.push(['transactionReference', '==', filters.transactionReference]);
+        constraints.push(where('transactionReference', '==', filters.transactionReference));
       }
       if (filters.orderReference) {
-        constraints.push(['orderReference', '==', filters.orderReference]);
+        constraints.push(where('orderReference', '==', filters.orderReference));
       }
       if (filters.productSku) {
-        constraints.push(['productSku', '==', filters.productSku]);
+        constraints.push(where('productSku', '==', filters.productSku));
       }
 
       // Add reason filter for manual adjustments
       if (filters.reason) {
-        constraints.push(['reason', '==', filters.reason]);
+        constraints.push(where('reason', '==', filters.reason));
       }
 
       // Query inventory movements with constructed constraints

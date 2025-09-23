@@ -10,7 +10,7 @@ import { authReducer } from '../../../../store/slices/authSlice';
 
 // Mock the Redux store
 const createMockStore = () => {
-  return configureStore({
+  return configureStore({ 
     reducer: {
       inventory: inventoryReducer,
       categoryGroups: categoryGroupsReducer,
@@ -90,6 +90,13 @@ const createMockStore = () => {
         selectedMovement: null,
         selectedAlert: null,
         lastDeductionResult: null,
+        categoryDeduction: {
+          isProcessing: false,
+          preview: null,
+          categoriesWithDeduction: [],
+          deductionConfigurationSummary: [],
+          lastProcessedOrderItems: [],
+        },
       },
       categoryGroups: {
         groups: [
@@ -126,7 +133,11 @@ const createMockStore = () => {
         lastUpdated: null,
       },
       auth: {
-        user: { uid: 'test-uid', email: 'test@example.com' },
+        user: {
+          uid: 'test-user-id',
+          email: 'test@example.com',
+          displayName: 'Test User',
+        },
         loading: false,
         error: null,
         isAuthenticated: true,
@@ -134,7 +145,7 @@ const createMockStore = () => {
         isLoading: false,
       },
     },
-  });
+  }) as any;
 };
 
 describe('ManualAdjustmentModal', () => {
@@ -146,7 +157,7 @@ describe('ManualAdjustmentModal', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-  });
+  }) as any;
 
   it('renders the modal when open', () => {
     const store = createMockStore();
@@ -158,7 +169,7 @@ describe('ManualAdjustmentModal', () => {
 
     expect(screen.getByText('Manual Inventory Adjustment')).toBeInTheDocument();
     expect(screen.getByText('Adjust inventory levels manually with proper tracking and audit trail')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('does not render when closed', () => {
     const store = createMockStore();
@@ -169,7 +180,7 @@ describe('ManualAdjustmentModal', () => {
     );
 
     expect(screen.queryByText('Manual Inventory Adjustment')).not.toBeInTheDocument();
-  });
+  }) as any;
 
   it('shows adjustment type options', () => {
     const store = createMockStore();
@@ -182,7 +193,7 @@ describe('ManualAdjustmentModal', () => {
     expect(screen.getByLabelText('Increase')).toBeInTheDocument();
     expect(screen.getByLabelText('Decrease')).toBeInTheDocument();
     expect(screen.getByLabelText('Set Level')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('displays current user in adjusted by field', () => {
     const store = createMockStore();
@@ -195,7 +206,7 @@ describe('ManualAdjustmentModal', () => {
     const adjustedByField = screen.getByDisplayValue('test@example.com');
     expect(adjustedByField).toBeDisabled();
     expect(screen.getByText('Automatically filled from current user session')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('calls onClose when cancel button is clicked', async () => {
     const store = createMockStore();
@@ -212,7 +223,7 @@ describe('ManualAdjustmentModal', () => {
     await user.click(cancelButton);
 
     expect(onClose).toHaveBeenCalledTimes(1);
-  });
+  }) as any;
 
   it('shows submit button as disabled initially', () => {
     const store = createMockStore();
@@ -224,14 +235,14 @@ describe('ManualAdjustmentModal', () => {
 
     const submitButton = screen.getByText('Apply Adjustment');
     expect(submitButton).toBeDisabled();
-  });
+  }) as any;
 
   it('shows loading state during submission', () => {
     const store = createMockStore();
     // Manually set the loading state after store creation
     store.dispatch({
       type: 'inventory/adjustInventoryManually/pending'
-    });
+    }) as any;
 
     render(
       <Provider store={store}>
@@ -242,5 +253,5 @@ describe('ManualAdjustmentModal', () => {
     // Submit button should show loading spinner
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeDisabled();
-  });
-});
+  }) as any;
+}) as any;

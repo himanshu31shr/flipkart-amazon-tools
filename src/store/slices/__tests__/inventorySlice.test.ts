@@ -208,6 +208,13 @@ describe('inventorySlice', () => {
     selectedMovement: null,
     selectedAlert: null,
     lastDeductionResult: null,
+    categoryDeduction: {
+      isProcessing: false,
+      preview: null,
+      categoriesWithDeduction: [],
+      deductionConfigurationSummary: [],
+      lastProcessedOrderItems: [],
+    },
   };
 
   beforeEach(() => {

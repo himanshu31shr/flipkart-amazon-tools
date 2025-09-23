@@ -65,7 +65,7 @@ jest.mock('../../pages/inventory/components/InventoryAlertsPanel', () => {
       if (loadTime > 100) {
         console.warn(`InventoryAlertsPanel slow render: ${loadTime.toFixed(2)}ms`);
       }
-    });
+    }) as any;
 
     return mockReact.createElement('div', { 'data-testid': 'inventory-alerts-panel' },
       mockReact.createElement('div', { 'data-testid': 'panel-variant' }, variant),
@@ -80,8 +80,8 @@ jest.mock('../../pages/inventory/components/InventoryAlertsPanel', () => {
         onClick: () => onViewCategoryGroup('test-category-id')
       }, 'View Category')
     );
-  });
-});
+  }) as any;
+}) as any;
 
 // Performance test configuration
 const PERFORMANCE_THRESHOLDS = {
@@ -152,7 +152,7 @@ const createMockInventoryAlerts = (count: number): InventoryAlert[] => {
 
 // Helper function to create test store
 const createTestStore = (initialState = {}) => {
-  return configureStore({
+  return configureStore({ 
     reducer: {
       auth: authReducer,
       inventory: inventoryReducer,
@@ -249,7 +249,7 @@ const createTestStore = (initialState = {}) => {
       },
       ...initialState,
     },
-  });
+  }) as any;
 };
 
 // Helper function to render with providers
@@ -282,7 +282,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
       performance.clearMarks();
       performance.clearMeasures();
     }
-  });
+  }) as any;
 
   describe('Dashboard Loading Performance', () => {
     it('should load dashboard with 100+ category groups within 2 seconds', async () => {
@@ -303,12 +303,12 @@ describe('Dashboard Performance Benchmark Tests', () => {
             },
           },
         },
-      });
+      }) as any;
 
       // Wait for dashboard to fully load
       await waitFor(() => {
         expect(screen.getByText('Dashboard')).toBeInTheDocument();
-      }, { timeout: PERFORMANCE_THRESHOLDS.DASHBOARD_LOAD_MS });
+      }, { timeout: PERFORMANCE_THRESHOLDS.DASHBOARD_LOAD_MS }) as any;
 
       const endTime = performance.now();
       const loadTime = endTime - startTime;
@@ -320,7 +320,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
       
       console.log(`✓ Dashboard load: ${groupCount} groups loaded in ${loadTime.toFixed(2)}ms`);
       console.log(`  Performance requirement: <${PERFORMANCE_THRESHOLDS.DASHBOARD_LOAD_MS}ms`);
-    });
+    }) as any;
 
     it('should maintain performance with large datasets and complex calculations', async () => {
       const largeDatasetCount = PERFORMANCE_THRESHOLDS.LARGE_DATASET_COUNT;
@@ -335,12 +335,12 @@ describe('Dashboard Performance Benchmark Tests', () => {
             loading: { inventoryLevels: false },
           },
         },
-      });
+      }) as any;
 
       // Wait for complex calculations to complete
       await waitFor(() => {
         expect(screen.getByText('Dashboard')).toBeInTheDocument();
-      });
+      }) as any;
 
       const endTime = performance.now();
       const processTime = endTime - startTime;
@@ -348,7 +348,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
       expect(processTime).toBeLessThan(PERFORMANCE_THRESHOLDS.DASHBOARD_LOAD_MS * 2); // Allow extra time for large datasets
 
       console.log(`✓ Large dataset processing: ${largeDatasetCount} items in ${processTime.toFixed(2)}ms`);
-    });
+    }) as any;
 
     it('should handle dashboard loading with concurrent widget rendering', async () => {
       const groupCount = PERFORMANCE_THRESHOLDS.DASHBOARD_GROUPS_COUNT;
@@ -368,13 +368,13 @@ describe('Dashboard Performance Benchmark Tests', () => {
             },
           },
         },
-      });
+      }) as any;
 
       // Wait for all widgets to render concurrently
       await waitFor(() => {
         expect(screen.getByText('Dashboard')).toBeInTheDocument();
         expect(screen.getByText(/Inventory Overview/)).toBeInTheDocument();
-      });
+      }) as any;
 
       const endTime = performance.now();
       const concurrentRenderTime = endTime - startTime;
@@ -382,8 +382,8 @@ describe('Dashboard Performance Benchmark Tests', () => {
       expect(concurrentRenderTime).toBeLessThan(PERFORMANCE_THRESHOLDS.DASHBOARD_LOAD_MS);
 
       console.log(`✓ Concurrent widget rendering: ${concurrentRenderTime.toFixed(2)}ms`);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('InventoryAlertsWidget Performance', () => {
     it('should render InventoryAlertsWidget within performance threshold', async () => {
@@ -406,7 +406,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
       // Wait for widget to render
       await waitFor(() => {
         expect(screen.getByTestId('inventory-alerts-panel')).toBeInTheDocument();
-      });
+      }) as any;
 
       const endTime = performance.now();
       const renderTime = endTime - startTime;
@@ -414,7 +414,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
       expect(renderTime).toBeLessThan(PERFORMANCE_THRESHOLDS.WIDGET_RENDER_MS);
 
       console.log(`✓ InventoryAlertsWidget render: ${renderTime.toFixed(2)}ms`);
-    });
+    }) as any;
 
     it('should process alert generation and display within 3-second requirement', async () => {
       const alertCount = 100;
@@ -438,7 +438,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
       // Wait for alert processing and display
       await waitFor(() => {
         expect(screen.getByTestId('inventory-alerts-panel')).toBeInTheDocument();
-      });
+      }) as any;
 
       const endTime = performance.now();
       const alertProcessingTime = endTime - startTime;
@@ -446,7 +446,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
       expect(alertProcessingTime).toBeLessThan(PERFORMANCE_THRESHOLDS.ALERT_PROCESSING_MS);
 
       console.log(`✓ Alert processing: ${alertCount} alerts processed in ${alertProcessingTime.toFixed(2)}ms`);
-    });
+    }) as any;
 
     it('should handle real-time alert updates efficiently', async () => {
       const { store } = renderWithProviders(
@@ -470,13 +470,13 @@ describe('Dashboard Performance Benchmark Tests', () => {
         store.dispatch({
           type: 'inventory/updateInventoryAlerts',
           payload: newAlerts,
-        });
-      });
+        }) as any;
+      }) as any;
 
       // Wait for real-time update to complete
       await waitFor(() => {
         expect(screen.getByTestId('inventory-alerts-panel')).toBeInTheDocument();
-      });
+      }) as any;
 
       const endTime = performance.now();
       const updateTime = endTime - startTime;
@@ -484,8 +484,8 @@ describe('Dashboard Performance Benchmark Tests', () => {
       expect(updateTime).toBeLessThan(PERFORMANCE_THRESHOLDS.REAL_TIME_UPDATE_MS);
 
       console.log(`✓ Real-time alert update: ${updateTime.toFixed(2)}ms`);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('InventorySummaryWidget Performance', () => {
     it('should render InventorySummaryWidget with large datasets efficiently', async () => {
@@ -504,7 +504,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
       // Wait for widget rendering and chart calculations
       await waitFor(() => {
         expect(screen.getByText(/Inventory Overview/)).toBeInTheDocument();
-      });
+      }) as any;
 
       const endTime = performance.now();
       const renderTime = endTime - startTime;
@@ -519,7 +519,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
 
       console.log(`✓ InventorySummaryWidget render: ${groupCount} levels in ${renderTime.toFixed(2)}ms`);
       console.log(`  Status distribution:`, statusCounts);
-    });
+    }) as any;
 
     it('should maintain chart rendering performance with complex data', async () => {
       const complexDataset = createMockInventoryLevels(500).map((level, index) => ({
@@ -541,7 +541,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
       // Wait for complex chart calculations
       await waitFor(() => {
         expect(screen.getByText(/Inventory Overview/)).toBeInTheDocument();
-      });
+      }) as any;
 
       const endTime = performance.now();
       const chartRenderTime = endTime - startTime;
@@ -549,7 +549,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
       expect(chartRenderTime).toBeLessThan(PERFORMANCE_THRESHOLDS.WIDGET_RENDER_MS * 1.5); // Allow extra time for charts
 
       console.log(`✓ Complex chart rendering: ${complexDataset.length} items in ${chartRenderTime.toFixed(2)}ms`);
-    });
+    }) as any;
 
     it('should handle responsive design performance across viewports', async () => {
       const mockInventoryLevels = createMockInventoryLevels(100);
@@ -568,7 +568,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/Inventory Overview/)).toBeInTheDocument();
-      });
+      }) as any;
 
       const mobileEndTime = performance.now();
       const mobileRenderTime = mobileEndTime - mobileStartTime;
@@ -592,8 +592,8 @@ describe('Dashboard Performance Benchmark Tests', () => {
       expect(desktopRenderTime).toBeLessThan(PERFORMANCE_THRESHOLDS.WIDGET_RENDER_MS);
 
       console.log(`✓ Responsive performance - Mobile: ${mobileRenderTime.toFixed(2)}ms, Desktop: ${desktopRenderTime.toFixed(2)}ms`);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('User Interaction Performance', () => {
     it('should handle rapid user interactions without performance degradation', async () => {
@@ -606,7 +606,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('manual-adjustment-button')).toBeInTheDocument();
-      });
+      }) as any;
 
       const button = screen.getByTestId('manual-adjustment-button');
       const interactionCount = 10;
@@ -626,7 +626,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
 
       console.log(`✓ Rapid interactions: ${interactionCount} clicks in ${totalInteractionTime.toFixed(2)}ms`);
       console.log(`  Average per interaction: ${avgInteractionTime.toFixed(2)}ms`);
-    });
+    }) as any;
 
     it('should maintain responsiveness during state updates', async () => {
       const { store } = renderWithProviders(React.createElement(DashboardPage));
@@ -640,8 +640,8 @@ describe('Dashboard Performance Benchmark Tests', () => {
           store.dispatch({
             type: 'inventory/updateInventoryLevels',
             payload: createMockInventoryLevels(10),
-          });
-        });
+          }) as any;
+        }) as any;
       }
 
       const endTime = performance.now();
@@ -650,8 +650,8 @@ describe('Dashboard Performance Benchmark Tests', () => {
       expect(updateTime).toBeLessThan(1000); // All updates should complete within 1 second
 
       console.log(`✓ State update performance: ${updateCount} updates in ${updateTime.toFixed(2)}ms`);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Memory Management', () => {
     it('should not leak memory during dashboard operations', async () => {
@@ -667,7 +667,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
               loading: { inventoryLevels: false, inventoryAlerts: false },
             },
           },
-        });
+        }) as any;
 
         // Unmount to test cleanup
         unmount();
@@ -686,7 +686,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
 
       console.log(`✓ Memory management: ${operationCount} operations, ${memoryIncreaseKB.toFixed(2)}KB increase`);
       console.log(`  Threshold: ${PERFORMANCE_THRESHOLDS.MEMORY_THRESHOLD_KB}KB`);
-    });
+    }) as any;
 
     it('should handle component cleanup efficiently', async () => {
       const cleanupCount = 50;
@@ -712,8 +712,8 @@ describe('Dashboard Performance Benchmark Tests', () => {
 
       console.log(`✓ Component cleanup: ${cleanupCount} cleanups in ${cleanupTime.toFixed(2)}ms`);
       console.log(`  Average per cleanup: ${avgCleanupTime.toFixed(2)}ms`);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Load Testing Scenarios', () => {
     it('should handle peak dashboard load simulation', async () => {
@@ -736,13 +736,13 @@ describe('Dashboard Performance Benchmark Tests', () => {
           products: { items: peakLoadData.products, loading: false },
           orders: { items: peakLoadData.orders, loading: false },
         },
-      });
+      }) as any;
 
       // Wait for peak load rendering
       await waitFor(() => {
         expect(screen.getByText('Dashboard')).toBeInTheDocument();
         expect(screen.getByText(/Inventory Overview/)).toBeInTheDocument();
-      }, { timeout: PERFORMANCE_THRESHOLDS.DASHBOARD_LOAD_MS });
+      }, { timeout: PERFORMANCE_THRESHOLDS.DASHBOARD_LOAD_MS }) as any;
 
       const endTime = performance.now();
       const peakLoadTime = endTime - startTime;
@@ -751,7 +751,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
 
       console.log(`✓ Peak load simulation: ${peakLoadTime.toFixed(2)}ms`);
       console.log(`  Data loaded: ${peakLoadData.inventoryLevels.length} levels, ${peakLoadData.inventoryAlerts.length} alerts`);
-    });
+    }) as any;
 
     it('should maintain performance under concurrent widget updates', async () => {
       const { store } = renderWithProviders(React.createElement(DashboardPage));
@@ -767,16 +767,16 @@ describe('Dashboard Performance Benchmark Tests', () => {
               store.dispatch({
                 type: 'inventory/updateInventoryLevels',
                 payload: createMockInventoryLevels(25),
-              });
+              }) as any;
               store.dispatch({
                 type: 'inventory/updateInventoryAlerts',
                 payload: createMockInventoryAlerts(5),
-              });
-            });
+              }) as any;
+            }) as any;
             resolve();
           }, i * 10); // Stagger updates
-        });
-      });
+        }) as any;
+      }) as any;
 
       await Promise.all(updatePromises);
 
@@ -786,8 +786,8 @@ describe('Dashboard Performance Benchmark Tests', () => {
       expect(concurrentUpdateTime).toBeLessThan(PERFORMANCE_THRESHOLDS.DASHBOARD_LOAD_MS);
 
       console.log(`✓ Concurrent updates: ${updateCycles} cycles in ${concurrentUpdateTime.toFixed(2)}ms`);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Performance Regression Prevention', () => {
     it('should establish performance baseline for future comparisons', async () => {
@@ -806,11 +806,11 @@ describe('Dashboard Performance Benchmark Tests', () => {
             loading: { inventoryLevels: false, inventoryAlerts: false },
           },
         },
-      });
+      }) as any;
 
       await waitFor(() => {
         expect(screen.getByText('Dashboard')).toBeInTheDocument();
-      });
+      }) as any;
 
       const dashboardLoadTime = performance.now() - dashboardStartTime;
       unmountDashboard();
@@ -826,7 +826,7 @@ describe('Dashboard Performance Benchmark Tests', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/Inventory Overview/)).toBeInTheDocument();
-      });
+      }) as any;
 
       const widgetRenderTime = performance.now() - widgetStartTime;
       unmountWidget();
@@ -848,6 +848,6 @@ describe('Dashboard Performance Benchmark Tests', () => {
       console.log(`  Widget Render: ${baselineMetrics.widgetRenderTime.toFixed(2)}ms`);
       console.log(`  Dataset Size: ${baselineMetrics.datasetSize} levels`);
       console.log(`  Alert Count: ${baselineMetrics.alertCount} alerts`);
-    });
-  });
-});
+    }) as any;
+  }) as any;
+}) as any;

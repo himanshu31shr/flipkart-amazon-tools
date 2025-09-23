@@ -63,11 +63,11 @@ jest.mock('../../../../store/slices/productsSlice', () => ({
 const theme = createTheme();
 
 // Mock store
-const mockStore = configureStore({
+const mockStore = configureStore({ 
   reducer: {
     products: (state = { categories: [] }) => state,
   },
-});
+}) as any;
 
 const mockTimestamp = { seconds: 1234567890, nanoseconds: 0 } as Timestamp;
 
@@ -201,7 +201,7 @@ describe('ProductTable - Group Integration', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-  });
+  }) as any;
 
   describe('Group display in table', () => {
     it('should display category group column', async () => {
@@ -212,8 +212,8 @@ describe('ProductTable - Group Integration', () => {
         const tableHeaders = container.querySelectorAll('th');
         const groupHeader = Array.from(tableHeaders).find(th => th.textContent?.includes('Group'));
         expect(groupHeader).toBeInTheDocument();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should show group chips with correct colors for products with groups', async () => {
       renderWithProviders(<ProductTable {...defaultProps} />);
@@ -227,12 +227,12 @@ describe('ProductTable - Group Integration', () => {
 
         // Check chip colors
         const techChip = techChips[0].closest('.MuiChip-root');
-        expect(techChip).toHaveStyle({ backgroundColor: '#FF5722' });
+        expect(techChip).toHaveStyle({ backgroundColor: '#FF5722' }) as any;
 
         const fashionChip = fashionChips[0].closest('.MuiChip-root');
-        expect(fashionChip).toHaveStyle({ backgroundColor: '#2196F3' });
-      });
-    });
+        expect(fashionChip).toHaveStyle({ backgroundColor: '#2196F3' }) as any;
+      }) as any;
+    }) as any;
 
     it('should show placeholder for products without groups', async () => {
       renderWithProviders(<ProductTable {...defaultProps} />);
@@ -241,8 +241,8 @@ describe('ProductTable - Group Integration', () => {
         const placeholderChips = screen.getAllByText('-');
         // Should have one placeholder chip for the uncategorized product
         expect(placeholderChips.length).toBeGreaterThan(0);
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should calculate contrast color for chip text', async () => {
       const productsWithDarkGroup = [{
@@ -266,10 +266,10 @@ describe('ProductTable - Group Integration', () => {
 
       await waitFor(() => {
         const darkChip = screen.getByText('Dark Group').closest('.MuiChip-root');
-        expect(darkChip).toHaveStyle({ color: '#ffffff' });
-      });
-    });
-  });
+        expect(darkChip).toHaveStyle({ color: '#ffffff' }) as any;
+      }) as any;
+    }) as any;
+  }) as any;
 
   describe('Product selection and bulk operations', () => {
     it('should allow selecting products via checkboxes', async () => {
@@ -278,14 +278,14 @@ describe('ProductTable - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByText('iPhone 15')).toBeInTheDocument();
-      });
+      }) as any;
 
       const checkboxes = screen.getAllByRole('checkbox');
       const firstProductCheckbox = checkboxes[0];
 
       await user.click(firstProductCheckbox);
       expect(firstProductCheckbox).toBeChecked();
-    });
+    }) as any;
 
     it('should show selected product count in toolbar', async () => {
       const user = userEvent.setup();
@@ -293,7 +293,7 @@ describe('ProductTable - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByText('iPhone 15')).toBeInTheDocument();
-      });
+      }) as any;
 
       const checkboxes = screen.getAllByRole('checkbox');
       await user.click(checkboxes[0]);
@@ -302,8 +302,8 @@ describe('ProductTable - Group Integration', () => {
       // Should show count in the specific group assignment button
       await waitFor(() => {
         expect(screen.getByText('Assign Group (2)')).toBeInTheDocument();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should call onBulkGroupUpdate when group is assigned', async () => {
       const user = userEvent.setup();
@@ -311,7 +311,7 @@ describe('ProductTable - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByText('iPhone 15')).toBeInTheDocument();
-      });
+      }) as any;
 
       // Select products
       const checkboxes = screen.getAllByRole('checkbox');
@@ -322,7 +322,7 @@ describe('ProductTable - Group Integration', () => {
       await user.click(assignGroupButton);
 
       expect(mockOnBulkGroupUpdate).toHaveBeenCalledWith(['PHONE-001'], null);
-    });
+    }) as any;
 
     it('should clear selections after successful bulk operations', async () => {
       const user = userEvent.setup();
@@ -330,7 +330,7 @@ describe('ProductTable - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByText('iPhone 15')).toBeInTheDocument();
-      });
+      }) as any;
 
       const checkboxes = screen.getAllByRole('checkbox');
       await user.click(checkboxes[0]);
@@ -341,8 +341,8 @@ describe('ProductTable - Group Integration', () => {
       // after a successful bulk operation via a callback
       // For now, we just verify the selection was made
       expect(mockOnBulkCategoryUpdate).toBeDefined();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Filtering integration', () => {
     it('should pass group filter to toolbar', () => {
@@ -365,7 +365,7 @@ describe('ProductTable - Group Integration', () => {
 
       // Toolbar should receive the group filter
       expect(screen.getByLabelText(/group/i)).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle filter changes from toolbar', async () => {
       const user = userEvent.setup();
@@ -381,8 +381,8 @@ describe('ProductTable - Group Integration', () => {
       expect(mockOnFilterChange).toHaveBeenCalledWith(
         expect.objectContaining({ platform: 'amazon' })
       );
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Category and group information display', () => {
     it('should display category names correctly', async () => {
@@ -394,8 +394,8 @@ describe('ProductTable - Group Integration', () => {
         
         const clothingChips = screen.getAllByText('Clothing');
         expect(clothingChips.length).toBeGreaterThan(0);
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should show group names in separate column', async () => {
       renderWithProviders(<ProductTable {...defaultProps} />);
@@ -403,8 +403,8 @@ describe('ProductTable - Group Integration', () => {
       await waitFor(() => {
         expect(screen.getAllByText('Tech Products')).toHaveLength(2);
         expect(screen.getByText('Fashion')).toBeInTheDocument();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should handle products with categories but no groups', async () => {
       const productsWithCategoryNoGroup = [{
@@ -426,9 +426,9 @@ describe('ProductTable - Group Integration', () => {
       await waitFor(() => {
         expect(screen.getByText('Electronics')).toBeInTheDocument();
         expect(screen.getByText('-')).toBeInTheDocument(); // Placeholder for missing group
-      });
-    });
-  });
+      }) as any;
+    }) as any;
+  }) as any;
 
   describe('Error handling and edge cases', () => {
     it('should handle empty products array', async () => {
@@ -444,8 +444,8 @@ describe('ProductTable - Group Integration', () => {
         const tableHeaders = container.querySelectorAll('th');
         const groupHeader = Array.from(tableHeaders).find(th => th.textContent?.includes('Group'));
         expect(groupHeader).toBeInTheDocument();
-      }, { timeout: 1000 });
-    });
+      }, { timeout: 1000 }) as any;
+    }) as any;
 
     it('should handle products with missing category data', async () => {
       const productsWithMissingData = [{
@@ -466,8 +466,8 @@ describe('ProductTable - Group Integration', () => {
         // Should show placeholder for missing category/group
         const dashElements = screen.getAllByText('-');
         expect(dashElements.length).toBeGreaterThan(0);
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should handle invalid group colors gracefully', async () => {
       const productsWithInvalidColor = [{
@@ -492,8 +492,8 @@ describe('ProductTable - Group Integration', () => {
       await waitFor(() => {
         // Should still render without crashing
         expect(screen.getByText('Invalid Color')).toBeInTheDocument();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should handle bulk operation errors gracefully', async () => {
       const user = userEvent.setup();
@@ -503,7 +503,7 @@ describe('ProductTable - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByText('iPhone 15')).toBeInTheDocument();
-      });
+      }) as any;
 
       const checkboxes = screen.getAllByRole('checkbox');
       await user.click(checkboxes[0]);
@@ -512,8 +512,8 @@ describe('ProductTable - Group Integration', () => {
       // For now, we verify the error handler exists
 
       expect(mockOnBulkCategoryUpdate).toBeDefined();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Accessibility', () => {
     it('should have proper ARIA labels for checkboxes', async () => {
@@ -525,27 +525,27 @@ describe('ProductTable - Group Integration', () => {
         checkboxes.forEach(checkbox => {
           expect(checkbox).toBeInTheDocument();
           expect(checkbox).toHaveAttribute('type', 'checkbox');
-        });
-      });
-    });
+        }) as any;
+      }) as any;
+    }) as any;
 
     it('should support keyboard navigation', async () => {
       renderWithProviders(<ProductTable {...defaultProps} />);
 
       await waitFor(() => {
         expect(screen.getByText('iPhone 15')).toBeInTheDocument();
-      });
+      }) as any;
 
       const firstCheckbox = screen.getAllByRole('checkbox')[0];
       firstCheckbox.focus();
       expect(firstCheckbox).toHaveFocus();
 
       // Navigate with keyboard
-      fireEvent.keyDown(firstCheckbox, { key: 'Tab' });
+      fireEvent.keyDown(firstCheckbox, { key: 'Tab' }) as any;
       
       // Verify keyboard interaction works
       expect(document.activeElement).toBeDefined();
-    });
+    }) as any;
 
     it('should have proper color contrast for group chips', async () => {
       renderWithProviders(<ProductTable {...defaultProps} />);
@@ -554,9 +554,9 @@ describe('ProductTable - Group Integration', () => {
         const techChip = screen.getAllByText('Tech Products')[0].closest('.MuiChip-root');
         // Should have readable contrast (this is tested by the contrast calculation)
         expect(techChip).toBeInTheDocument();
-      });
-    });
-  });
+      }) as any;
+    }) as any;
+  }) as any;
 
   describe('Performance', () => {
     it('should handle large product lists efficiently', () => {
@@ -577,7 +577,7 @@ describe('ProductTable - Group Integration', () => {
       const endTime = performance.now();
 
       expect(endTime - startTime).toBeLessThan(200); // Should render within 200ms
-    });
+    }) as any;
 
     it('should not re-render unnecessarily when props don\'t change', () => {
       const { rerender } = renderWithProviders(<ProductTable {...defaultProps} />);
@@ -593,6 +593,6 @@ describe('ProductTable - Group Integration', () => {
 
       // Render count shouldn't increase (this would need React.memo to work properly)
       expect(screen.getByText('iPhone 15')).toBeInTheDocument();
-    });
-  });
-});
+    }) as any;
+  }) as any;
+}) as any;

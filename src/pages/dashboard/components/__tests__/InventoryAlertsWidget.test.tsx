@@ -1,9 +1,14 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { BrowserRouter } from 'react-router-dom';
 import InventoryAlertsWidget from '../InventoryAlertsWidget';
+import inventoryReducer from '../../../../store/slices/inventorySlice';
+import categoryGroupsReducer from '../../../../store/slices/categoryGroupsSlice';
+import { authReducer } from '../../../../store/slices/authSlice';
 
 // Mock Firebase Timestamp
 jest.mock('firebase/firestore', () => ({
@@ -23,7 +28,7 @@ jest.mock('firebase/firestore', () => ({
 
 // Mock InventoryAlertsPanel since we're testing the widget wrapper
 jest.mock('../../../inventory/components/InventoryAlertsPanel', () => {
-  const MockInventoryAlertsPanel = ({ 
+  return function MockInventoryAlertsPanel({ 
     variant, 
     maxAlertsInWidget, 
     onManualAdjustment, 
@@ -33,41 +38,166 @@ jest.mock('../../../inventory/components/InventoryAlertsPanel', () => {
     maxAlertsInWidget?: number;
     onManualAdjustment?: (categoryId: string) => void;
     onViewCategoryGroup?: (categoryId: string) => void;
-  }) => (
-    <div data-testid="inventory-alerts-panel">
-      <div data-testid="panel-variant">{variant}</div>
-      <div data-testid="max-alerts">{maxAlertsInWidget}</div>
-      {onManualAdjustment && (
-        <button 
-          data-testid="manual-adjustment-button"
-          onClick={() => onManualAdjustment('test-category-id')}
-        >
-          Manual Adjustment
-        </button>
-      )}
-      {onViewCategoryGroup && (
-        <button 
-          data-testid="view-category-button"
-          onClick={() => onViewCategoryGroup('test-category-id')}
-        >
-          View Category
-        </button>
-      )}
-    </div>
-  );
-  
-  return MockInventoryAlertsPanel;
+  }) {
+    return (
+      <div data-testid="inventory-alerts-panel">
+        <div data-testid="panel-variant">{variant}</div>
+        <div data-testid="max-alerts">{maxAlertsInWidget}</div>
+        {onManualAdjustment && (
+          <button 
+            data-testid="manual-adjustment-button"
+            onClick={() => onManualAdjustment('test-category-id')}
+          >
+            Manual Adjustment
+          </button>
+        )}
+        {onViewCategoryGroup && (
+          <button 
+            data-testid="view-category-button"
+            onClick={() => onViewCategoryGroup('test-category-id')}
+          >
+            View Category
+          </button>
+        )}
+      </div>
+    );
+  };
 });
 
 const theme = createTheme();
 
+// Create mock store
+const createMockStore = () => {
+  return configureStore({
+    reducer: {
+      inventory: inventoryReducer,
+      categoryGroups: categoryGroupsReducer,
+      auth: authReducer,
+    },
+    preloadedState: {
+      inventory: {
+        inventoryLevels: [],
+        filteredInventoryLevels: [],
+        inventoryMovements: [],
+        filteredInventoryMovements: [],
+        inventoryAlerts: [
+          {
+            id: 'alert-1',
+            categoryGroupId: 'group-1',
+            categoryGroupName: 'Test Group',
+            alertType: 'low_stock' as const,
+            severity: 'medium' as const,
+            currentLevel: 5,
+            threshold: 10,
+            message: 'Stock level is below threshold',
+            createdAt: '2024-01-01T00:00:00Z',
+            acknowledged: false,
+            resolvedAt: null,
+          }
+        ],
+        activeInventoryAlerts: [
+          {
+            id: 'alert-1',
+            categoryGroupId: 'group-1',
+            categoryGroupName: 'Test Group',
+            alertType: 'low_stock' as const,
+            severity: 'medium' as const,
+            currentLevel: 5,
+            threshold: 10,
+            message: 'Stock level is below threshold',
+            createdAt: '2024-01-01T00:00:00Z',
+            acknowledged: false,
+            resolvedAt: null,
+          }
+        ],
+        loading: {
+          inventoryLevels: false,
+          inventoryMovements: false,
+          inventoryAlerts: false,
+          deduction: false,
+          adjustment: false,
+          alertCreation: false,
+          alertAcknowledgment: false,
+          alertResolution: false,
+        },
+        error: {
+          inventoryLevels: null,
+          inventoryMovements: null,
+          inventoryAlerts: null,
+          deduction: null,
+          adjustment: null,
+          alertCreation: null,
+          alertAcknowledgment: null,
+          alertResolution: null,
+        },
+        filters: {
+          inventory: {},
+          movements: {},
+        },
+        lastFetched: {
+          inventoryLevels: null,
+          inventoryMovements: null,
+          inventoryAlerts: null,
+        },
+        pagination: {
+          inventoryLevels: {
+            currentPage: 1,
+            pageSize: 50,
+            totalItems: 0,
+            hasNextPage: false,
+          },
+          inventoryMovements: {
+            currentPage: 1,
+            pageSize: 50,
+            totalItems: 0,
+            hasNextPage: false,
+          },
+        },
+        selectedInventoryLevel: null,
+        selectedMovement: null,
+        selectedAlert: null,
+        lastDeductionResult: null,
+        categoryDeduction: {
+          isProcessing: false,
+          preview: null,
+          categoriesWithDeduction: [],
+          deductionConfigurationSummary: [],
+          lastProcessedOrderItems: [],
+        },
+      },
+      categoryGroups: {
+        groups: [],
+        loading: false,
+        error: null,
+        selectedGroupId: null,
+        lastUpdated: null,
+      },
+      auth: {
+        user: {
+          uid: 'test-user-id',
+          email: 'test@example.com',
+          displayName: 'Test User',
+        },
+        loading: false,
+        error: null,
+        isAuthenticated: true,
+        authStateLoaded: true,
+        isLoading: false,
+      },
+    },
+  }) as any;
+};
+
 const renderWithProviders = (component: React.ReactElement) => {
+  const store = createMockStore();
   return render(
-    <BrowserRouter>
-      <ThemeProvider theme={theme}>
-        {component}
-      </ThemeProvider>
-    </BrowserRouter>
+    <Provider store={store}>
+      <BrowserRouter>
+        <ThemeProvider theme={theme}>
+          {component}
+        </ThemeProvider>
+      </BrowserRouter>
+    </Provider>
   );
 };
 
@@ -78,26 +208,26 @@ describe('InventoryAlertsWidget', () => {
       
       expect(screen.getByTestId('inventory-alerts-panel')).toBeInTheDocument();
       expect(screen.getByTestId('panel-variant')).toHaveTextContent('widget');
-    });
+    }) as any;
 
     it('should pass default maxAlertsInWidget prop', () => {
       renderWithProviders(<InventoryAlertsWidget />);
       
       expect(screen.getByTestId('max-alerts')).toHaveTextContent('5');
-    });
+    }) as any;
 
     it('should pass custom maxAlertsInWidget prop', () => {
       renderWithProviders(<InventoryAlertsWidget maxAlertsInWidget={10} />);
       
       expect(screen.getByTestId('max-alerts')).toHaveTextContent('10');
-    });
+    }) as any;
 
     it('should render without crashing with minimal props', () => {
       const { container } = renderWithProviders(<InventoryAlertsWidget />);
       
       expect(container).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('callback props', () => {
     it('should call onManualAdjustment when callback is provided', async () => {
@@ -112,7 +242,7 @@ describe('InventoryAlertsWidget', () => {
       await user.click(button);
       
       expect(mockOnManualAdjustment).toHaveBeenCalledWith('test-category-id');
-    });
+    }) as any;
 
     it('should call onViewCategoryGroup when callback is provided', async () => {
       const user = userEvent.setup();
@@ -126,7 +256,7 @@ describe('InventoryAlertsWidget', () => {
       await user.click(button);
       
       expect(mockOnViewCategoryGroup).toHaveBeenCalledWith('test-category-id');
-    });
+    }) as any;
 
     it('should handle both callbacks when provided', async () => {
       const user = userEvent.setup();
@@ -148,35 +278,35 @@ describe('InventoryAlertsWidget', () => {
       
       expect(mockOnManualAdjustment).toHaveBeenCalledWith('test-category-id');
       expect(mockOnViewCategoryGroup).toHaveBeenCalledWith('test-category-id');
-    });
+    }) as any;
 
     it('should not render callback buttons when callbacks are not provided', () => {
       renderWithProviders(<InventoryAlertsWidget />);
       
       expect(screen.queryByTestId('manual-adjustment-button')).not.toBeInTheDocument();
       expect(screen.queryByTestId('view-category-button')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('props validation', () => {
     it('should handle zero maxAlertsInWidget', () => {
       renderWithProviders(<InventoryAlertsWidget maxAlertsInWidget={0} />);
       
       expect(screen.getByTestId('max-alerts')).toHaveTextContent('0');
-    });
+    }) as any;
 
     it('should handle large maxAlertsInWidget values', () => {
       renderWithProviders(<InventoryAlertsWidget maxAlertsInWidget={100} />);
       
       expect(screen.getByTestId('max-alerts')).toHaveTextContent('100');
-    });
+    }) as any;
 
     it('should handle negative maxAlertsInWidget values', () => {
       renderWithProviders(<InventoryAlertsWidget maxAlertsInWidget={-1} />);
       
       expect(screen.getByTestId('max-alerts')).toHaveTextContent('-1');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('widget behavior', () => {
     it('should always pass widget variant regardless of other props', () => {
@@ -185,7 +315,7 @@ describe('InventoryAlertsWidget', () => {
       );
       
       expect(screen.getByTestId('panel-variant')).toHaveTextContent('widget');
-    });
+    }) as any;
 
     it('should maintain widget identity with different configurations', () => {
       const configs = [
@@ -202,8 +332,8 @@ describe('InventoryAlertsWidget', () => {
         expect(screen.getByTestId('max-alerts')).toHaveTextContent(config.maxAlertsInWidget.toString());
         
         unmount();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should work as a dashboard widget component', () => {
       // Test that it can be used as a dashboard widget
@@ -219,8 +349,8 @@ describe('InventoryAlertsWidget', () => {
       expect(screen.getByTestId('dashboard')).toBeInTheDocument();
       expect(screen.getAllByTestId('inventory-alerts-panel')).toHaveLength(2);
       expect(screen.getAllByTestId('panel-variant')).toHaveLength(2);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('user interactions', () => {
     it('should support complete manual adjustment workflow', async () => {
@@ -239,7 +369,7 @@ describe('InventoryAlertsWidget', () => {
       
       expect(mockOnManualAdjustment).toHaveBeenCalledTimes(2);
       expect(mockOnManualAdjustment).toHaveBeenCalledWith('test-category-id');
-    });
+    }) as any;
 
     it('should support complete view category workflow', async () => {
       const user = userEvent.setup();
@@ -256,7 +386,7 @@ describe('InventoryAlertsWidget', () => {
       await user.keyboard('{Enter}');
       
       expect(mockOnViewCategoryGroup).toHaveBeenCalledWith('test-category-id');
-    });
+    }) as any;
 
     it('should handle rapid user interactions', async () => {
       const user = userEvent.setup();
@@ -274,8 +404,8 @@ describe('InventoryAlertsWidget', () => {
       await user.click(button);
       
       expect(mockCallback).toHaveBeenCalledTimes(3);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('error handling', () => {
     it('should render without errors when wrapped component fails gracefully', () => {
@@ -283,7 +413,7 @@ describe('InventoryAlertsWidget', () => {
       renderWithProviders(<InventoryAlertsWidget />);
       
       expect(screen.getByTestId('inventory-alerts-panel')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle undefined callbacks gracefully', () => {
       renderWithProviders(
@@ -296,7 +426,7 @@ describe('InventoryAlertsWidget', () => {
       expect(screen.getByTestId('inventory-alerts-panel')).toBeInTheDocument();
       expect(screen.queryByTestId('manual-adjustment-button')).not.toBeInTheDocument();
       expect(screen.queryByTestId('view-category-button')).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle null props gracefully', () => {
       renderWithProviders(
@@ -308,8 +438,8 @@ describe('InventoryAlertsWidget', () => {
       );
       
       expect(screen.getByTestId('inventory-alerts-panel')).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('accessibility', () => {
     it('should maintain accessibility structure from wrapped component', () => {
@@ -319,7 +449,7 @@ describe('InventoryAlertsWidget', () => {
       const panel = screen.getByTestId('inventory-alerts-panel');
       expect(panel).toBeInTheDocument();
       expect(panel).toBeVisible();
-    });
+    }) as any;
 
     it('should pass through all props to maintain accessibility', () => {
       const mockCallback = jest.fn();
@@ -337,7 +467,7 @@ describe('InventoryAlertsWidget', () => {
       expect(screen.getByTestId('max-alerts')).toHaveTextContent('3');
       expect(screen.getByTestId('manual-adjustment-button')).toBeInTheDocument();
       expect(screen.getByTestId('view-category-button')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle keyboard navigation', async () => {
       const user = userEvent.setup();
@@ -355,8 +485,8 @@ describe('InventoryAlertsWidget', () => {
       
       await user.keyboard('{Enter}');
       expect(mockCallback).toHaveBeenCalledWith('test-category-id');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('responsive behavior', () => {
     it('should render correctly on different screen sizes', () => {
@@ -378,7 +508,7 @@ describe('InventoryAlertsWidget', () => {
       global.dispatchEvent(new Event('resize'));
       
       expect(screen.getByTestId('inventory-alerts-panel')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should maintain widget behavior across viewports', () => {
       renderWithProviders(<InventoryAlertsWidget maxAlertsInWidget={7} />);
@@ -386,8 +516,8 @@ describe('InventoryAlertsWidget', () => {
       // Verify widget variant is maintained regardless of screen size
       expect(screen.getByTestId('panel-variant')).toHaveTextContent('widget');
       expect(screen.getByTestId('max-alerts')).toHaveTextContent('7');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('performance', () => {
     it('should handle component re-renders gracefully', () => {
@@ -401,7 +531,7 @@ describe('InventoryAlertsWidget', () => {
       // Component should still render correctly after re-render
       expect(screen.getByTestId('inventory-alerts-panel')).toBeInTheDocument();
       expect(screen.getByTestId('max-alerts')).toHaveTextContent('5');
-    });
+    }) as any;
 
     it('should handle rapid prop changes', () => {
       const { rerender } = renderWithProviders(<InventoryAlertsWidget maxAlertsInWidget={1} />);
@@ -413,7 +543,7 @@ describe('InventoryAlertsWidget', () => {
       
       rerender(<InventoryAlertsWidget maxAlertsInWidget={3} />);
       expect(screen.getByTestId('max-alerts')).toHaveTextContent('3');
-    });
+    }) as any;
 
     it('should handle callback function changes', () => {
       const callback1 = jest.fn();
@@ -428,6 +558,6 @@ describe('InventoryAlertsWidget', () => {
       rerender(<InventoryAlertsWidget onManualAdjustment={callback2} />);
       
       expect(screen.getByTestId('manual-adjustment-button')).toBeInTheDocument();
-    });
-  });
-});
+    }) as any;
+  }) as any;
+}) as any;

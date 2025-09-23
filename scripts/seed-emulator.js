@@ -60,29 +60,68 @@ const DEMO_USER = {
   password: "demo123456",
   displayName: "Demo User",
   role: "admin",
-}; // Seed data
+}; // Category Groups seed data
+const CATEGORY_GROUPS_SEED_DATA = [
+  {
+    id: "tech-group",
+    name: "Technology Products",
+    description: "All technology and electronic items",
+    color: "#2196F3",
+    currentInventory: 100,
+    inventoryUnit: "pcs",
+    inventoryType: "qty",
+    minimumThreshold: 10,
+    lastInventoryUpdate: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: "lifestyle-group", 
+    name: "Lifestyle Products",
+    description: "Books, clothing and lifestyle items",
+    color: "#4CAF50",
+    currentInventory: 50,
+    inventoryUnit: "pcs", 
+    inventoryType: "qty",
+    minimumThreshold: 5,
+    lastInventoryUpdate: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+];
+
+// Seed data
 const CATEGORIES_SEED_DATA = [
   {
     id: "electronics",
     name: "Electronics",
     description: "Electronic devices and gadgets",
     tag: "tech",
+    categoryGroupId: "tech-group",
+    inventoryUnit: "pcs",
+    inventoryDeductionQuantity: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
     id: "books",
-    name: "Books",
+    name: "Books", 
     description: "Books and literature",
     tag: "education",
+    categoryGroupId: "lifestyle-group",
+    inventoryUnit: "pcs",
+    inventoryDeductionQuantity: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
     id: "clothing",
     name: "Clothing",
-    description: "Apparel and fashion items",
+    description: "Apparel and fashion items", 
     tag: "fashion",
+    categoryGroupId: "lifestyle-group",
+    inventoryUnit: "pcs", 
+    inventoryDeductionQuantity: 2,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -194,6 +233,28 @@ async function createDemoUser() {
       return null;
     }
     console.error("❌ Error creating demo user:", error);
+    throw error;
+  }
+}
+
+async function seedCategoryGroups() {
+  try {
+    console.log("🏷️ Seeding category groups...");
+
+    for (const group of CATEGORY_GROUPS_SEED_DATA) {
+      const groupData = {
+        ...group,
+        lastInventoryUpdate: Timestamp.fromDate(group.lastInventoryUpdate),
+        createdAt: Timestamp.fromDate(group.createdAt),
+        updatedAt: Timestamp.fromDate(group.updatedAt),
+      };
+
+      await setDoc(doc(db, "categoryGroups", group.id), groupData);
+    }
+
+    console.log(`✅ Seeded ${CATEGORY_GROUPS_SEED_DATA.length} category groups`);
+  } catch (error) {
+    console.error("❌ Error seeding category groups:", error);
     throw error;
   }
 }
@@ -342,7 +403,10 @@ async function seedEmulatorData() {
       }
     }
 
-    // Seed categories
+    // Seed category groups first
+    await seedCategoryGroups();
+
+    // Seed categories  
     await seedCategories();
 
     // Seed products
@@ -357,6 +421,7 @@ async function seedEmulatorData() {
     console.log("🎉 Firebase emulator seeding completed successfully!");
     console.log(`📧 Demo User: ${DEMO_USER.email}`);
     console.log(`🔑 Password: ${DEMO_USER.password}`);
+    console.log(`🏷️ Category Groups: ${CATEGORY_GROUPS_SEED_DATA.length}`);
     console.log(`📦 Categories: ${CATEGORIES_SEED_DATA.length}`);
     console.log(`🛍️ Products: ${PRODUCTS_SEED_DATA.length}`);
     console.log(`📋 Orders: ${ORDERS_SEED_DATA.length}`);

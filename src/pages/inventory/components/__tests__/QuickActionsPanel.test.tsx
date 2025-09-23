@@ -3,15 +3,16 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { configureStore } from '@reduxjs/toolkit';
+import { Timestamp } from 'firebase/firestore';
 import QuickActionsPanel from '../QuickActionsPanel';
 import inventoryReducer from '../../../../store/slices/inventorySlice';
 
 const theme = createTheme();
 
-const mockStore = configureStore({
+const mockStore = configureStore({ 
   reducer: {
     inventory: inventoryReducer,
-  },
+  } as any,
   preloadedState: {
     inventory: {
       inventoryLevels: [],
@@ -28,7 +29,7 @@ const mockStore = configureStore({
           unit: 'pcs' as const,
           severity: 'critical' as const,
           isActive: true,
-          createdAt: new Date().toISOString(),
+          createdAt: Timestamp.fromDate(new Date()),
         },
         {
           id: 'alert2',
@@ -39,7 +40,7 @@ const mockStore = configureStore({
           unit: 'kg' as const,
           severity: 'high' as const,
           isActive: true,
-          createdAt: new Date().toISOString(),
+          createdAt: Timestamp.fromDate(new Date()),
         },
       ],
       activeInventoryAlerts: [
@@ -52,7 +53,7 @@ const mockStore = configureStore({
           unit: 'pcs' as const,
           severity: 'critical' as const,
           isActive: true,
-          createdAt: new Date().toISOString(),
+          createdAt: Timestamp.fromDate(new Date()),
         },
         {
           id: 'alert2',
@@ -63,7 +64,7 @@ const mockStore = configureStore({
           unit: 'kg' as const,
           severity: 'high' as const,
           isActive: true,
-          createdAt: new Date().toISOString(),
+          createdAt: Timestamp.fromDate(new Date()),
         },
       ],
       loading: {
@@ -112,10 +113,16 @@ const mockStore = configureStore({
       selectedInventoryLevel: null,
       selectedMovement: null,
       selectedAlert: null,
-      lastDeductionResult: null,
+      categoryDeduction: {
+        isProcessing: false,
+        preview: null,
+        categoriesWithDeduction: [],
+        deductionConfigurationSummary: [],
+        lastProcessedOrderItems: [],
+      },      lastDeductionResult: null,
     },
   },
-});
+}) as any;
 
 const renderWithProviders = (ui: React.ReactElement) => {
   return render(
@@ -139,7 +146,7 @@ describe('QuickActionsPanel', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-  });
+  }) as any;
 
   describe('Floating Mode', () => {
     it('renders floating SpeedDial by default', () => {
@@ -148,7 +155,7 @@ describe('QuickActionsPanel', () => {
       );
 
       expect(screen.getByLabelText('Quick inventory actions')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('opens SpeedDial and shows action buttons when clicked', async () => {
       renderWithProviders(
@@ -166,8 +173,8 @@ describe('QuickActionsPanel', () => {
         expect(screen.getByText('View Alerts')).toBeInTheDocument();
         expect(screen.getByText('Configure Thresholds')).toBeInTheDocument();
         expect(screen.getByText('View Movements')).toBeInTheDocument();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('shows badge on alerts action when critical alerts exist', async () => {
       renderWithProviders(
@@ -180,8 +187,8 @@ describe('QuickActionsPanel', () => {
       await waitFor(() => {
         // Should show badge with count of critical alerts (1 in our mock data)
         expect(screen.getByText('1')).toBeInTheDocument();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('calls appropriate handler when action is clicked', async () => {
       renderWithProviders(
@@ -194,11 +201,11 @@ describe('QuickActionsPanel', () => {
       await waitFor(() => {
         const manualAdjustmentAction = screen.getByText('Manual Adjustment');
         fireEvent.click(manualAdjustmentAction);
-      });
+      }) as any;
 
       expect(mockHandlers.onManualAdjustment).toHaveBeenCalledTimes(1);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Embedded Mode', () => {
     it('renders button group in embedded mode', () => {
@@ -213,7 +220,7 @@ describe('QuickActionsPanel', () => {
       expect(screen.getByText('Manual Adjustment')).toBeInTheDocument();
       expect(screen.getByText('Bulk Operations')).toBeInTheDocument();
       expect(screen.getByText('Refresh Data')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('supports horizontal orientation', () => {
       renderWithProviders(
@@ -227,7 +234,7 @@ describe('QuickActionsPanel', () => {
 
       const buttonGroup = screen.getByRole('group');
       expect(buttonGroup).toBeInTheDocument();
-    });
+    }) as any;
 
     it('supports vertical orientation', () => {
       renderWithProviders(
@@ -241,7 +248,7 @@ describe('QuickActionsPanel', () => {
 
       const buttonGroup = screen.getByRole('group');
       expect(buttonGroup).toBeInTheDocument();
-    });
+    }) as any;
 
     it('calls handler when embedded button is clicked', () => {
       renderWithProviders(
@@ -256,8 +263,8 @@ describe('QuickActionsPanel', () => {
       fireEvent.click(exportButton);
 
       expect(mockHandlers.onExportData).toHaveBeenCalledTimes(1);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Compact Mode', () => {
     it('renders compact buttons with icons only', () => {
@@ -275,7 +282,7 @@ describe('QuickActionsPanel', () => {
       // Should show tooltips on hover
       const buttons = screen.getAllByRole('button');
       expect(buttons.length).toBeGreaterThan(0);
-    });
+    }) as any;
 
     it('shows tooltips for compact mode buttons', async () => {
       renderWithProviders(
@@ -291,9 +298,9 @@ describe('QuickActionsPanel', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Manual Adjustment')).toBeInTheDocument();
-      });
-    });
-  });
+      }) as any;
+    }) as any;
+  }) as any;
 
   describe('Custom Actions', () => {
     it('renders custom actions', () => {
@@ -315,7 +322,7 @@ describe('QuickActionsPanel', () => {
       );
 
       expect(screen.getByText('Custom Action')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('calls custom action handler when clicked', () => {
       const customHandler = jest.fn();
@@ -340,8 +347,8 @@ describe('QuickActionsPanel', () => {
       fireEvent.click(customButton);
 
       expect(customHandler).toHaveBeenCalledTimes(1);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Badge Functionality', () => {
     it('shows badges when enabled', () => {
@@ -356,7 +363,7 @@ describe('QuickActionsPanel', () => {
 
       // Should show critical alerts count as badge
       expect(screen.getByText('1')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('hides badges when disabled', () => {
       renderWithProviders(
@@ -370,12 +377,12 @@ describe('QuickActionsPanel', () => {
 
       // Should not show badge count
       expect(screen.queryByText('1')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Loading States', () => {
     it('disables actions when loading', () => {
-      const loadingStore = configureStore({
+      const loadingStore = configureStore({ 
         reducer: {
           inventory: inventoryReducer,
         },
@@ -394,7 +401,7 @@ describe('QuickActionsPanel', () => {
             },
           },
         },
-      });
+      }) as any;
 
       render(
         <Provider store={loadingStore}>
@@ -411,7 +418,7 @@ describe('QuickActionsPanel', () => {
       const buttons = screen.getAllByRole('button');
       buttons.forEach(button => {
         expect(button).toBeDisabled();
-      });
-    });
-  });
-});
+      }) as any;
+    }) as any;
+  }) as any;
+}) as any;

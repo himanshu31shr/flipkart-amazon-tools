@@ -5,6 +5,7 @@ import { store } from '..';
 import { CategorySortConfig } from "../../utils/pdfSorting";
 import { PDFConsolidationService, ConsolidationProgress, ConsolidationError } from '../../services/pdfConsolidation.service';
 import { InventoryDeductionResult } from '../../types/inventory';
+import { InventoryDeductionPreview } from '../../services/inventoryOrderProcessor.service';
 
 export interface PdfMergerState {
   amazonFiles: File[];
@@ -17,6 +18,8 @@ export interface PdfMergerState {
   selectedDate: Date;
   consolidationProgress: ConsolidationProgress | null;
   isConsolidating: boolean;
+  categoryDeductionPreview: InventoryDeductionPreview | null;
+  hasAutomaticDeductionEnabled: boolean;
 }
 
 const initialState: PdfMergerState = {
@@ -30,6 +33,8 @@ const initialState: PdfMergerState = {
   selectedDate: new Date(),
   consolidationProgress: null,
   isConsolidating: false,
+  categoryDeductionPreview: null,
+  hasAutomaticDeductionEnabled: false,
 };
 
 interface MergePDFsParams {
@@ -54,6 +59,76 @@ const readFileFromInput = (file: File): Promise<Uint8Array> => {
     reader.readAsArrayBuffer(file);
   });
 };
+
+export const previewCategoryDeductions = createAsyncThunk(
+  'pdfMerger/previewCategoryDeductions',
+  async (params: MergePDFsParams) => {
+    const { amazonFiles, flipkartFiles, sortConfig } = params;
+
+    if (amazonFiles.length === 0 && flipkartFiles.length === 0) {
+      throw new Error('No files provided');
+    }
+
+    const products = store.getState().products.items;
+    const categories = store.getState().products.categories;
+
+    // Create consolidation service for preview
+    const consolidationService = new PDFConsolidationService({
+      enableProgressTracking: false,
+      enableCancellation: false,
+      chunkSize: 5,
+      validateFiles: true
+    });
+
+    // Step 1: Consolidate files for preview
+    let consolidatedAmazonPDF: Uint8Array | null = null;
+    if (amazonFiles.length > 0) {
+      const amazonFileContents = await Promise.all(
+        amazonFiles.map(file => readFileFromInput(file))
+      );
+      consolidatedAmazonPDF = await consolidationService.mergeAmazonFiles(amazonFileContents);
+    }
+
+    let consolidatedFlipkartPDF: Uint8Array | null = null;
+    if (flipkartFiles.length > 0) {
+      const flipkartFileContents = await Promise.all(
+        flipkartFiles.map(file => readFileFromInput(file))
+      );
+      consolidatedFlipkartPDF = await consolidationService.mergeFlipkartFiles(flipkartFileContents);
+    }
+
+    // Step 2: Preview deductions using transformers
+    const mergePdfs = new PDFMergerService(products, categories);
+    
+    // Preview deductions from both platforms
+    const amazonPreview = consolidatedAmazonPDF ? 
+      await mergePdfs.previewAmazonDeductions(consolidatedAmazonPDF, sortConfig) : null;
+    const flipkartPreview = consolidatedFlipkartPDF ? 
+      await mergePdfs.previewFlipkartDeductions(consolidatedFlipkartPDF, sortConfig) : null;
+
+    // Combine previews
+    const combinedPreview: InventoryDeductionPreview = {
+      items: [
+        ...(amazonPreview?.items || []),
+        ...(flipkartPreview?.items || [])
+      ],
+      totalDeductions: new Map([
+        ...Array.from(amazonPreview?.totalDeductions || new Map()),
+        ...Array.from(flipkartPreview?.totalDeductions || new Map())
+      ]),
+      warnings: [
+        ...(amazonPreview?.warnings || []),
+        ...(flipkartPreview?.warnings || [])
+      ],
+      errors: [
+        ...(amazonPreview?.errors || []),
+        ...(flipkartPreview?.errors || [])
+      ]
+    };
+
+    return combinedPreview;
+  }
+);
 
 export const mergePDFs = createAsyncThunk(
   'pdfMerger/mergePDFs',
@@ -196,6 +271,8 @@ const pdfMergerSlice = createSlice({
       state.selectedDate = new Date();
       state.consolidationProgress = null;
       state.isConsolidating = false;
+      state.categoryDeductionPreview = null;
+      state.hasAutomaticDeductionEnabled = false;
     },
     updateConsolidationProgress: (state, action: PayloadAction<ConsolidationProgress>) => {
       state.consolidationProgress = action.payload;
@@ -204,6 +281,15 @@ const pdfMergerSlice = createSlice({
     clearConsolidationProgress: (state) => {
       state.consolidationProgress = null;
       state.isConsolidating = false;
+    },
+    setCategoryDeductionPreview: (state, action: PayloadAction<InventoryDeductionPreview | null>) => {
+      state.categoryDeductionPreview = action.payload;
+    },
+    clearCategoryDeductionPreview: (state) => {
+      state.categoryDeductionPreview = null;
+    },
+    setAutomaticDeductionEnabled: (state, action: PayloadAction<boolean>) => {
+      state.hasAutomaticDeductionEnabled = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -226,6 +312,21 @@ const pdfMergerSlice = createSlice({
         state.error = action.error.message || 'Failed to merge PDFs';
         state.consolidationProgress = null;
         state.isConsolidating = false;
+      })
+      .addCase(previewCategoryDeductions.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.categoryDeductionPreview = null;
+      })
+      .addCase(previewCategoryDeductions.fulfilled, (state, action) => {
+        state.loading = false;
+        state.categoryDeductionPreview = action.payload;
+        state.hasAutomaticDeductionEnabled = action.payload.items.length > 0;
+      })
+      .addCase(previewCategoryDeductions.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to preview category deductions';
+        state.categoryDeductionPreview = null;
       });
   },
 });
@@ -240,6 +341,9 @@ export const {
   setSelectedDate,
   clearFiles,
   updateConsolidationProgress,
-  clearConsolidationProgress
+  clearConsolidationProgress,
+  setCategoryDeductionPreview,
+  clearCategoryDeductionPreview,
+  setAutomaticDeductionEnabled
 } = pdfMergerSlice.actions;
 export const pdfMergerReducer = pdfMergerSlice.reducer; 

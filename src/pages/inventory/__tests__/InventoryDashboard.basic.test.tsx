@@ -6,7 +6,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { InventoryDashboard } from '../InventoryDashboard';
 
 // Create a minimal mock store
-const mockStore = configureStore({
+const mockStore = configureStore({ 
   reducer: {
     inventory: (state = {
       inventoryLevels: [],
@@ -60,7 +60,7 @@ const mockStore = configureStore({
       error: null,
     }) => state,
   },
-});
+}) as any;
 
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -83,7 +83,7 @@ describe('InventoryDashboard Basic Tests', () => {
     
     // Check that the main heading is present
     expect(screen.getByText('Inventory Management')).toBeInTheDocument();
-  });
+  }) as any;
   
   test('displays basic UI elements', () => {
     render(
@@ -99,7 +99,7 @@ describe('InventoryDashboard Basic Tests', () => {
     expect(screen.getByText('Low Stock')).toBeInTheDocument();
     expect(screen.getByText('Zero Stock')).toBeInTheDocument();
     expect(screen.getByText('Negative Stock')).toBeInTheDocument();
-  });
+  }) as any;
   
   test('displays quick action buttons', () => {
     render(
@@ -111,7 +111,7 @@ describe('InventoryDashboard Basic Tests', () => {
     expect(screen.getByText('Manual Adjustment')).toBeInTheDocument();
     expect(screen.getByText('Inventory Levels')).toBeInTheDocument();
     expect(screen.getByText('Activity History')).toBeInTheDocument();
-  });
+  }) as any;
   
   test('shows empty state messages when no data', () => {
     render(
@@ -122,5 +122,5 @@ describe('InventoryDashboard Basic Tests', () => {
     
     // With empty data, should show appropriate messages
     expect(screen.getByText('No inventory levels found.')).toBeInTheDocument();
-  });
-});
+  }) as any;
+}) as any;

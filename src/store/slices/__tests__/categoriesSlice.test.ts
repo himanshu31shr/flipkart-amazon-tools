@@ -62,6 +62,12 @@ describe('categoriesSlice', () => {
         // Inventory-related state
         categoryInventoryLevels: {},
         categoryGroupInventoryLevels: {},
+        
+        // Deduction-related state
+        categoriesWithDeduction: [],
+        deductionConfiguration: {},
+        deductionLoading: false,
+        deductionError: null,
         categoryInventoryAlerts: [],
         inventoryLoading: false,
         inventoryError: null,
@@ -130,6 +136,10 @@ describe('categoriesSlice', () => {
             categoriesWithZeroStock: [],
             categoryInventoryStatus: {},
             categoryGroups: [],
+            categoriesWithDeduction: [],
+            deductionConfiguration: {},
+            deductionLoading: false,
+            deductionError: null,
           },
         },
       });
@@ -195,7 +205,7 @@ describe('categoriesSlice', () => {
           type: createCategory.fulfilled.type, 
           payload: mockCategory2 
         };
-        const state = categoriesReducer(initialState, action);
+        const state = categoriesReducer(initialState as any, action);
 
         expect(state.items).toHaveLength(2);
         expect(state.items[1]).toEqual(mockCategory2);
@@ -226,7 +236,7 @@ describe('categoriesSlice', () => {
           type: updateCategory.fulfilled.type, 
           payload: updatedCategory 
         };
-        const state = categoriesReducer(initialState, action);
+        const state = categoriesReducer(initialState as any, action);
 
         expect(state.items[0].name).toBe('Updated Electronics');
         expect(state.items[1]).toEqual(mockCategory2); // Should remain unchanged
@@ -245,7 +255,7 @@ describe('categoriesSlice', () => {
           type: updateCategory.fulfilled.type, 
           payload: updatedCategory 
         };
-        const state = categoriesReducer(initialState, action);
+        const state = categoriesReducer(initialState as any, action);
 
         expect(state.items).toEqual([mockCategory]); // Should remain unchanged
       });
@@ -274,7 +284,7 @@ describe('categoriesSlice', () => {
           type: deleteCategory.fulfilled.type, 
           payload: 'cat-1' 
         };
-        const state = categoriesReducer(initialState, action);
+        const state = categoriesReducer(initialState as any, action);
 
         expect(state.items).toHaveLength(1);
         expect(state.items[0]).toEqual(mockCategory2);
@@ -286,13 +296,28 @@ describe('categoriesSlice', () => {
           loading: false,
           error: null,
           selectedCategory: 'cat-1',
+          categoryInventoryLevels: {},
+          categoryGroupInventoryLevels: {},
+          categoryInventoryAlerts: [],
+          inventoryLoading: false,
+          inventoryError: null,
+          categoryGroupsLoading: false,
+          categoryGroupsError: null,
+          categoriesWithLowStock: [],
+          categoriesWithZeroStock: [],
+          categoryInventoryStatus: {},
+          categoryGroups: [],
+          categoriesWithDeduction: [],
+          deductionConfiguration: {},
+          deductionLoading: false,
+          deductionError: null,
         };
         
         const action = { 
           type: deleteCategory.fulfilled.type, 
           payload: 'cat-1' 
         };
-        const state = categoriesReducer(initialState, action);
+        const state = categoriesReducer(initialState as any, action);
 
         expect(state.items).toHaveLength(0);
         expect(state.selectedCategory).toBeNull();
@@ -304,13 +329,28 @@ describe('categoriesSlice', () => {
           loading: false,
           error: null,
           selectedCategory: 'cat-1',
+          categoryInventoryLevels: {},
+          categoryGroupInventoryLevels: {},
+          categoryInventoryAlerts: [],
+          inventoryLoading: false,
+          inventoryError: null,
+          categoryGroupsLoading: false,
+          categoryGroupsError: null,
+          categoriesWithLowStock: [],
+          categoriesWithZeroStock: [],
+          categoryInventoryStatus: {},
+          categoryGroups: [],
+          categoriesWithDeduction: [],
+          deductionConfiguration: {},
+          deductionLoading: false,
+          deductionError: null,
         };
         
         const action = { 
           type: deleteCategory.fulfilled.type, 
           payload: 'cat-2' 
         };
-        const state = categoriesReducer(initialState, action);
+        const state = categoriesReducer(initialState as any, action);
 
         expect(state.items).toHaveLength(1);
         expect(state.selectedCategory).toBe('cat-1');

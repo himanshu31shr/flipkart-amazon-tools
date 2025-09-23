@@ -42,7 +42,7 @@ const mockSelectedItems: InventoryLevel[] = [
   },
 ];
 
-const mockStore = configureStore({
+const mockStore = configureStore({ 
   reducer: {
     inventory: inventoryReducer,
   },
@@ -101,9 +101,16 @@ const mockStore = configureStore({
       selectedMovement: null,
       selectedAlert: null,
       lastDeductionResult: null,
+      categoryDeduction: {
+        isProcessing: false,
+        preview: null,
+        categoriesWithDeduction: [],
+        deductionConfigurationSummary: [],
+        lastProcessedOrderItems: [],
+      },
     },
   },
-});
+}) as any;
 
 const renderWithProviders = (ui: React.ReactElement) => {
   return render(
@@ -125,7 +132,7 @@ describe('BulkActionsToolbar', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-  });
+  }) as any;
 
   describe('Visibility and Basic Rendering', () => {
     it('does not render when no items are selected', () => {
@@ -137,7 +144,7 @@ describe('BulkActionsToolbar', () => {
       );
       
       expect(container.firstChild).toBeNull();
-    });
+    }) as any;
 
     it('renders when items are selected', () => {
       renderWithProviders(
@@ -149,7 +156,7 @@ describe('BulkActionsToolbar', () => {
 
       expect(screen.getByText('3 selected')).toBeInTheDocument();
       expect(screen.getByText('Total: 20 units')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('displays status chips for selected items', () => {
       renderWithProviders(
@@ -162,7 +169,7 @@ describe('BulkActionsToolbar', () => {
       expect(screen.getByText('1 healthy')).toBeInTheDocument();
       expect(screen.getByText('1 low stock')).toBeInTheDocument();
       expect(screen.getByText('1 zero stock')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('renders in compact mode', () => {
       renderWithProviders(
@@ -176,8 +183,8 @@ describe('BulkActionsToolbar', () => {
       expect(screen.getByText('3 selected')).toBeInTheDocument();
       // Status chips should not be visible in compact mode
       expect(screen.queryByText('1 healthy')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Action Buttons', () => {
     it('shows bulk adjustment button', () => {
@@ -189,7 +196,7 @@ describe('BulkActionsToolbar', () => {
       );
 
       expect(screen.getByText('Bulk Adjustment')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('shows update thresholds button', () => {
       renderWithProviders(
@@ -200,7 +207,7 @@ describe('BulkActionsToolbar', () => {
       );
 
       expect(screen.getByText('Update Thresholds')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('calls clear selection when close button is clicked', () => {
       renderWithProviders(
@@ -214,8 +221,8 @@ describe('BulkActionsToolbar', () => {
       fireEvent.click(closeButton);
 
       expect(mockHandlers.onClearSelection).toHaveBeenCalledTimes(1);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Actions Menu', () => {
     it('opens and closes actions menu', async () => {
@@ -235,12 +242,12 @@ describe('BulkActionsToolbar', () => {
       await waitFor(() => {
         expect(screen.getByText('Export Selected')).toBeInTheDocument();
         expect(screen.getByText('Filter by Selection')).toBeInTheDocument();
-      });
+      }) as any;
 
       // Just verify the menu is open - don't test closing behavior
       // as it's complex MUI internal behavior
       expect(screen.getByText('Export Selected')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('calls export handler when export menu item is clicked', async () => {
       renderWithProviders(
@@ -259,11 +266,11 @@ describe('BulkActionsToolbar', () => {
       await waitFor(() => {
         const exportMenuItem = screen.getByText('Export Selected');
         fireEvent.click(exportMenuItem);
-      });
+      }) as any;
 
       expect(mockHandlers.onBulkExport).toHaveBeenCalledWith(mockSelectedItems);
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Bulk Adjustment Dialog', () => {
     it('opens bulk adjustment dialog', async () => {
@@ -280,8 +287,8 @@ describe('BulkActionsToolbar', () => {
       await waitFor(() => {
         expect(screen.getByText('Bulk Inventory Adjustment')).toBeInTheDocument();
         expect(screen.getByText('Adjusting 3 items')).toBeInTheDocument();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('allows setting adjustment type and amount', async () => {
       renderWithProviders(
@@ -296,17 +303,17 @@ describe('BulkActionsToolbar', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Bulk Inventory Adjustment')).toBeInTheDocument();
-      });
+      }) as any;
 
       // Set amount first (easier to test)
       const amountInput = screen.getByLabelText('Amount');
-      fireEvent.change(amountInput, { target: { value: '5' } });
+      fireEvent.change(amountInput, { target: { value: '5' } }) as any;
 
       expect(amountInput).toHaveValue(5);
       
       // Test that adjustment type selector is present by looking for the combobox
       expect(screen.getByRole('combobox')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('calls bulk adjustment handler when applied', async () => {
       mockHandlers.onBulkAdjustment.mockResolvedValue(undefined);
@@ -324,16 +331,16 @@ describe('BulkActionsToolbar', () => {
       await waitFor(() => {
         // Set amount
         const amountInput = screen.getByLabelText('Amount');
-        fireEvent.change(amountInput, { target: { value: '10' } });
+        fireEvent.change(amountInput, { target: { value: '10' } }) as any;
 
         // Set reason
         const reasonInput = screen.getByLabelText('Reason (Optional)');
-        fireEvent.change(reasonInput, { target: { value: 'Test adjustment' } });
+        fireEvent.change(reasonInput, { target: { value: 'Test adjustment' } }) as any;
 
         // Apply adjustment
         const applyButton = screen.getByText('Apply Adjustment');
         fireEvent.click(applyButton);
-      });
+      }) as any;
 
       expect(mockHandlers.onBulkAdjustment).toHaveBeenCalledWith(
         mockSelectedItems,
@@ -343,7 +350,7 @@ describe('BulkActionsToolbar', () => {
           reason: 'Test adjustment',
         }
       );
-    });
+    }) as any;
 
     it('disables apply button when amount is zero', async () => {
       renderWithProviders(
@@ -359,9 +366,9 @@ describe('BulkActionsToolbar', () => {
       await waitFor(() => {
         const applyButton = screen.getByText('Apply Adjustment');
         expect(applyButton).toBeDisabled();
-      });
-    });
-  });
+      }) as any;
+    }) as any;
+  }) as any;
 
   describe('Bulk Threshold Update Dialog', () => {
     it('opens bulk threshold update dialog', async () => {
@@ -378,8 +385,8 @@ describe('BulkActionsToolbar', () => {
       await waitFor(() => {
         expect(screen.getByText('Update Bulk Thresholds')).toBeInTheDocument();
         expect(screen.getByText('Updating thresholds for 3 items')).toBeInTheDocument();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('calls bulk threshold update handler when applied', async () => {
       mockHandlers.onBulkThresholdUpdate.mockResolvedValue(undefined);
@@ -396,11 +403,11 @@ describe('BulkActionsToolbar', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Update Bulk Thresholds')).toBeInTheDocument();
-      });
+      }) as any;
 
       // Set threshold value
       const thresholdInput = screen.getByLabelText('New Minimum Threshold');
-      fireEvent.change(thresholdInput, { target: { value: '15' } });
+      fireEvent.change(thresholdInput, { target: { value: '15' } }) as any;
 
       // Find and click the update button in the dialog
       const updateButtons = screen.getAllByText('Update Thresholds');
@@ -414,8 +421,8 @@ describe('BulkActionsToolbar', () => {
           mockSelectedItems,
           15
         );
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('shows warning message in threshold dialog', async () => {
       renderWithProviders(
@@ -430,13 +437,13 @@ describe('BulkActionsToolbar', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/This will overwrite existing threshold settings/)).toBeInTheDocument();
-      });
-    });
-  });
+      }) as any;
+    }) as any;
+  }) as any;
 
   describe('Loading States', () => {
     it('disables actions when adjustment is loading', () => {
-      const loadingStore = configureStore({
+      const loadingStore = configureStore({ 
         reducer: {
           inventory: inventoryReducer,
         },
@@ -455,7 +462,7 @@ describe('BulkActionsToolbar', () => {
             },
           },
         },
-      });
+      }) as any;
 
       render(
         <Provider store={loadingStore}>
@@ -473,8 +480,8 @@ describe('BulkActionsToolbar', () => {
 
       expect(adjustmentButton).toBeDisabled();
       expect(thresholdButton).toBeDisabled();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Responsive Behavior', () => {
     it('handles compact mode correctly', () => {
@@ -489,12 +496,12 @@ describe('BulkActionsToolbar', () => {
       // In compact mode, detailed information should be hidden
       expect(screen.queryByText('Total: 20 units')).not.toBeInTheDocument();
       expect(screen.queryByText('1 healthy')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Error Handling', () => {
     it('handles bulk adjustment errors gracefully', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {}) as any;
       mockHandlers.onBulkAdjustment.mockRejectedValue(new Error('Adjustment failed'));
 
       renderWithProviders(
@@ -509,21 +516,21 @@ describe('BulkActionsToolbar', () => {
 
       await waitFor(() => {
         const amountInput = screen.getByLabelText('Amount');
-        fireEvent.change(amountInput, { target: { value: '10' } });
+        fireEvent.change(amountInput, { target: { value: '10' } }) as any;
 
         const applyButton = screen.getByText('Apply Adjustment');
         fireEvent.click(applyButton);
-      });
+      }) as any;
 
       await waitFor(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith('Bulk adjustment failed:', expect.any(Error));
-      });
+      }) as any;
 
       consoleErrorSpy.mockRestore();
-    });
+    }) as any;
 
     it('handles bulk threshold update errors gracefully', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {}) as any;
       mockHandlers.onBulkThresholdUpdate.mockRejectedValue(new Error('Update failed'));
 
       renderWithProviders(
@@ -538,10 +545,10 @@ describe('BulkActionsToolbar', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Update Bulk Thresholds')).toBeInTheDocument();
-      });
+      }) as any;
 
       const thresholdInput = screen.getByLabelText('New Minimum Threshold');
-      fireEvent.change(thresholdInput, { target: { value: '15' } });
+      fireEvent.change(thresholdInput, { target: { value: '15' } }) as any;
 
       // Find and click the update button in the dialog
       const updateButtons = screen.getAllByText('Update Thresholds');
@@ -552,9 +559,9 @@ describe('BulkActionsToolbar', () => {
 
       await waitFor(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith('Bulk threshold update failed:', expect.any(Error));
-      });
+      }) as any;
 
       consoleErrorSpy.mockRestore();
-    });
-  });
-});
+    }) as any;
+  }) as any;
+}) as any;

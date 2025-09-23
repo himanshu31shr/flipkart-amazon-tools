@@ -125,9 +125,16 @@ const mockInitialState = {
         selectedMovement: null,
         selectedAlert: null,
         lastDeductionResult: null,
+        categoryDeduction: {
+            isProcessing: false,
+            preview: null,
+            categoriesWithDeduction: [],
+            deductionConfigurationSummary: [],
+            lastProcessedOrderItems: [],
+        },
     },
     auth: {
-        user: { uid: 'test-user', email: 'test@example.com' },
+        user: null,
         loading: false,
         error: null,
         isAuthenticated: true,
@@ -145,7 +152,7 @@ const mockInitialState = {
 
 // Create test store
 const createTestStore = (initialState = mockInitialState) => {
-    return configureStore({
+    return configureStore({ 
         reducer: {
             inventory: inventoryReducer,
             auth: authReducer,
@@ -180,10 +187,10 @@ describe('InventoryDashboard', () => {
                     <InventoryDashboard />
                 </TestWrapper>
             );
-        });
+        }) as any;
         
         expect(screen.getByText('Inventory Management')).toBeInTheDocument();
-    });
+    }) as any;
     
     test('displays inventory metrics correctly', async () => {
         await act(async () => {
@@ -192,13 +199,13 @@ describe('InventoryDashboard', () => {
                     <InventoryDashboard />
                 </TestWrapper>
             );
-        });
+        }) as any;
         
         // Check for metric cards - use getAllByText since these labels might appear multiple times
         expect(screen.getAllByText('Healthy Stock').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Low Stock').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Zero Stock').length).toBeGreaterThan(0);
-    });
+    }) as any;
     
     test('displays quick action buttons', async () => {
         await act(async () => {
@@ -207,12 +214,12 @@ describe('InventoryDashboard', () => {
                     <InventoryDashboard />
                 </TestWrapper>
             );
-        });
+        }) as any;
         
         expect(screen.getByText('Export')).toBeInTheDocument();
         expect(screen.getByText('Import')).toBeInTheDocument();
         expect(screen.getByText('Manual Adjustment')).toBeInTheDocument();
-    });
+    }) as any;
     
     test('displays alerts section when there are alerts', async () => {
         // TestWrapper creates empty store, so no alerts section should be displayed
@@ -222,12 +229,12 @@ describe('InventoryDashboard', () => {
                     <InventoryDashboard />
                 </TestWrapper>
             );
-        });
+        }) as any;
         
         // When there are no alerts, the alerts section should not be rendered
         expect(screen.queryByText('Inventory Alerts')).not.toBeInTheDocument();
         expect(screen.queryByText('Critical Alerts')).not.toBeInTheDocument();
-    });
+    }) as any;
     
     test('displays inventory levels section', async () => {
         await act(async () => {
@@ -236,13 +243,13 @@ describe('InventoryDashboard', () => {
                     <InventoryDashboard />
                 </TestWrapper>
             );
-        });
+        }) as any;
         
         // Check for the tabbed interface
         expect(screen.getByText('Inventory Levels')).toBeInTheDocument();
         expect(screen.getByText('Activity History')).toBeInTheDocument();
         expect(screen.getByText('All Inventory Levels')).toBeInTheDocument();
-    });
+    }) as any;
     
     test('handles loading state', async () => {
         const loadingState = {
@@ -266,12 +273,12 @@ describe('InventoryDashboard', () => {
                     </BrowserRouter>
                 </Provider>
             );
-        });
+        }) as any;
         
         // Component should still render basic structure during loading
         expect(screen.getByText('Inventory Management')).toBeInTheDocument();
         expect(screen.getByText('Export')).toBeInTheDocument();
-    });
+    }) as any;
     
     test('handles error state', async () => {
         const errorState = {
@@ -285,7 +292,7 @@ describe('InventoryDashboard', () => {
             },
         };
         
-        const store = createTestStore(errorState);
+        const store = createTestStore(errorState as any);
         
         await act(async () => {
             render(
@@ -295,12 +302,12 @@ describe('InventoryDashboard', () => {
                     </BrowserRouter>
                 </Provider>
             );
-        });
+        }) as any;
         
         // Component should still render despite error, error appears in snackbar
         expect(screen.getByText('Inventory Management')).toBeInTheDocument();
         expect(screen.getByText('Export')).toBeInTheDocument();
-    });
+    }) as any;
     
     test('handles empty inventory state', async () => {
         const emptyState = {
@@ -323,12 +330,12 @@ describe('InventoryDashboard', () => {
                     </BrowserRouter>
                 </Provider>
             );
-        });
+        }) as any;
         
         // Multiple "0" values in metric cards, check they exist
         expect(screen.getAllByText('0').length).toBeGreaterThan(0);
         // Component should render the basic structure even when empty
         expect(screen.getByText('Inventory Management')).toBeInTheDocument();
         expect(screen.getByText('Healthy Stock')).toBeInTheDocument();
-    });
-});
+    }) as any;
+}) as any;

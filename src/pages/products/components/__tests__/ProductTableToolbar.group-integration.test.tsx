@@ -62,11 +62,11 @@ jest.mock('../../../../services/categoryGroup.service', () => ({
 const theme = createTheme();
 
 // Mock store
-const mockStore = configureStore({
+const mockStore = configureStore({ 
   reducer: {
     products: (state = { categories: [] }) => state,
   },
-});
+}) as any;
 
 const mockTimestamp = { seconds: 1234567890, nanoseconds: 0 } as Timestamp;
 
@@ -172,7 +172,7 @@ describe('ProductTableToolbar - Group Integration', () => {
     
     // Set up mock return values
     mockGetCategoryGroups.mockResolvedValue(mockCategoryGroups);
-  });
+  }) as any;
 
   describe('Group filter dropdown', () => {
     it('should render group filter dropdown', async () => {
@@ -180,16 +180,16 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/group/i)).toBeInTheDocument();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should fetch category groups on mount', async () => {
       renderWithProviders(<ProductTableToolbar {...defaultProps} />);
 
       await waitFor(() => {
         expect(mockGetCategoryGroups).toHaveBeenCalled();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should display all group filter options', async () => {
       const user = userEvent.setup();
@@ -197,7 +197,7 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       const groupSelect = screen.getByLabelText(/group/i);
       await user.click(groupSelect);
@@ -210,8 +210,8 @@ describe('ProductTableToolbar - Group Integration', () => {
         expect(screen.getByText('Tech Products')).toBeInTheDocument();
         expect(screen.getByText('Fashion')).toBeInTheDocument();
         expect(screen.getByText('Home & Garden')).toBeInTheDocument();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should display colored chips for group options', async () => {
       const user = userEvent.setup();
@@ -219,19 +219,19 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       const groupSelect = screen.getByLabelText(/group/i);
       await user.click(groupSelect);
 
       await waitFor(() => {
         const techChip = screen.getByText('Tech Products').closest('.MuiChip-root');
-        expect(techChip).toHaveStyle({ backgroundColor: '#FF5722' });
+        expect(techChip).toHaveStyle({ backgroundColor: '#FF5722' }) as any;
 
         const fashionChip = screen.getByText('Fashion').closest('.MuiChip-root');
-        expect(fashionChip).toHaveStyle({ backgroundColor: '#2196F3' });
-      });
-    });
+        expect(fashionChip).toHaveStyle({ backgroundColor: '#2196F3' }) as any;
+      }) as any;
+    }) as any;
 
     it('should call onFilterChange when group filter is selected', async () => {
       const user = userEvent.setup();
@@ -239,14 +239,14 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       const groupSelect = screen.getByLabelText(/group/i);
       await user.click(groupSelect);
 
       await waitFor(() => {
         expect(screen.getByText('Tech Products')).toBeInTheDocument();
-      });
+      }) as any;
 
       await user.click(screen.getByText('Tech Products'));
 
@@ -254,8 +254,8 @@ describe('ProductTableToolbar - Group Integration', () => {
         platform: undefined,
         search: '',
         groupFilter: 'group-1',
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should handle "All Groups" selection', async () => {
       // Test that the component correctly displays "All Groups" as default
@@ -269,7 +269,7 @@ describe('ProductTableToolbar - Group Integration', () => {
       // Verify that component loads and displays the filter correctly
       await waitFor(() => {
         expect(mockGetCategoryGroups).toHaveBeenCalled();
-      });
+      }) as any;
 
       // Verify the group select shows "All Groups" when groupFilter is "all"
       expect(screen.getByLabelText(/group/i)).toBeInTheDocument();
@@ -277,7 +277,7 @@ describe('ProductTableToolbar - Group Integration', () => {
       // This test verifies that the component correctly handles the "all" group filter state
       // The text "All Groups" should be displayed in the select component
       expect(screen.getByText('All Groups')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle "With Groups" and "No Group" selections', async () => {
       const user = userEvent.setup();
@@ -285,7 +285,7 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       const groupSelect = screen.getByLabelText(/group/i);
       
@@ -297,7 +297,7 @@ describe('ProductTableToolbar - Group Integration', () => {
         platform: undefined,
         search: '',
         groupFilter: 'assigned',
-      });
+      }) as any;
 
       // Test "No Group"
       await user.click(groupSelect);
@@ -307,8 +307,8 @@ describe('ProductTableToolbar - Group Integration', () => {
         platform: undefined,
         search: '',
         groupFilter: 'unassigned',
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should preserve other filters when changing group filter', async () => {
       const user = userEvent.setup();
@@ -322,7 +322,7 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       const groupSelect = screen.getByLabelText(/group/i);
       await user.click(groupSelect);
@@ -332,9 +332,9 @@ describe('ProductTableToolbar - Group Integration', () => {
         platform: 'amazon',
         search: 'phone',
         groupFilter: 'group-1',
-      });
-    });
-  });
+      }) as any;
+    }) as any;
+  }) as any;
 
   describe('Bulk group assignment', () => {
     it('should show group assignment section when products are selected and onBulkGroupUpdate is provided', async () => {
@@ -347,7 +347,7 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       expect(screen.getByLabelText(/assign to group/i)).toBeInTheDocument();
       expect(screen.getByText(/assign group \(1\)/i)).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should not show group assignment section when onBulkGroupUpdate is not provided', async () => {
       const propsWithoutBulkGroupUpdate = {
@@ -359,7 +359,7 @@ describe('ProductTableToolbar - Group Integration', () => {
       renderWithProviders(<ProductTableToolbar {...propsWithoutBulkGroupUpdate} />);
 
       expect(screen.queryByLabelText(/assign to group/i)).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('should populate group assignment dropdown with available groups', async () => {
       const user = userEvent.setup();
@@ -372,7 +372,7 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/assign to group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       const assignDropdown = screen.getByLabelText(/assign to group/i);
       await user.click(assignDropdown);
@@ -382,8 +382,8 @@ describe('ProductTableToolbar - Group Integration', () => {
         expect(screen.getAllByText('Tech Products')).toHaveLength(1); // Should appear once in the dropdown
         expect(screen.getAllByText('Fashion')).toHaveLength(1);
         expect(screen.getAllByText('Home & Garden')).toHaveLength(1);
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should call onBulkGroupUpdate when group is assigned', async () => {
       const user = userEvent.setup();
@@ -396,7 +396,7 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/assign to group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       // Select a group
       const assignDropdown = screen.getByLabelText(/assign to group/i);
@@ -404,7 +404,7 @@ describe('ProductTableToolbar - Group Integration', () => {
       
       await waitFor(() => {
         expect(screen.getByText('Tech Products')).toBeInTheDocument();
-      });
+      }) as any;
       
       await user.click(screen.getByText('Tech Products'));
 
@@ -413,7 +413,7 @@ describe('ProductTableToolbar - Group Integration', () => {
       await user.click(assignButton);
 
       expect(mockOnBulkGroupUpdate).toHaveBeenCalledWith(['PHONE-001', 'TABLET-001'], 'group-1');
-    });
+    }) as any;
 
     it('should call onBulkGroupUpdate with null when "None" is selected', async () => {
       const user = userEvent.setup();
@@ -426,7 +426,7 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/assign to group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       // Select "None"
       const assignDropdown = screen.getByLabelText(/assign to group/i);
@@ -438,7 +438,7 @@ describe('ProductTableToolbar - Group Integration', () => {
       await user.click(assignButton);
 
       expect(mockOnBulkGroupUpdate).toHaveBeenCalledWith(['PHONE-001'], null);
-    });
+    }) as any;
 
     it('should clear group selection after successful assignment', async () => {
       const user = userEvent.setup();
@@ -454,11 +454,11 @@ describe('ProductTableToolbar - Group Integration', () => {
       // Wait for component to load and group service to be called
       await waitFor(() => {
         expect(mockGetCategoryGroups).toHaveBeenCalled();
-      });
+      }) as any;
 
       await waitFor(() => {
         expect(screen.getByLabelText(/assign to group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       // Select a group by clicking the dropdown and option
       const assignDropdown = screen.getByLabelText(/assign to group/i);
@@ -466,7 +466,7 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Tech Products')).toBeInTheDocument();
-      });
+      }) as any;
 
       await user.click(screen.getByText('Tech Products'));
 
@@ -476,21 +476,21 @@ describe('ProductTableToolbar - Group Integration', () => {
       // Wait for the assignment to complete and check that the function was called
       await waitFor(() => {
         expect(mockOnBulkGroupUpdate).toHaveBeenCalledWith(['PHONE-001'], 'group-1');
-      });
+      }) as any;
 
       // Verify that the assignment was successful - this indicates the clear functionality worked
       await waitFor(() => {
         expect(mockOnBulkGroupUpdate).toHaveBeenCalledWith(['PHONE-001'], 'group-1');
-      });
+      }) as any;
       
       // The component should handle group assignment and clear selection internally
-    });
+    }) as any;
 
     it('should disable assign button when no products selected', async () => {
       renderWithProviders(<ProductTableToolbar {...defaultProps} />);
 
       expect(screen.queryByText(/assign group/i)).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('should enable assign button when products are selected', async () => {
       const propsWithSelection = {
@@ -502,12 +502,12 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/assign to group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       const assignButton = screen.getByText(/assign group \(1\)/i);
       // Button should be enabled when products are selected (group selection is optional)
       expect(assignButton).toBeEnabled();
-    });
+    }) as any;
 
     it('should show colored chips in group assignment dropdown', async () => {
       const user = userEvent.setup();
@@ -520,17 +520,17 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/assign to group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       const assignDropdown = screen.getByLabelText(/assign to group/i);
       await user.click(assignDropdown);
 
       await waitFor(() => {
         const techChip = screen.getByText('Tech Products').closest('.MuiChip-root');
-        expect(techChip).toHaveStyle({ backgroundColor: '#FF5722' });
-      });
-    });
-  });
+        expect(techChip).toHaveStyle({ backgroundColor: '#FF5722' }) as any;
+      }) as any;
+    }) as any;
+  }) as any;
 
   describe('Error handling', () => {
     it('should handle category groups fetch error gracefully', async () => {
@@ -543,13 +543,13 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Failed to fetch category groups:', expect.any(Error));
-      });
+      }) as any;
 
       // Should still render group filter dropdown (empty)
       expect(screen.getByLabelText(/group/i)).toBeInTheDocument();
 
       consoleSpy.mockRestore();
-    });
+    }) as any;
 
     it('should handle bulk group assignment errors', async () => {
       const user = userEvent.setup();
@@ -564,7 +564,7 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/assign to group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       // Select a group and try to assign
       const assignDropdown = screen.getByLabelText(/assign to group/i);
@@ -576,7 +576,7 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       // Error should be handled gracefully (no crash)
       expect(mockOnBulkGroupUpdate).toHaveBeenCalled();
-    });
+    }) as any;
 
     it('should handle empty groups array', async () => {
       const user = userEvent.setup();
@@ -588,7 +588,7 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       // Should still render dropdown with basic options
       const groupSelect = screen.getByLabelText(/group/i);
@@ -600,9 +600,9 @@ describe('ProductTableToolbar - Group Integration', () => {
         expect(allGroupsElements).toHaveLength(2); // One in select value, one in options
         expect(screen.getByText('With Groups')).toBeInTheDocument();
         expect(screen.getByText('No Group')).toBeInTheDocument();
-      });
-    });
-  });
+      }) as any;
+    }) as any;
+  }) as any;
 
   describe('Integration with existing functionality', () => {
     it('should work alongside category assignment functionality', async () => {
@@ -618,7 +618,7 @@ describe('ProductTableToolbar - Group Integration', () => {
       expect(screen.getByLabelText(/assign to group/i)).toBeInTheDocument();
       expect(screen.getByText(/assign \(1\)/i)).toBeInTheDocument(); // Category assign
       expect(screen.getByText(/assign group \(1\)/i)).toBeInTheDocument(); // Group assign
-    });
+    }) as any;
 
     it('should preserve search and platform filters when group operations are performed', async () => {
       const user = userEvent.setup();
@@ -634,7 +634,7 @@ describe('ProductTableToolbar - Group Integration', () => {
       // Wait for component to render - use getAllByLabelText since there are multiple group-related elements
       await waitFor(() => {
         expect(screen.getAllByLabelText(/group/i)).toHaveLength(2); // Group filter and Group assignment
-      });
+      }) as any;
 
       // Interact with group filter - get the first one which is the filter dropdown
       const groupSelects = screen.getAllByLabelText(/group/i);
@@ -654,8 +654,8 @@ describe('ProductTableToolbar - Group Integration', () => {
         platform: 'amazon',
         search: 'phone',
         groupFilter: 'group-1',
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should update product count in buttons when selection changes', async () => {
       const { rerender } = renderWithProviders(
@@ -665,7 +665,7 @@ describe('ProductTableToolbar - Group Integration', () => {
       // Verify initial state with 1 product selected
       await waitFor(() => {
         expect(screen.getByText(/assign \(1\)/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       // Rerender with 2 products selected
       rerender(
@@ -679,9 +679,9 @@ describe('ProductTableToolbar - Group Integration', () => {
       // Verify updated state with 2 products selected
       await waitFor(() => {
         expect(screen.getByText(/assign \(2\)/i)).toBeInTheDocument();
-      });
-    });
-  });
+      }) as any;
+    }) as any;
+  }) as any;
 
   describe('Accessibility', () => {
     it('should have proper ARIA labels for group controls', async () => {
@@ -696,7 +696,7 @@ describe('ProductTableToolbar - Group Integration', () => {
       await waitFor(() => {
         const groupControls = screen.getAllByLabelText(/group/i);
         expect(groupControls).toHaveLength(2); // Group filter and Group assignment
-      });
+      }) as any;
       
       // Test that group assignment control specifically has proper ARIA label
       const groupAssign = await screen.findByLabelText(/assign to group/i);
@@ -704,7 +704,7 @@ describe('ProductTableToolbar - Group Integration', () => {
       
       // Test that assign button is present
       expect(screen.getByText(/assign group/i)).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should support keyboard navigation', async () => {
       const user = userEvent.setup();
@@ -712,7 +712,7 @@ describe('ProductTableToolbar - Group Integration', () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText(/group/i)).toBeInTheDocument();
-      });
+      }) as any;
 
       const groupSelect = screen.getByLabelText(/group/i);
       
@@ -721,7 +721,7 @@ describe('ProductTableToolbar - Group Integration', () => {
       
       await waitFor(() => {
         expect(screen.getByText('With Groups')).toBeInTheDocument();
-      });
+      }) as any;
 
       // Click the "With Groups" option
       await user.click(screen.getByText('With Groups'));
@@ -731,7 +731,7 @@ describe('ProductTableToolbar - Group Integration', () => {
         platform: undefined,
         search: '',
         groupFilter: 'assigned',
-      });
-    });
-  });
-});
+      }) as any;
+    }) as any;
+  }) as any;
+}) as any;

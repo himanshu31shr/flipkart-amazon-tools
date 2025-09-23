@@ -337,7 +337,12 @@ export const InventoryAlertsPanel: React.FC<InventoryAlertsPanelProps> = ({
   const formatTimestamp = (timestamp?: { toDate?: () => Date } | Date | number | string) => {
     if (!timestamp) return 'Unknown';
     
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    let date: Date;
+    if (typeof timestamp === 'object' && timestamp && 'toDate' in timestamp && typeof timestamp.toDate === 'function') {
+      date = timestamp.toDate();
+    } else {
+      date = new Date(timestamp as string | number | Date);
+    }
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMinutes = Math.floor(diffMs / (1000 * 60));

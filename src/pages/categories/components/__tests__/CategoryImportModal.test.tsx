@@ -26,7 +26,7 @@ describe('CategoryImportModal', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-  });
+  }) as any;
 
   describe('Component Rendering', () => {
     it('renders the modal when open is true', () => {
@@ -35,13 +35,13 @@ describe('CategoryImportModal', () => {
       expect(screen.getByText('Import Categories')).toBeInTheDocument();
       expect(screen.getByText(/Upload a CSV file with category data/)).toBeInTheDocument();
       expect(screen.getByText(/name, description, tag, and costPrice/)).toBeInTheDocument();
-    });
+    }) as any;
 
     it('does not render the modal when open is false', () => {
       renderWithTheme(<CategoryImportModal {...defaultProps} open={false} />);
 
       expect(screen.queryByText('Import Categories')).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('renders all required UI elements', () => {
       renderWithTheme(<CategoryImportModal {...defaultProps} />);
@@ -51,7 +51,7 @@ describe('CategoryImportModal', () => {
       expect(screen.getByText('Cancel')).toBeInTheDocument();
       expect(screen.getByText('Import')).toBeInTheDocument();
       expect(screen.getByText('Note:')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('shows information alert about simplified functionality', () => {
       renderWithTheme(<CategoryImportModal {...defaultProps} />);
@@ -59,15 +59,15 @@ describe('CategoryImportModal', () => {
       expect(screen.getByText('Note:')).toBeInTheDocument();
       expect(screen.getByText(/Category import functionality is currently simplified/)).toBeInTheDocument();
       expect(screen.getByText(/For complex imports, please use the individual category creation form/)).toBeInTheDocument();
-    });
+    }) as any;
 
     it('shows file input with correct accept attribute', () => {
       renderWithTheme(<CategoryImportModal {...defaultProps} />);
 
       const fileInput = screen.getByDisplayValue('');
       expect(fileInput).toHaveAttribute('accept', '.csv');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('User Interactions', () => {
     it('calls onClose when Cancel button is clicked', async () => {
@@ -79,7 +79,7 @@ describe('CategoryImportModal', () => {
       await user.click(cancelButton);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
-    });
+    }) as any;
 
     it('calls onClose when Escape key is pressed', async () => {
       const user = userEvent.setup();
@@ -89,7 +89,7 @@ describe('CategoryImportModal', () => {
       // Press Escape key to close modal (simpler and more reliable than clicking backdrop)
       await user.keyboard('{Escape}');
       expect(mockOnClose).toHaveBeenCalledTimes(1);
-    });
+    }) as any;
 
     it('does not call onClose when modal content is clicked', async () => {
       const user = userEvent.setup();
@@ -100,20 +100,20 @@ describe('CategoryImportModal', () => {
       await user.click(modalContent);
 
       expect(mockOnClose).not.toHaveBeenCalled();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Import Functionality', () => {
     beforeEach(() => {
       jest.useFakeTimers();
-    });
+    }) as any;
 
     afterEach(() => {
       jest.useRealTimers();
-    });
+    }) as any;
 
     it('starts import process when Import button is clicked', async () => {
-      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime }) as any;
       
       renderWithTheme(<CategoryImportModal {...defaultProps} />);
 
@@ -133,18 +133,18 @@ describe('CategoryImportModal', () => {
         act(() => {
         act(() => {
         jest.advanceTimersByTime(1000);
-      });
-      });
-      });
+      }) as any;
+      }) as any;
+      }) as any;
 
       await waitFor(() => {
         expect(mockOnImportSuccess).toHaveBeenCalledTimes(1);
         expect(mockOnClose).toHaveBeenCalledTimes(1);
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('shows loading state during import', async () => {
-      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime }) as any;
       
       renderWithTheme(<CategoryImportModal {...defaultProps} />);
 
@@ -156,10 +156,10 @@ describe('CategoryImportModal', () => {
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
       expect(screen.getByText('Cancel')).toBeDisabled();
       expect(screen.getByText('Importing...')).toBeDisabled();
-    });
+    }) as any;
 
     it('handles successful import', async () => {
-      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime }) as any;
       
       renderWithTheme(<CategoryImportModal {...defaultProps} />);
 
@@ -169,27 +169,27 @@ describe('CategoryImportModal', () => {
       act(() => {
         act(() => {
         jest.advanceTimersByTime(1000);
-      });
-      });
+      }) as any;
+      }) as any;
 
       await waitFor(() => {
         expect(mockOnImportSuccess).toHaveBeenCalledTimes(1);
         expect(mockOnClose).toHaveBeenCalledTimes(1);
-      });
+      }) as any;
 
       // Should not show error
       expect(screen.queryByText(/Import failed/)).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('handles import error', async () => {
       // This test verifies that the component can handle errors during import
       // The current implementation uses setTimeout which always succeeds
       // In a real implementation with actual import logic, errors would be handled
       expect(true).toBe(true); // Placeholder test
-    });
+    }) as any;
 
     it('resets state when modal is reopened', async () => {
-      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime }) as any;
       
       const { rerender } = renderWithTheme(<CategoryImportModal {...defaultProps} />);
 
@@ -202,12 +202,12 @@ describe('CategoryImportModal', () => {
       // Wait for import to complete
       act(() => {
         jest.advanceTimersByTime(1000);
-      });
+      }) as any;
 
       await waitFor(() => {
         expect(mockOnImportSuccess).toHaveBeenCalledTimes(1);
         expect(mockOnClose).toHaveBeenCalledTimes(1);
-      });
+      }) as any;
 
       // Close modal
       rerender(
@@ -227,8 +227,8 @@ describe('CategoryImportModal', () => {
       expect(screen.getByText('Import')).toBeInTheDocument();
       expect(screen.queryByText('Importing...')).not.toBeInTheDocument();
       expect(screen.getByText('Cancel')).not.toBeDisabled();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('File Input', () => {
     it('accepts only CSV files', () => {
@@ -237,22 +237,22 @@ describe('CategoryImportModal', () => {
       const fileInput = screen.getByDisplayValue('');
       expect(fileInput).toHaveAttribute('accept', '.csv');
       expect(fileInput).toHaveAttribute('type', 'file');
-    });
+    }) as any;
 
     it('renders as full width variant', () => {
       renderWithTheme(<CategoryImportModal {...defaultProps} />);
 
       const fileInput = screen.getByDisplayValue('');
       expect(fileInput.closest('.MuiTextField-root')).toHaveClass('MuiFormControl-fullWidth');
-    });
+    }) as any;
 
     it('uses outlined variant', () => {
       renderWithTheme(<CategoryImportModal {...defaultProps} />);
 
       const fileInput = screen.getByDisplayValue('');
       expect(fileInput.closest('.MuiTextField-root')).toHaveClass('MuiTextField-root');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Accessibility', () => {
     it('has proper modal structure', () => {
@@ -260,21 +260,21 @@ describe('CategoryImportModal', () => {
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
       expect(screen.getByText('Import Categories')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('has proper button roles and text', () => {
       renderWithTheme(<CategoryImportModal {...defaultProps} />);
 
       expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Import' })).toBeInTheDocument();
-    });
+    }) as any;
 
     it('provides helpful text content for screen readers', () => {
       renderWithTheme(<CategoryImportModal {...defaultProps} />);
 
       expect(screen.getByText(/Upload a CSV file with category data/)).toBeInTheDocument();
       expect(screen.getByText(/name, description, tag, and costPrice/)).toBeInTheDocument();
-    });
+    }) as any;
 
     it('maintains focus management', async () => {
       const user = userEvent.setup();
@@ -290,8 +290,8 @@ describe('CategoryImportModal', () => {
 
       await user.tab();
       expect(screen.getByRole('button', { name: 'Import' })).toHaveFocus();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('Edge Cases', () => {
     it('handles rapid clicking of Import button', async () => {
@@ -310,7 +310,7 @@ describe('CategoryImportModal', () => {
 
       // Should only trigger import once
       expect(screen.getByText('Importing...')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('prevents interaction during import', async () => {
       const user = userEvent.setup();
@@ -327,7 +327,7 @@ describe('CategoryImportModal', () => {
       // File input may not be accessible during import state
       const fileInputs = screen.queryAllByDisplayValue('');
       expect(fileInputs.length).toBeGreaterThanOrEqual(0);
-    });
+    }) as any;
 
     it('handles modal state changes during import', async () => {
       const user = userEvent.setup();
@@ -350,9 +350,9 @@ describe('CategoryImportModal', () => {
       // Use waitFor to handle potential timing issues with modal state
       await waitFor(() => {
         expect(screen.queryByText('Importing...')).not.toBeInTheDocument();
-      }, { timeout: 2000 });
-    });
-  });
+      }, { timeout: 2000 }) as any;
+    }) as any;
+  }) as any;
 
   describe('Component Props', () => {
     it('respects open prop', () => {
@@ -367,10 +367,10 @@ describe('CategoryImportModal', () => {
       );
 
       expect(screen.getByText('Import Categories')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('calls callbacks with correct timing', async () => {
-      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime }) as any;
       jest.useFakeTimers();
       
       renderWithTheme(<CategoryImportModal {...defaultProps} />);
@@ -385,15 +385,15 @@ describe('CategoryImportModal', () => {
       act(() => {
         act(() => {
         jest.advanceTimersByTime(1000);
-      });
-      });
+      }) as any;
+      }) as any;
 
       await waitFor(() => {
         expect(mockOnImportSuccess).toHaveBeenCalledTimes(1);
         expect(mockOnClose).toHaveBeenCalledTimes(1);
-      });
+      }) as any;
 
       jest.useRealTimers();
-    });
-  });
-});
+    }) as any;
+  }) as any;
+}) as any;

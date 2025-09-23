@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { Timestamp } from 'firebase/firestore';
 import { InventoryService } from '../../services/inventory.service';
+import { InventoryOrderProcessor, ProductSummary } from '../../services/inventoryOrderProcessor.service';
+import type { InventoryDeductionPreview } from '../../services/inventoryOrderProcessor.service';
 import { AlertingService } from '../../services/alerting.service';
 import {
   InventoryLevel,
@@ -86,6 +88,19 @@ export interface InventoryState {
   
   // Recent operation results
   lastDeductionResult: InventoryDeductionResult | null;
+  
+  // Category-based deduction state
+  categoryDeduction: {
+    isProcessing: boolean;
+    preview: InventoryDeductionPreview | null;
+    categoriesWithDeduction: any[]; // Categories configured for automatic deduction
+    deductionConfigurationSummary: Array<{
+      categoryId: string;
+      categoryName: string;
+      summary: string;
+    }>;
+    lastProcessedOrderItems: ProductSummary[];
+  };
 }
 
 const initialState: InventoryState = {
@@ -148,10 +163,19 @@ const initialState: InventoryState = {
   selectedMovement: null,
   selectedAlert: null,
   lastDeductionResult: null,
+  
+  categoryDeduction: {
+    isProcessing: false,
+    preview: null,
+    categoriesWithDeduction: [],
+    deductionConfigurationSummary: [],
+    lastProcessedOrderItems: [],
+  },
 };
 
 // Service instances
 const inventoryService = new InventoryService();
+const inventoryOrderProcessor = new InventoryOrderProcessor();
 const alertingService = new AlertingService();
 
 // Async thunks for inventory levels
@@ -405,6 +429,48 @@ export const importInventoryData = createAsyncThunk(
   }
 );
 
+// Category-based deduction async thunks
+export const processOrderWithCategoryDeduction = createAsyncThunk(
+  'inventory/processOrderWithCategoryDeduction',
+  async (params: {
+    orderItems: ProductSummary[];
+    orderReference?: string;
+  }) => {
+    return await inventoryOrderProcessor.processOrderWithCategoryDeduction(
+      params.orderItems,
+      params.orderReference
+    );
+  }
+);
+
+export const previewCategoryDeductions = createAsyncThunk(
+  'inventory/previewCategoryDeductions',
+  async (orderItems: ProductSummary[]) => {
+    return await inventoryOrderProcessor.previewCategoryDeductions(orderItems);
+  }
+);
+
+export const fetchCategoriesWithDeduction = createAsyncThunk(
+  'inventory/fetchCategoriesWithDeduction',
+  async () => {
+    return await inventoryOrderProcessor.getCategoriesWithDeductionEnabled();
+  }
+);
+
+export const checkAutomaticDeductionEnabled = createAsyncThunk(
+  'inventory/checkAutomaticDeductionEnabled',
+  async (productSku: string) => {
+    return await inventoryOrderProcessor.isAutomaticDeductionEnabled(productSku);
+  }
+);
+
+export const fetchDeductionConfigurationSummary = createAsyncThunk(
+  'inventory/fetchDeductionConfigurationSummary',
+  async () => {
+    return await inventoryOrderProcessor.getDeductionConfigurationSummary();
+  }
+);
+
 const inventorySlice = createSlice({
   name: 'inventory',
   initialState,
@@ -495,6 +561,29 @@ const inventorySlice = createSlice({
     // Clear last deduction result
     clearLastDeductionResult: (state) => {
       state.lastDeductionResult = null;
+    },
+    
+    // Category-based deduction reducers
+    clearCategoryDeductionPreview: (state) => {
+      state.categoryDeduction.preview = null;
+    },
+    
+    clearCategoryDeductionState: (state) => {
+      state.categoryDeduction = {
+        isProcessing: false,
+        preview: null,
+        categoriesWithDeduction: [],
+        deductionConfigurationSummary: [],
+        lastProcessedOrderItems: [],
+      };
+    },
+    
+    setCategoryDeductionPreview: (state, action: PayloadAction<InventoryDeductionPreview>) => {
+      state.categoryDeduction.preview = action.payload;
+    },
+    
+    updateLastProcessedOrderItems: (state, action: PayloadAction<ProductSummary[]>) => {
+      state.categoryDeduction.lastProcessedOrderItems = action.payload;
     },
   },
   
@@ -682,6 +771,72 @@ const inventorySlice = createSlice({
       .addCase(importInventoryData.rejected, (state, action) => {
         state.loading.adjustment = false;
         state.error.adjustment = action.error.message || 'Failed to import inventory data';
+      })
+      
+      // Process Order with Category Deduction
+      .addCase(processOrderWithCategoryDeduction.pending, (state) => {
+        state.categoryDeduction.isProcessing = true;
+        state.error.deduction = null;
+        state.lastDeductionResult = null;
+      })
+      .addCase(processOrderWithCategoryDeduction.fulfilled, (state, action) => {
+        state.categoryDeduction.isProcessing = false;
+        state.categoryDeduction.lastProcessedOrderItems = action.payload.orderItems;
+        state.lastDeductionResult = action.payload.inventoryResult;
+        
+        // Invalidate inventory levels cache to force refresh
+        state.lastFetched.inventoryLevels = null;
+        state.lastFetched.inventoryMovements = null;
+      })
+      .addCase(processOrderWithCategoryDeduction.rejected, (state, action) => {
+        state.categoryDeduction.isProcessing = false;
+        state.error.deduction = action.error.message || 'Failed to process order with category deduction';
+      })
+      
+      // Preview Category Deductions
+      .addCase(previewCategoryDeductions.pending, (state) => {
+        state.categoryDeduction.preview = null;
+        state.error.deduction = null;
+      })
+      .addCase(previewCategoryDeductions.fulfilled, (state, action) => {
+        state.categoryDeduction.preview = action.payload;
+      })
+      .addCase(previewCategoryDeductions.rejected, (state, action) => {
+        state.error.deduction = action.error.message || 'Failed to preview category deductions';
+      })
+      
+      // Fetch Categories with Deduction
+      .addCase(fetchCategoriesWithDeduction.pending, (state) => {
+        state.error.deduction = null;
+      })
+      .addCase(fetchCategoriesWithDeduction.fulfilled, (state, action) => {
+        state.categoryDeduction.categoriesWithDeduction = action.payload;
+      })
+      .addCase(fetchCategoriesWithDeduction.rejected, (state, action) => {
+        state.error.deduction = action.error.message || 'Failed to fetch categories with deduction';
+      })
+      
+      // Check Automatic Deduction Enabled
+      .addCase(checkAutomaticDeductionEnabled.pending, (state) => {
+        state.error.deduction = null;
+      })
+      .addCase(checkAutomaticDeductionEnabled.fulfilled, (_state) => {
+        // Result is returned but doesn't need to be stored in state
+        // This is typically used for component-level decision making
+      })
+      .addCase(checkAutomaticDeductionEnabled.rejected, (state, action) => {
+        state.error.deduction = action.error.message || 'Failed to check automatic deduction status';
+      })
+      
+      // Fetch Deduction Configuration Summary
+      .addCase(fetchDeductionConfigurationSummary.pending, (state) => {
+        state.error.deduction = null;
+      })
+      .addCase(fetchDeductionConfigurationSummary.fulfilled, (state, action) => {
+        state.categoryDeduction.deductionConfigurationSummary = action.payload;
+      })
+      .addCase(fetchDeductionConfigurationSummary.rejected, (state, action) => {
+        state.error.deduction = action.error.message || 'Failed to fetch deduction configuration summary';
       });
   },
 });
@@ -705,6 +860,10 @@ export const {
   clearAlertAcknowledgmentError,
   clearAlertResolutionError,
   clearLastDeductionResult,
+  clearCategoryDeductionPreview,
+  clearCategoryDeductionState,
+  setCategoryDeductionPreview,
+  updateLastProcessedOrderItems,
 } = inventorySlice.actions;
 
 // Selectors
@@ -752,6 +911,25 @@ export const selectInventoryMovementsLastFetched = (state: { inventory: Inventor
 
 export const selectInventoryAlertsLastFetched = (state: { inventory: InventoryState }) => 
   state.inventory.lastFetched.inventoryAlerts;
+
+// Category-based deduction selectors
+export const selectCategoryDeductionState = (state: { inventory: InventoryState }) => 
+  state.inventory.categoryDeduction;
+
+export const selectCategoryDeductionPreview = (state: { inventory: InventoryState }) => 
+  state.inventory.categoryDeduction.preview;
+
+export const selectCategoriesWithDeduction = (state: { inventory: InventoryState }) => 
+  state.inventory.categoryDeduction.categoriesWithDeduction;
+
+export const selectDeductionConfigurationSummary = (state: { inventory: InventoryState }) => 
+  state.inventory.categoryDeduction.deductionConfigurationSummary;
+
+export const selectLastProcessedOrderItems = (state: { inventory: InventoryState }) => 
+  state.inventory.categoryDeduction.lastProcessedOrderItems;
+
+export const selectIsCategoryDeductionProcessing = (state: { inventory: InventoryState }) => 
+  state.inventory.categoryDeduction.isProcessing;
 
 export const inventoryReducer = inventorySlice.reducer;
 export default inventorySlice.reducer;

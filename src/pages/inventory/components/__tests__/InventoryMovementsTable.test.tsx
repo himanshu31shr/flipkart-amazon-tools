@@ -23,7 +23,7 @@ const mockMovement: InventoryMovement = {
   createdAt: Timestamp.fromDate(new Date('2023-01-01T10:00:00Z')),
 };
 
-const mockStore = configureStore({
+const mockStore = configureStore({ 
   reducer: {
     inventory: inventoryReducer,
   },
@@ -82,13 +82,20 @@ const mockStore = configureStore({
       selectedMovement: null,
       selectedAlert: null,
       lastDeductionResult: null,
+      categoryDeduction: {
+        isProcessing: false,
+        preview: null,
+        categoriesWithDeduction: [],
+        deductionConfigurationSummary: [],
+        lastProcessedOrderItems: [],
+      },
     },
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: false, // Disable for test environment
     }),
-});
+}) as any;
 
 const theme = createTheme();
 
@@ -107,14 +114,14 @@ const renderWithProviders = (ui: React.ReactElement) => {
 describe('InventoryMovementsTable', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
+  }) as any;
 
   it('renders the inventory movements table', () => {
     renderWithProviders(<InventoryMovementsTable />);
 
     expect(screen.getByText('Inventory Movements')).toBeInTheDocument();
     expect(screen.getByText('1 movements')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('displays movement data correctly', () => {
     renderWithProviders(<InventoryMovementsTable />);
@@ -127,16 +134,16 @@ describe('InventoryMovementsTable', () => {
     
     // Check if the order reference is displayed
     expect(screen.getByText('Order: ORDER-123')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('shows filters when filter button is clicked', () => {
     renderWithProviders(<InventoryMovementsTable />);
 
-    const filterButton = screen.getByRole('button', { name: /toggle filters/i });
+    const filterButton = screen.getByRole('button', { name: /toggle filters/i }) as any;
     fireEvent.click(filterButton);
 
     expect(screen.getByText('Filter Inventory Movements')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('handles order click callback', () => {
     const mockOnOrderClick = jest.fn();
@@ -146,10 +153,10 @@ describe('InventoryMovementsTable', () => {
     fireEvent.click(orderLink);
 
     expect(mockOnOrderClick).toHaveBeenCalledWith('ORDER-123');
-  });
+  }) as any;
 
   it('shows loading state', () => {
-    const loadingStore = configureStore({
+    const loadingStore = configureStore({ 
       reducer: {
         inventory: inventoryReducer,
       },
@@ -162,7 +169,7 @@ describe('InventoryMovementsTable', () => {
           },
         },
       },
-    });
+    }) as any;
 
     render(
       <Provider store={loadingStore}>
@@ -175,10 +182,10 @@ describe('InventoryMovementsTable', () => {
     );
 
     expect(screen.getByText('Loading inventory movements...')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('shows empty state when no movements', async () => {
-    const emptyStore = configureStore({
+    const emptyStore = configureStore({ 
       reducer: {
         inventory: inventoryReducer,
       },
@@ -197,7 +204,7 @@ describe('InventoryMovementsTable', () => {
         getDefaultMiddleware({
           serializableCheck: false, // Disable for test environment
         }),
-    });
+    }) as any;
 
     render(
       <Provider store={emptyStore}>
@@ -212,12 +219,12 @@ describe('InventoryMovementsTable', () => {
     // Wait for component to finish rendering and effects to complete
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 0));
-    });
+    }) as any;
 
     // Should show the empty state message
     expect(screen.getByText(/No Inventory Movements Found/)).toBeInTheDocument();
     expect(screen.getByText(/Inventory movements will appear here/)).toBeInTheDocument();
-  });
+  }) as any;
 
   it('shows export button and can trigger export', () => {
     // Mock the CSV blob creation
@@ -225,14 +232,14 @@ describe('InventoryMovementsTable', () => {
     const mockRevokeObjectURL = jest.fn();
     Object.defineProperty(window.URL, 'createObjectURL', {
       value: mockCreateObjectURL,
-    });
+    }) as any;
     Object.defineProperty(window.URL, 'revokeObjectURL', {
       value: mockRevokeObjectURL,
-    });
+    }) as any;
 
     renderWithProviders(<InventoryMovementsTable />);
 
-    const exportButton = screen.getByRole('button', { name: /export to csv/i });
+    const exportButton = screen.getByRole('button', { name: /export to csv/i }) as any;
     expect(exportButton).toBeInTheDocument();
     expect(exportButton).not.toBeDisabled();
 
@@ -240,5 +247,5 @@ describe('InventoryMovementsTable', () => {
     
     // Should create a blob URL for CSV export
     expect(mockCreateObjectURL).toHaveBeenCalled();
-  });
-});
+  }) as any;
+}) as any;

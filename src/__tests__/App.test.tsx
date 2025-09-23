@@ -21,7 +21,7 @@ jest.mock('../services/firebase.config', () => ({
 }));
 
 const createMockStore = (authState: Record<string, unknown> = {}) => {
-  return configureStore({
+  return configureStore({ 
     reducer: {
       auth: authReducer,
     },
@@ -36,7 +36,7 @@ const createMockStore = (authState: Record<string, unknown> = {}) => {
         ...authState,
       },
     },
-  });
+  }) as any;
 };
 
 const renderApp = (authState?: Record<string, unknown>) => {
@@ -56,14 +56,14 @@ describe('App', () => {
   it('should render without crashing', () => {
     renderApp();
     expect(document.body).toBeInTheDocument();
-  });
+  }) as any;
 
   it('should render the app with theme provider', () => {
     renderApp();
     // The app should render with Material-UI theme
     const appElement = document.querySelector('body');
     expect(appElement).toBeInTheDocument();
-  });
+  }) as any;
 
   it('should handle different auth states', () => {
     // Test with authenticated user
@@ -78,7 +78,7 @@ describe('App', () => {
     
     renderApp(authenticatedState);
     expect(document.body).toBeInTheDocument();
-  });
+  }) as any;
 
   it('should handle loading state', () => {
     const loadingState = {
@@ -92,7 +92,7 @@ describe('App', () => {
     
     renderApp(loadingState);
     expect(document.body).toBeInTheDocument();
-  });
+  }) as any;
 
   it('should handle error state', () => {
     const errorState = {
@@ -106,7 +106,7 @@ describe('App', () => {
     
     renderApp(errorState);
     expect(document.body).toBeInTheDocument();
-  });
+  }) as any;
 
   it('should provide theme context to child components', () => {
     renderApp();
@@ -117,5 +117,5 @@ describe('App', () => {
     
     // The app should have rendered without throwing errors
     expect(body.children.length).toBeGreaterThan(0);
-  });
-}); 
+  }) as any;
+}) as any; 

@@ -7,7 +7,7 @@ import categoryGroupsSlice from '../../../../store/slices/categoryGroupsSlice';
 
 // Mock store setup
 const createMockStore = () => {
-  return configureStore({
+  return configureStore({ 
     reducer: {
       categoryGroups: categoryGroupsSlice,
     },
@@ -20,7 +20,7 @@ const createMockStore = () => {
         lastUpdated: null,
       },
     },
-  });
+  }) as any;
 };
 
 const renderWithProvider = (component: React.ReactElement) => {
@@ -41,7 +41,7 @@ describe('CategoryGroupFormWithInventory - Real-time Preview', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-  });
+  }) as any;
 
   it('should render the enhanced real-time preview section', () => {
     renderWithProvider(<CategoryGroupFormWithInventory {...mockProps} />);
@@ -57,18 +57,18 @@ describe('CategoryGroupFormWithInventory - Real-time Preview', () => {
     
     // Check for configuration summary section
     expect(screen.getByText('Configuration Summary')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('should update preview when form values change', () => {
     renderWithProvider(<CategoryGroupFormWithInventory {...mockProps} />);
 
     // Change the group name
     const nameInput = screen.getByLabelText('Group Name');
-    fireEvent.change(nameInput, { target: { value: 'Test Group' } });
+    fireEvent.change(nameInput, { target: { value: 'Test Group' } }) as any;
 
     // The preview should show the updated name
     expect(screen.getByText('Test Group')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('should show inventory status with proper color coding', () => {
     renderWithProvider(<CategoryGroupFormWithInventory {...mockProps} />);
@@ -77,12 +77,12 @@ describe('CategoryGroupFormWithInventory - Real-time Preview', () => {
     const currentInventoryInput = screen.getByLabelText('Current Inventory');
     const thresholdInput = screen.getByLabelText('Minimum Threshold');
     
-    fireEvent.change(currentInventoryInput, { target: { value: '5' } });
-    fireEvent.change(thresholdInput, { target: { value: '10' } });
+    fireEvent.change(currentInventoryInput, { target: { value: '5' } }) as any;
+    fireEvent.change(thresholdInput, { target: { value: '10' } }) as any;
 
     // Should show low stock status
     expect(screen.getByText('LOW STOCK')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('should show unit conversion hints for weight-based inventory', () => {
     renderWithProvider(<CategoryGroupFormWithInventory {...mockProps} />);
@@ -93,18 +93,18 @@ describe('CategoryGroupFormWithInventory - Real-time Preview', () => {
 
     // Should show conversion hint
     expect(screen.getByText(/Tip: 1 kg = 1000 g/)).toBeInTheDocument();
-  });
+  }) as any;
 
   it('should show validation messages for invalid configurations', () => {
     renderWithProvider(<CategoryGroupFormWithInventory {...mockProps} />);
 
     // Set negative inventory
     const currentInventoryInput = screen.getByLabelText('Current Inventory');
-    fireEvent.change(currentInventoryInput, { target: { value: '-5' } });
+    fireEvent.change(currentInventoryInput, { target: { value: '-5' } }) as any;
 
     // Should show validation message
     expect(screen.getByText(/Negative inventory requires immediate attention/)).toBeInTheDocument();
-  });
+  }) as any;
 
   it('should display configuration summary with correct values', () => {
     renderWithProvider(<CategoryGroupFormWithInventory {...mockProps} />);
@@ -113,12 +113,12 @@ describe('CategoryGroupFormWithInventory - Real-time Preview', () => {
     const currentInventoryInput = screen.getByLabelText('Current Inventory');
     const thresholdInput = screen.getByLabelText('Minimum Threshold');
     
-    fireEvent.change(currentInventoryInput, { target: { value: '100' } });
-    fireEvent.change(thresholdInput, { target: { value: '20' } });
+    fireEvent.change(currentInventoryInput, { target: { value: '100' } }) as any;
+    fireEvent.change(thresholdInput, { target: { value: '20' } }) as any;
 
     // Check configuration summary shows correct values (using getAllByText since values appear multiple times)
     expect(screen.getAllByText('100 pcs')).toHaveLength(2); // Once in inventory status, once in summary
     expect(screen.getAllByText('20 pcs')).toHaveLength(2); // Once in inventory status, once in summary
     expect(screen.getByText('Quantity-based')).toBeInTheDocument();
-  });
-});
+  }) as any;
+}) as any;
