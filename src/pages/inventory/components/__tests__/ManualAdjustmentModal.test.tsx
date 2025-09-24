@@ -16,6 +16,13 @@ const createMockStore = () => {
       categoryGroups: categoryGroupsReducer,
       auth: authReducer,
     },
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware({
+        serializableCheck: {
+          ignoredActions: ['persist/PERSIST'],
+          ignoredPaths: ['auth.user'],
+        },
+      }),
     preloadedState: {
       inventory: {
         inventoryLevels: [
@@ -137,7 +144,24 @@ const createMockStore = () => {
           uid: 'test-user-id',
           email: 'test@example.com',
           displayName: 'Test User',
-        },
+          emailVerified: true,
+          isAnonymous: false,
+          metadata: {
+            creationTime: '2023-01-01T00:00:00.000Z',
+            lastSignInTime: '2024-01-01T00:00:00.000Z',
+          },
+          providerData: [],
+          refreshToken: 'test-refresh-token',
+          tenantId: null,
+          delete: jest.fn(),
+          getIdToken: jest.fn(),
+          getIdTokenResult: jest.fn(),
+          reload: jest.fn(),
+          toJSON: jest.fn(),
+          phoneNumber: null,
+          photoURL: null,
+          providerId: 'firebase',
+        } as any,
         loading: false,
         error: null,
         isAuthenticated: true,
