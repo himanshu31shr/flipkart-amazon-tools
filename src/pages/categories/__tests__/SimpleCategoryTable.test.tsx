@@ -1,16 +1,36 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import SimpleCategoryTable from '../SimpleCategoryTable';
 import { CategoryService } from '../../../services/category.service';
 import { CategoryGroupService } from '../../../services/categoryGroup.service';
+import categoryGroupsReducer from '../../../store/slices/categoryGroupsSlice';
 
 // Mock the CategoryService
 jest.mock('../../../services/category.service');
 
 // Mock CategoryGroupService
-jest.mock('../../../services/categoryGroup.service');
+jest.mock('../../../services/categoryGroup.service', () => ({
+  CategoryGroupService: jest.fn().mockImplementation(() => ({
+    getCategoryGroupsWithStats: jest.fn().mockResolvedValue([
+      {
+        id: 'group-1',
+        name: 'Tech Group',
+        color: '#1976d2',
+        categoryCount: 5
+      },
+      {
+        id: 'group-2',
+        name: 'Fashion Group',
+        color: '#d32f2f',
+        categoryCount: 3
+      }
+    ])
+  }))
+}));
 
 // Mock CategoryGroupSelector
 jest.mock('../../categoryGroups/components/CategoryGroupSelector', () => {
@@ -24,10 +44,46 @@ jest.mock('../../categoryGroups/components/CategoryGroupSelector', () => {
   };
 }) as any;
 
+// Mock CategoryGroupFilterSelector
+jest.mock('../../categoryGroups/components/CategoryGroupFilterSelector', () => {
+  return function MockCategoryGroupFilterSelector({ 
+    value, 
+    onChange 
+  }: { 
+    value: string | 'all' | 'assigned' | 'unassigned'; 
+    onChange: (value: string | 'all' | 'assigned' | 'unassigned') => void;
+  }) {
+    return (
+      <div data-testid="category-group-filter-selector">
+        <select 
+          value={value} 
+          onChange={(e) => onChange(e.target.value as any)}
+          data-testid="filter-select"
+        >
+          <option value="all">All Categories</option>
+          <option value="assigned">With Groups</option>
+          <option value="unassigned">Without Groups</option>
+          <option value="group-1">Tech Group</option>
+          <option value="group-2">Fashion Group</option>
+        </select>
+      </div>
+    );
+  };
+}) as any;
+
 const mockCategoryService = CategoryService as jest.MockedClass<typeof CategoryService>;
 const mockCategoryGroupService = CategoryGroupService as jest.MockedClass<typeof CategoryGroupService>;
 
 const theme = createTheme();
+
+const createTestStore = (initialState = {}) => {
+  return configureStore({
+    reducer: {
+      categoryGroups: categoryGroupsReducer,
+    },
+    preloadedState: initialState
+  });
+};
 
 const mockCategories = [
   {
@@ -73,11 +129,13 @@ const mockGroups = [
   }
 ];
 
-const renderWithTheme = (component: React.ReactElement) => {
+const renderWithTheme = (component: React.ReactElement, store = createTestStore()) => {
   return render(
-    <ThemeProvider theme={theme}>
-      {component}
-    </ThemeProvider>
+    <Provider store={store}>
+      <ThemeProvider theme={theme}>
+        {component}
+      </ThemeProvider>
+    </Provider>
   );
 };
 
@@ -119,7 +177,16 @@ describe('SimpleCategoryTable', () => {
 
   describe('Component Rendering', () => {
     it('renders the component with categories', async () => {
-      renderWithTheme(<SimpleCategoryTable />);
+      const store = createTestStore({
+        categoryGroups: {
+          groups: mockGroups,
+          loading: false,
+          error: null,
+          selectedGroupId: null,
+          lastUpdated: new Date().toISOString()
+        }
+      });
+      renderWithTheme(<SimpleCategoryTable />, store);
       
       await waitFor(() => {
         expect(screen.getByText('Categories (3 of 3)')).toBeInTheDocument();
@@ -131,7 +198,16 @@ describe('SimpleCategoryTable', () => {
     }) as any;
 
     it('displays category details correctly', async () => {
-      renderWithTheme(<SimpleCategoryTable />);
+      const store = createTestStore({
+        categoryGroups: {
+          groups: mockGroups,
+          loading: false,
+          error: null,
+          selectedGroupId: null,
+          lastUpdated: new Date().toISOString()
+        }
+      });
+      renderWithTheme(<SimpleCategoryTable />, store);
       
       await waitFor(() => {
         expect(screen.getByText('Electronics')).toBeInTheDocument();
@@ -152,7 +228,16 @@ describe('SimpleCategoryTable', () => {
     it('shows loading state', () => {
       mockGetCategoriesWithGroups.mockImplementation(() => new Promise(() => {})); // Never resolves
       
-      renderWithTheme(<SimpleCategoryTable />);
+      const store = createTestStore({
+        categoryGroups: {
+          groups: [],
+          loading: true,
+          error: null,
+          selectedGroupId: null,
+          lastUpdated: null
+        }
+      });
+      renderWithTheme(<SimpleCategoryTable />, store);
       
       expect(screen.getAllByRole('progressbar')).toHaveLength(2); // One in title, one in export button
     }) as any;
@@ -160,7 +245,16 @@ describe('SimpleCategoryTable', () => {
     it('shows empty state when no categories', async () => {
       mockGetCategoriesWithGroups.mockResolvedValue([]);
       
-      renderWithTheme(<SimpleCategoryTable />);
+      const store = createTestStore({
+        categoryGroups: {
+          groups: mockGroups,
+          loading: false,
+          error: null,
+          selectedGroupId: null,
+          lastUpdated: new Date().toISOString()
+        }
+      });
+      renderWithTheme(<SimpleCategoryTable />, store);
       
       await waitFor(() => {
         expect(screen.getByText('Categories (0 of 0)')).toBeInTheDocument();
@@ -176,7 +270,16 @@ describe('SimpleCategoryTable', () => {
   describe('Refresh Functionality', () => {
     it('refreshes data when refresh button is clicked', async () => {
       const user = userEvent.setup();
-      renderWithTheme(<SimpleCategoryTable />);
+      const store = createTestStore({
+        categoryGroups: {
+          groups: mockGroups,
+          loading: false,
+          error: null,
+          selectedGroupId: null,
+          lastUpdated: new Date().toISOString()
+        }
+      });
+      renderWithTheme(<SimpleCategoryTable />, store);
       
       await waitFor(() => {
         expect(mockGetCategoriesWithGroups).toHaveBeenCalledTimes(1);
@@ -191,16 +294,27 @@ describe('SimpleCategoryTable', () => {
     }) as any;
 
     it('refreshes when refreshTrigger prop changes', async () => {
-      const { rerender } = renderWithTheme(<SimpleCategoryTable refreshTrigger={0} />);
+      const store = createTestStore({
+        categoryGroups: {
+          groups: mockGroups,
+          loading: false,
+          error: null,
+          selectedGroupId: null,
+          lastUpdated: new Date().toISOString()
+        }
+      });
+      const { rerender } = renderWithTheme(<SimpleCategoryTable refreshTrigger={0} />, store);
       
       await waitFor(() => {
         expect(mockGetCategoriesWithGroups).toHaveBeenCalledTimes(1);
       }) as any;
 
       rerender(
-        <ThemeProvider theme={theme}>
-          <SimpleCategoryTable refreshTrigger={1} />
-        </ThemeProvider>
+        <Provider store={store}>
+          <ThemeProvider theme={theme}>
+            <SimpleCategoryTable refreshTrigger={1} />
+          </ThemeProvider>
+        </Provider>
       );
 
       await waitFor(() => {
@@ -214,7 +328,16 @@ describe('SimpleCategoryTable', () => {
     it('opens add category dialog when Add Category button is clicked', async () => {
       const user = userEvent.setup();
       
-      renderWithTheme(<SimpleCategoryTable />);
+      const store = createTestStore({
+        categoryGroups: {
+          groups: mockGroups,
+          loading: false,
+          error: null,
+          selectedGroupId: null,
+          lastUpdated: new Date().toISOString()
+        }
+      });
+      renderWithTheme(<SimpleCategoryTable />, store);
       
       await waitFor(() => {
         expect(screen.getByText('Add Category')).toBeInTheDocument();
@@ -254,7 +377,16 @@ describe('SimpleCategoryTable', () => {
         }
       ]);
 
-      renderWithTheme(<SimpleCategoryTable />);
+      const store = createTestStore({
+        categoryGroups: {
+          groups: mockGroups,
+          loading: false,
+          error: null,
+          selectedGroupId: null,
+          lastUpdated: new Date().toISOString()
+        }
+      });
+      renderWithTheme(<SimpleCategoryTable />, store);
       
       await waitFor(() => {
         expect(screen.getByText('Test Category')).toBeInTheDocument();

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { CategoryGroupService } from '../categoryGroup.service';
 import { CategoryGroup, CategoryGroupFormData } from '../../types/categoryGroup';
 import { Timestamp } from 'firebase/firestore';

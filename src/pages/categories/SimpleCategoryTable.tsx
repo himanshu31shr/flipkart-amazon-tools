@@ -23,9 +23,6 @@ import {
   Menu,
   MenuItem,
   InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
   Grid,
   Collapse,
 } from '@mui/material';
@@ -39,8 +36,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ClearIcon from '@mui/icons-material/Clear';
 import { CategoryService, Category } from '../../services/category.service';
-import { CategoryGroupService } from '../../services/categoryGroup.service';
 import CategoryGroupSelector from '../categoryGroups/components/CategoryGroupSelector';
+import CategoryGroupFilterSelector from '../categoryGroups/components/CategoryGroupFilterSelector';
 import { CategoryForm } from './CategoryForm';
 
 const getContrastColor = (hexColor: string): string => {
@@ -77,22 +74,16 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [groupFilter, setGroupFilter] = useState<string | 'all' | 'assigned' | 'unassigned'>('all');
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [availableGroups, setAvailableGroups] = useState<Array<{ id: string; name: string; color: string }>>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingTags, setExistingTags] = useState<string[]>([]);
 
   const categoryService = new CategoryService();
-  const categoryGroupService = new CategoryGroupService();
 
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const [categoriesData, groupsData] = await Promise.all([
-        categoryService.getCategoriesWithGroups(),
-        categoryGroupService.getCategoryGroups()
-      ]);
+      const categoriesData = await categoryService.getCategoriesWithGroups();
       setCategories(categoriesData);
-      setAvailableGroups(groupsData.filter(group => group.id) as Array<{ id: string; name: string; color: string }>);
       
       // Extract existing tags for CategoryForm
       const tags = categoriesData
@@ -328,33 +319,11 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
               />
             </Grid>
             <Grid item xs={12} md={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Filter by Group</InputLabel>
-                <Select
-                  value={groupFilter}
-                  label="Filter by Group"
-                  onChange={(e) => setGroupFilter(e.target.value as string)}
-                >
-                  <MenuItem value="all">All Categories</MenuItem>
-                  <MenuItem value="assigned">With Groups</MenuItem>
-                  <MenuItem value="unassigned">Without Groups</MenuItem>
-                  {availableGroups.map((group) => (
-                    <MenuItem key={group.id} value={group.id}>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Chip
-                          label={group.name}
-                          size="small"
-                          sx={{
-                            backgroundColor: group.color,
-                            color: getContrastColor(group.color),
-                            fontWeight: 'medium',
-                          }}
-                        />
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <CategoryGroupFilterSelector
+                value={groupFilter}
+                onChange={(value) => setGroupFilter(value)}
+                size="small"
+              />
             </Grid>
             <Grid item xs={12} md={2}>
               <Button
@@ -514,7 +483,6 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
               }
             }}
             label="Select Category Group"
-            placeholder="Choose a group or leave unassigned"
           />
         </DialogContent>
         <DialogActions>
@@ -554,7 +522,6 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
             value={null}
             onChange={handleBulkGroupAssignment}
             label="Select Category Group"
-            placeholder="Choose a group or leave unassigned"
           />
         </DialogContent>
         <DialogActions>

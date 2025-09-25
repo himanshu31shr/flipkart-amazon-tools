@@ -90,21 +90,21 @@ describe('PDFMergerService', () => {
 
     beforeEach(() => {
       // Mock the initialize method
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       jest.spyOn(mergerService as any, 'initialize').mockResolvedValue(undefined);
       // Mock PDF document
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       (mergerService as any).outpdf = {
         copyPages: jest.fn().mockResolvedValue([{}]),
         addPage: jest.fn(),
       };
       // Mock process methods
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       jest.spyOn(mergerService as any, 'processAmazonFile').mockResolvedValue(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       jest.spyOn(mergerService as any, 'processFlipkartFile').mockResolvedValue(undefined);
       // Mock summary
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       (mergerService as any).summaryText = [
         { name: 'Test Product', quantity: '1', SKU: 'TEST-001', type: 'amazon' },
       ];
@@ -173,9 +173,9 @@ describe('PDFMergerService', () => {
     });
 
     it('should process files before updating orders', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const processAmazonSpy = jest.spyOn(mergerService as any, 'processAmazonFile');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const processFlipkartSpy = jest.spyOn(mergerService as any, 'processFlipkartFile');
 
       await mergerService.mergePdfs({
@@ -197,7 +197,7 @@ describe('PDFMergerService', () => {
         prioritizeActiveCategories: true,
         sortCategoriesAlphabetically: false,
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const processAmazonSpy = jest.spyOn(mergerService as any, 'processAmazonFile');
 
       await mergerService.mergePdfs({
@@ -211,7 +211,7 @@ describe('PDFMergerService', () => {
     });
 
     it('should return undefined when PDF document is not initialized', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       (mergerService as any).outpdf = null;
 
       const result = await mergerService.mergePdfs({
@@ -276,7 +276,7 @@ describe('PDFMergerService', () => {
       const mockSummary = [
         { name: 'Product 1', quantity: '2', SKU: 'SKU-001', type: 'amazon' },
       ];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       (mergerService as any).summaryText = mockSummary;
 
       expect(mergerService.summary).toEqual(mockSummary);
@@ -298,19 +298,19 @@ describe('PDFMergerService', () => {
       });
 
       // Mock initialize and setup
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       jest.spyOn(mergerService as any, 'initialize').mockResolvedValue(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       (mergerService as any).outpdf = {
         copyPages: jest.fn().mockResolvedValue([{}]),
         addPage: jest.fn(),
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       jest.spyOn(mergerService as any, 'processAmazonFile').mockResolvedValue(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       jest.spyOn(mergerService as any, 'processFlipkartFile').mockResolvedValue(undefined);
       // Mock summary
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       (mergerService as any).summaryText = [
         { name: 'Test Product', quantity: '1', SKU: 'TEST-001', type: 'amazon' },
       ];
@@ -336,7 +336,7 @@ describe('PDFMergerService', () => {
 
     it('should create a batch when processing Flipkart files', async () => {
       // Mock flipkart-specific summary
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       (mergerService as any).summaryText = [
         { name: 'Test Flipkart Product', quantity: '1', SKU: 'FLP-001', type: 'flipkart' },
       ];
@@ -357,7 +357,7 @@ describe('PDFMergerService', () => {
 
     it('should create a mixed platform batch when processing both Amazon and Flipkart files', async () => {
       // Mock different summaries for mixed files
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       (mergerService as any).summaryText = [
         { name: 'Amazon Product', quantity: '1', SKU: 'AMZ-001', type: 'amazon' },
         { name: 'Flipkart Product', quantity: '1', SKU: 'FLP-001', type: 'flipkart' },
@@ -395,7 +395,7 @@ describe('PDFMergerService', () => {
     });
 
     it('should not create batch when no files are processed', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       (mergerService as any).summaryText = []; // Empty summary
 
       await mergerService.mergePdfs({

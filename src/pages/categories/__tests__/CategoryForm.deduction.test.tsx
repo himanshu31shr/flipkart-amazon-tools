@@ -1,25 +1,69 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material';
 import { CategoryForm } from '../CategoryForm';
+import categoryGroupsReducer from '../../../store/slices/categoryGroupsSlice';
 
 // Mock Firebase services
 jest.mock('../../../services/firebase.service');
-jest.mock('../../../services/categoryGroup.service');
+jest.mock('../../../services/categoryGroup.service', () => ({
+  CategoryGroupService: jest.fn().mockImplementation(() => ({
+    getCategoryGroupsWithStats: jest.fn().mockResolvedValue([
+      {
+        id: 'group-1',
+        name: 'Test Group',
+        color: '#FF0000',
+        categoryCount: 5
+      }
+    ])
+  }))
+}));
 
 const theme = createTheme();
 
-const renderWithTheme = (component: React.ReactElement) => {
+const createTestStore = (initialState = {}) => {
+  return configureStore({
+    reducer: {
+      categoryGroups: categoryGroupsReducer,
+    },
+    preloadedState: initialState
+  });
+};
+
+const renderWithTheme = (component: React.ReactElement, store = createTestStore()) => {
   return render(
-    <ThemeProvider theme={theme}>
-      {component}
-    </ThemeProvider>
+    <Provider store={store}>
+      <ThemeProvider theme={theme}>
+        {component}
+      </ThemeProvider>
+    </Provider>
   );
 };
 
 describe('CategoryForm - Inventory Deduction Configuration', () => {
+  const mockGroups = [
+    {
+      id: 'group-1',
+      name: 'Test Group',
+      color: '#FF0000',
+      categoryCount: 5
+    }
+  ];
+
+  const createStoreWithGroups = () => createTestStore({
+    categoryGroups: {
+      groups: mockGroups,
+      loading: false,
+      error: null,
+      selectedGroupId: null,
+      lastUpdated: new Date().toISOString()
+    }
+  });
+
   const defaultProps = {
     open: true,
     onClose: jest.fn(),
@@ -46,14 +90,14 @@ describe('CategoryForm - Inventory Deduction Configuration', () => {
 
   describe('Initial State', () => {
     it('renders inventory deduction configuration section', () => {
-      renderWithTheme(<CategoryForm {...defaultProps} />);
+      renderWithTheme(<CategoryForm {...defaultProps} />, createStoreWithGroups());
       
       expect(screen.getByText('Category Inventory Settings')).toBeInTheDocument();
       expect(screen.getByText('Configure how inventory is managed for products in this category')).toBeInTheDocument();
     }) as any;
 
     it('shows deduction quantity field', () => {
-      renderWithTheme(<CategoryForm {...defaultProps} />);
+      renderWithTheme(<CategoryForm {...defaultProps} />, createStoreWithGroups());
       
       const deductionField = screen.getByLabelText(/deduction quantity per order/i);
       expect(deductionField).toBeInTheDocument();
@@ -61,7 +105,7 @@ describe('CategoryForm - Inventory Deduction Configuration', () => {
     }) as any;
 
     it('shows informational alert when no deduction quantity set', () => {
-      renderWithTheme(<CategoryForm {...defaultProps} />);
+      renderWithTheme(<CategoryForm {...defaultProps} />, createStoreWithGroups());
       
       expect(screen.getByText(/No automatic deduction/)).toBeInTheDocument();
     }) as any;
@@ -70,7 +114,7 @@ describe('CategoryForm - Inventory Deduction Configuration', () => {
   describe('Deduction Quantity Input', () => {
     it('accepts positive numbers for quantity', async () => {
       const user = userEvent.setup();
-      renderWithTheme(<CategoryForm {...defaultProps} />);
+      renderWithTheme(<CategoryForm {...defaultProps} />, createStoreWithGroups());
       
       const deductionField = screen.getByLabelText(/deduction quantity per order/i);
       await user.clear(deductionField);
@@ -81,7 +125,7 @@ describe('CategoryForm - Inventory Deduction Configuration', () => {
 
     it('shows example alert when quantity is specified', async () => {
       const user = userEvent.setup();
-      renderWithTheme(<CategoryForm {...defaultProps} />);
+      renderWithTheme(<CategoryForm {...defaultProps} />, createStoreWithGroups());
       
       const deductionField = screen.getByLabelText(/deduction quantity per order/i);
       await user.clear(deductionField);
@@ -94,7 +138,7 @@ describe('CategoryForm - Inventory Deduction Configuration', () => {
     }) as any;
 
     it('updates helper text with correct unit', async () => {
-      renderWithTheme(<CategoryForm {...defaultProps} />);
+      renderWithTheme(<CategoryForm {...defaultProps} />, createStoreWithGroups());
       
       expect(screen.getByLabelText(/deduction quantity per order \(pcs\)/i)).toBeInTheDocument();
     }) as any;
@@ -104,7 +148,7 @@ describe('CategoryForm - Inventory Deduction Configuration', () => {
   describe('Form Validation', () => {
     it('accepts minimum value of 0 for deduction quantity', async () => {
       const user = userEvent.setup();
-      renderWithTheme(<CategoryForm {...defaultProps} />);
+      renderWithTheme(<CategoryForm {...defaultProps} />, createStoreWithGroups());
       
       const deductionField = screen.getByLabelText(/deduction quantity per order/i);
       await user.clear(deductionField);
@@ -151,7 +195,7 @@ describe('CategoryForm - Inventory Deduction Configuration', () => {
   describe('Visual Feedback', () => {
     it('shows appropriate alert for zero deduction', async () => {
       const user = userEvent.setup();
-      renderWithTheme(<CategoryForm {...defaultProps} />);
+      renderWithTheme(<CategoryForm {...defaultProps} />, createStoreWithGroups());
       
       const deductionField = screen.getByLabelText(/deduction quantity per order/i);
       await user.clear(deductionField);
@@ -164,7 +208,7 @@ describe('CategoryForm - Inventory Deduction Configuration', () => {
 
     it('shows success alert for positive deduction', async () => {
       const user = userEvent.setup();
-      renderWithTheme(<CategoryForm {...defaultProps} />);
+      renderWithTheme(<CategoryForm {...defaultProps} />, createStoreWithGroups());
       
       const deductionField = screen.getByLabelText(/deduction quantity per order/i);
       await user.clear(deductionField);

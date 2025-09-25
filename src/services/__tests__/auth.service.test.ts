@@ -57,9 +57,9 @@ jest.mock('../firebase.config', () => ({
 
 // Helper function to access the mocks
 const getMocks = () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const auth = jest.requireMock('firebase/auth') as any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const firestore = jest.requireMock('firebase/firestore') as any;
   
   return {

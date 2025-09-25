@@ -30,19 +30,19 @@ describe('TodaysOrder Service', () => {
     todaysOrderService = new TodaysOrder();
     
     // Mock the inherited methods from FirebaseService
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     mockGetDocument = jest.spyOn(todaysOrderService as any, 'getDocument').mockResolvedValue(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     mockUpdateDocument = jest.spyOn(todaysOrderService as any, 'updateDocument').mockResolvedValue(undefined);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     mockBatchOperation = jest.spyOn(todaysOrderService as any, 'batchOperation').mockResolvedValue(undefined);
     
     // Mock the product mapping methods
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     jest.spyOn(todaysOrderService as any, 'mapProductsToActiveOrder').mockResolvedValue(undefined);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     jest.spyOn(todaysOrderService as any, 'mapProductToOrder').mockImplementation(() => {});
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     jest.spyOn(todaysOrderService as any, 'cleanOrders').mockImplementation((orders) => orders);
   });
 
@@ -73,7 +73,7 @@ describe('TodaysOrder Service', () => {
 
     it('should map products to orders when orders exist', async () => {
       const testDate = '2024-01-15';
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const mapProductSpy = jest.spyOn(todaysOrderService as any, 'mapProductToOrder');
       mockGetDocument.mockResolvedValue(mockActiveOrderSchema);
 

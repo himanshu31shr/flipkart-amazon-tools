@@ -33,7 +33,7 @@ describe('transactionsSlice', () => {
       sellingPrice: 100,
       description: 'Test transaction 1',
       expenses: { shippingFee: 10, marketplaceFee: 5, otherFees: 2 },
-      product: { id: '1', name: 'Test Product 1' } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      product: { id: '1', name: 'Test Product 1' } as any,  
       metadata: { createdAt: '2023-01-01', updatedAt: '2023-01-01' },
       hash: 'hash1'
     },
@@ -46,11 +46,11 @@ describe('transactionsSlice', () => {
       sellingPrice: 200,
       description: 'Test transaction 2',
       expenses: { shippingFee: 15, marketplaceFee: 8, otherFees: 3 },
-      product: { id: '2', name: 'Test Product 2' } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
+      product: { id: '2', name: 'Test Product 2' } as any,  
       metadata: { createdAt: '2023-01-02', updatedAt: '2023-01-02' },
       hash: 'hash2'
     },
-  ] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  ] as any;  
 
   describe('reducers', () => {
     it('should return the initial state', () => {
