@@ -270,7 +270,7 @@ export class AlertingService extends FirebaseService {
     return this.compareValues(value, rule.condition.operator, rule.condition.threshold);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   private evaluateAvailabilityRule(_rule: AlertRule, _windowStart: number, _now: number): boolean {
     // For frontend apps, availability can be measured by successful health checks
     // This would typically integrate with external monitoring services

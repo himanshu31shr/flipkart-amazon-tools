@@ -22,7 +22,7 @@ describe('allOrdersForAnalyticsSlice', () => {
       type: 'flipkart',
       date: '2023-01-02',
     },
-  ] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  ] as any;  
 
   it('should return the initial state', () => {
     expect(allOrdersForAnalyticsReducer(undefined, { type: 'unknown' })).toEqual(initialState);

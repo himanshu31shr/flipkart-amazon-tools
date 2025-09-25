@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Chip,
   Box,
-  CircularProgress,
-  FormHelperText,
+  TextField,
+  Autocomplete,
 } from '@mui/material';
-import { CategoryGroupService } from '../../../services/categoryGroup.service';
+import { useAppSelector, useAppDispatch } from '../../../store/hooks';
+import {
+  selectCategoryGroups,
+  selectCategoryGroupsLoading,
+  selectCategoryGroupsLastUpdated,
+  fetchCategoryGroups,
+} from '../../../store/slices/categoryGroupsSlice';
 import { CategoryGroupWithStats } from '../../../types/categoryGroup';
 
 interface CategoryGroupSelectorProps {
@@ -18,10 +20,10 @@ interface CategoryGroupSelectorProps {
   error?: boolean;
   helperText?: string;
   label?: string;
-  placeholder?: string;
   required?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
+  size?: 'small' | 'medium';
 }
 
 const CategoryGroupSelector: React.FC<CategoryGroupSelectorProps> = ({
@@ -30,36 +32,26 @@ const CategoryGroupSelector: React.FC<CategoryGroupSelectorProps> = ({
   error = false,
   helperText,
   label = 'Category Group',
-  placeholder = 'Select a category group',
   required = false,
   disabled = false,
   fullWidth = true,
+  size = 'medium',
 }) => {
-  const [groups, setGroups] = useState<CategoryGroupWithStats[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const categoryGroupService = new CategoryGroupService();
+  const dispatch = useAppDispatch();
+  const groups = useAppSelector(selectCategoryGroups);
+  const loading = useAppSelector(selectCategoryGroupsLoading);
+  const lastUpdated = useAppSelector(selectCategoryGroupsLastUpdated);
 
   useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        setLoading(true);
-        const fetchedGroups = await categoryGroupService.getCategoryGroupsWithStats();
-        setGroups(fetchedGroups);
-      } catch (error) {
-        console.error('Failed to fetch category groups:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Only fetch if data is stale or not yet loaded
+    const shouldFetch = !groups.length || 
+      !lastUpdated || 
+      (Date.now() - new Date(lastUpdated).getTime() > 5 * 60 * 1000); // 5 minutes cache
 
-    fetchGroups();
-  }, []);
-
-  const handleChange = (event: { target: { value: string } }) => {
-    const selectedValue = event.target.value;
-    onChange(selectedValue === '' ? null : selectedValue);
-  };
+    if (shouldFetch) {
+      dispatch(fetchCategoryGroups());
+    }
+  }, [dispatch, groups.length, lastUpdated]);
 
   const getContrastColor = (hexColor: string): string => {
     try {
@@ -73,78 +65,74 @@ const CategoryGroupSelector: React.FC<CategoryGroupSelectorProps> = ({
     }
   };
 
-  const selectedGroup = groups?.find(group => group.id === value);
+  const selectedGroup = groups.find(group => group.id === value) || null;
+
+  const handleChange = (_: unknown, selectedGroup: CategoryGroupWithStats | null) => {
+    onChange(selectedGroup?.id || null);
+  };
 
   return (
-    <FormControl fullWidth={fullWidth} error={error} disabled={disabled}>
-      <InputLabel id="category-group-select-label">
-        {label}{required && ' *'}
-      </InputLabel>
-      <Select
-        labelId="category-group-select-label"
-        value={value || ''}
-        label={`${label}${required ? ' *' : ''}`}
-        onChange={handleChange}
-        disabled={loading || disabled}
-        displayEmpty
-        renderValue={(selected) => {
-          if (loading) {
-            return (
-              <Box display="flex" alignItems="center" gap={1}>
-                <CircularProgress size={16} />
-                Loading groups...
-              </Box>
-            );
-          }
-          
-          if (!selected) {
-            return <Box sx={{ color: 'text.secondary' }}>{placeholder}</Box>;
-          }
-
-          if (selectedGroup) {
-            return (
-              <Chip
-                label={selectedGroup.name}
-                size="small"
-                sx={{
-                  backgroundColor: selectedGroup.color,
-                  color: getContrastColor(selectedGroup.color),
-                  fontWeight: 'medium',
-                }}
-              />
-            );
-          }
-
-          return selected;
-        }}
-      >
-        <MenuItem value="">
-          <Box sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
-            No group assigned
-          </Box>
-        </MenuItem>
-        {groups?.map((group) => (
-          <MenuItem key={group.id} value={group.id}>
-            <Box display="flex" alignItems="center" gap={2} width="100%">
-              <Chip
-                label={group.name}
-                size="small"
-                sx={{
-                  backgroundColor: group.color,
-                  color: getContrastColor(group.color),
-                  fontWeight: 'medium',
-                  minWidth: 100,
-                }}
-              />
-              <Box sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
-                {group.categoryCount} {group.categoryCount === 1 ? 'category' : 'categories'}
-              </Box>
+    <Autocomplete
+      fullWidth={fullWidth}
+      size={size}
+      value={selectedGroup}
+      onChange={handleChange}
+      options={groups}
+      getOptionLabel={(group) => group.name}
+      loading={loading}
+      disabled={disabled || loading}
+      isOptionEqualToValue={(option, val) => option.id === val?.id}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label={`${label}${required ? ' *' : ''}`}
+          error={error}
+          helperText={helperText}
+          placeholder="Search and select a group..."
+        />
+      )}
+      renderOption={(props, group) => (
+        <Box component="li" {...props} key={group.id}>
+          <Box display="flex" alignItems="center" gap={1} width="100%">
+            <Chip
+              label={group.name}
+              size="small"
+              sx={{
+                backgroundColor: group.color,
+                color: getContrastColor(group.color),
+                fontWeight: 'medium',
+              }}
+            />
+            <Box sx={{ 
+              color: 'text.secondary', 
+              fontSize: '0.875rem',
+              ml: 'auto' 
+            }}>
+              {group.categoryCount} {group.categoryCount === 1 ? 'category' : 'categories'}
             </Box>
-          </MenuItem>
-        ))}
-      </Select>
-      {helperText && <FormHelperText>{helperText}</FormHelperText>}
-    </FormControl>
+          </Box>
+        </Box>
+      )}
+      renderTags={(tagValue, getTagProps) =>
+        tagValue.map((option, index) => (
+          <Chip
+            {...getTagProps({ index })}
+            key={option.id}
+            label={option.name}
+            size="small"
+            sx={{
+              backgroundColor: option.color,
+              color: getContrastColor(option.color),
+              fontWeight: 'medium',
+            }}
+          />
+        ))
+      }
+      noOptionsText="No category groups found"
+      clearText="Clear selection"
+      openText="Open options"
+      closeText="Close options"
+    />
   );
 };
 

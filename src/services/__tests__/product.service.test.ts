@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { ProductService, Product, ProductFilter } from '../product.service';
 import { Timestamp } from 'firebase/firestore';
 import Papa from 'papaparse';
