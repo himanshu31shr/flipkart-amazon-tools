@@ -12,6 +12,7 @@ import React, { useState, useEffect } from "react";
 import { Column, DataTable } from "../../../components/DataTable/DataTable";
 import { InventoryLevel, InventoryFilters, InventoryStatus } from "../../../types/inventory";
 import { InventoryLevelsToolbar } from "./InventoryLevelsToolbar";
+import EditableThresholdCell from "./EditableThresholdCell";
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { 
   fetchInventoryLevels, 
@@ -174,12 +175,22 @@ export const InventoryLevelsList: React.FC<Props> = ({
       label: "Min Threshold",
       align: "right",
       format: (value, row) => {
-        const threshold = value as number;
-        const unit = row?.inventoryUnit || '';
+        if (!row) return <Typography variant="body2">-</Typography>;
         return (
-          <Typography variant="body2">
-            {formatInventoryValue(threshold, unit)}
-          </Typography>
+          <EditableThresholdCell
+            inventoryLevel={row}
+            onUpdateSuccess={(categoryGroupId, newThreshold) => {
+              setSnackbarMessage(`Successfully updated threshold to ${newThreshold} ${row.inventoryUnit}`);
+              setSnackbarSeverity('success');
+              setSnackbarOpen(true);
+              handleRefresh(); // Refresh the data after successful update
+            }}
+            onUpdateError={(categoryGroupId, error) => {
+              setSnackbarMessage(`Failed to update threshold: ${error}`);
+              setSnackbarSeverity('error');
+              setSnackbarOpen(true);
+            }}
+          />
         );
       },
     },
