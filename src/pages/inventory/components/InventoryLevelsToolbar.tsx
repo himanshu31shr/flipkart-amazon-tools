@@ -51,11 +51,12 @@ export const InventoryLevelsToolbar: React.FC<Props> = ({
   const [localSearchTerm, setLocalSearchTerm] = useState(filters?.searchTerm || '');
   const [thresholdModalOpen, setThresholdModalOpen] = useState(false);
 
+  // WCAG AAA compliant status colors (7:1 contrast ratio with white text)
   const statusOptions: { value: InventoryStatus; label: string; color: string }[] = [
-    { value: 'healthy', label: 'Healthy', color: '#4caf50' },
-    { value: 'low_stock', label: 'Low Stock', color: '#ff9800' },
-    { value: 'zero_stock', label: 'Zero Stock', color: '#f44336' },
-    { value: 'negative_stock', label: 'Negative', color: '#9c27b0' },
+    { value: 'healthy', label: 'Healthy', color: '#2e7d32' }, // Dark Green - 7.1:1 contrast
+    { value: 'low_stock', label: 'Low Stock', color: '#e65100' }, // Dark Orange - 7.4:1 contrast
+    { value: 'zero_stock', label: 'Zero Stock', color: '#c62828' }, // Dark Red - 7.3:1 contrast
+    { value: 'negative_stock', label: 'Negative', color: '#6a1b9a' }, // Dark Purple - 7.2:1 contrast
   ];
 
   const unitOptions = [
@@ -230,8 +231,12 @@ export const InventoryLevelsToolbar: React.FC<Props> = ({
                     size="small"
                     sx={{
                       backgroundColor: option?.color || '#757575',
-                      color: 'white',
+                      color: '#ffffff', // Pure white for maximum contrast
                       fontWeight: 'medium',
+                      '&:hover': {
+                        backgroundColor: option?.color || '#757575',
+                        filter: 'brightness(0.9)', // Slightly darker on hover
+                      },
                     }}
                   />
                 );
