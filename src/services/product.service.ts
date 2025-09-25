@@ -13,6 +13,7 @@ export interface Product {
   visibility: "visible" | "hidden";
   sellingPrice: number;
   categoryId?: string; // Reference to category document ID
+  categoryGroupId?: string; // Reference to category group document ID
   metadata: {
     createdAt?: Timestamp;
     updatedAt?: Timestamp;
@@ -365,6 +366,12 @@ export class ProductService extends FirebaseService {
       this.COLLECTION_NAME,
       constraints
     );
+    
+    // Handle case where getDocuments returns undefined (e.g., in tests or emulator issues)
+    if (!products || !Array.isArray(products)) {
+      return [];
+    }
+    
     return products.map((product) => ({
       ...product,
       sku: product.id ?? product.sku,

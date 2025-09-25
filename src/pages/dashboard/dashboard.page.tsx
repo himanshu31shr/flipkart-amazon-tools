@@ -23,8 +23,16 @@ import { fetchOrderHistory } from '../../store/slices/orderHistorySlice';
 import { fetchOrders } from '../../store/slices/ordersSlice';
 import { fetchProducts } from '../../store/slices/productsSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
+import { 
+    fetchInventoryLevels,
+    fetchInventoryAlerts,
+    selectInventoryLevels,
+    selectInventoryLoading 
+} from '../../store/slices/inventorySlice';
 import { HiddenProductsWidget, HighPricedProductsWidget } from './components/ProductAlertWidgets';
 import UncategorizedProductsWidget from './components/UncategorizedProductsWidget';
+import InventoryAlertsWidget from './components/InventoryAlertsWidget';
+import InventorySummaryWidget from './components/InventorySummaryWidget';
 
 export const DashboardPage = () => {
     const dispatch = useAppDispatch();
@@ -32,6 +40,8 @@ export const DashboardPage = () => {
     const { items: orders } = useAppSelector(state => state.orders);
     const { dailyOrders } = useAppSelector(state => state.orderHistory);
     const isAuthenticated = useAppSelector(selectIsAuthenticated);
+    const inventoryLevels = useAppSelector(selectInventoryLevels);
+    const inventoryLoading = useAppSelector(selectInventoryLoading);
 
     useEffect(() => {
         // Only fetch data if authenticated
@@ -39,17 +49,21 @@ export const DashboardPage = () => {
             dispatch(fetchProducts({}));
             dispatch(fetchOrders());
             dispatch(fetchOrderHistory());
+            dispatch(fetchInventoryLevels());
+            dispatch(fetchInventoryAlerts());
         }
     }, [dispatch, isAuthenticated]);
 
     const totalOrders = orders.length;
-    const activeOrders = orders.filter(order => order.product?.visibility === 'visible').length;
     const totalProducts = products.length;
     const revenue = orders.reduce((sum, order: ProductSummary) => {
         const price = order.product?.sellingPrice || 0;
         const quantity = parseInt(order.quantity) || 0;
         return sum + (price * quantity);
     }, 0);
+    
+    // Calculate actual Average Order Value
+    const averageOrderValue = totalOrders > 0 ? revenue / totalOrders : 0;
 
     if (productsLoading) {
         return (
@@ -113,14 +127,14 @@ export const DashboardPage = () => {
                     <Paper sx={{ p: 2, borderRadius: 2, borderLeft: '4px solid', borderColor: 'info.main', height: '100%' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                             <Typography variant="subtitle1" color="text.secondary" fontWeight="medium">
-                                Recent Orders
+                                Total Products
                             </Typography>
                         </Box>
                         <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'info.dark' }}>
-                            {activeOrders}
+                            {totalProducts}
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                            Currently active orders
+                            Products in catalog
                         </Typography>
                     </Paper>
                 </Grid>
@@ -132,10 +146,10 @@ export const DashboardPage = () => {
                             </Typography>
                         </Box>
                         <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'secondary.dark' }}>
-                            {totalProducts}
+                            ₹{averageOrderValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                            Total products in catalog
+                            Average revenue per order
                         </Typography>
                     </Paper>
                 </Grid>
@@ -177,6 +191,30 @@ export const DashboardPage = () => {
                     </Paper>
                 </Grid>
 
+            </Grid>
+
+            {/* Inventory Widgets */}
+            <Grid container spacing={3} sx={{ mt: 1 }}>
+                {/* Inventory Summary Widget */}
+                <Grid item xs={12} md={8}>
+                    <InventorySummaryWidget
+                        inventoryLevels={inventoryLevels}
+                        loading={inventoryLoading.inventoryLevels}
+                    />
+                </Grid>
+
+                {/* Inventory Alerts Widget */}
+                <Grid item xs={12} md={4}>
+                    <InventoryAlertsWidget
+                        maxAlertsInWidget={5}
+                        onManualAdjustment={(categoryGroupId) => {
+                            console.log('Manual adjustment for category group:', categoryGroupId);
+                        }}
+                        onViewCategoryGroup={(categoryGroupId) => {
+                            console.log('View category group:', categoryGroupId);
+                        }}
+                    />
+                </Grid>
             </Grid>
 
             {/* Additional Alert Widgets */}

@@ -87,7 +87,7 @@ const createMockProduct = (platform: 'flipkart' | 'amazon', serialNumber?: strin
     ...(platform === 'flipkart' && serialNumber && { flipkartSerialNumber: serialNumber }),
     ...(platform === 'amazon' && serialNumber && { amazonSerialNumber: serialNumber }),
   },
-});
+}) as any;
 
 const mockFlipkartProduct: ProductSummary = {
   SKU: 'FLP-001',
@@ -131,14 +131,14 @@ const renderSummaryTable = (props = {}) => {
 describe('SummaryTable', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
+  }) as any;
 
   describe('rendering', () => {
     it('should render DataTable with correct id', () => {
       renderSummaryTable();
       
       expect(screen.getByTestId('summary-table')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should render table headers correctly', () => {
       renderSummaryTable();
@@ -148,48 +148,48 @@ describe('SummaryTable', () => {
       expect(screen.getByText('Quantity')).toBeInTheDocument();
       expect(screen.getByText('Platform')).toBeInTheDocument();
       expect(screen.getByText('Actions')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should render empty table when no summary data', () => {
-      renderSummaryTable({ summary: [] });
+      renderSummaryTable({ summary: [] }) as any;
       
       const table = screen.getByTestId('summary-table');
       expect(table).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should render table with summary data', () => {
       renderSummaryTable({ 
         summary: [mockFlipkartProduct, mockAmazonProduct] 
-      });
+      }) as any;
       
       expect(screen.getByText('FLP-001')).toBeInTheDocument();
       expect(screen.getByText('Test Flipkart Product')).toBeInTheDocument();
       expect(screen.getByText('AMZ-001')).toBeInTheDocument();
       expect(screen.getByText('Test Amazon Product')).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('column formatting', () => {
     it('should format quantity column correctly', () => {
-      renderSummaryTable({ summary: [mockFlipkartProduct] });
+      renderSummaryTable({ summary: [mockFlipkartProduct] }) as any;
       
       expect(screen.getByText('5')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should format platform column with chips', () => {
       renderSummaryTable({ 
         summary: [mockFlipkartProduct, mockAmazonProduct] 
-      });
+      }) as any;
       
       // Check for platform chips
       expect(screen.getByText('FLIPKART')).toBeInTheDocument();
       expect(screen.getByText('AMAZON')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should apply correct chip colors for platforms', () => {
       renderSummaryTable({ 
         summary: [mockFlipkartProduct, mockAmazonProduct] 
-      });
+      }) as any;
       
       // The chips should be rendered with different colors
       const flipkartChip = screen.getByText('FLIPKART');
@@ -197,7 +197,7 @@ describe('SummaryTable', () => {
       
       expect(flipkartChip).toBeInTheDocument();
       expect(amazonChip).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle different quantity formats', () => {
       const products = [
@@ -205,46 +205,46 @@ describe('SummaryTable', () => {
         { ...mockAmazonProduct, quantity: '999' },
       ];
       
-      renderSummaryTable({ summary: products });
+      renderSummaryTable({ summary: products }) as any;
       
       expect(screen.getByText('0')).toBeInTheDocument();
       expect(screen.getByText('999')).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('action buttons', () => {
     it('should render Flipkart action button for Flipkart products', () => {
-      renderSummaryTable({ summary: [mockFlipkartProduct] });
+      renderSummaryTable({ summary: [mockFlipkartProduct] }) as any;
       
       const flipkartButton = screen.getByTestId('view-flipkart-FLP123456');
       expect(flipkartButton).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should render Amazon action button for Amazon products', () => {
-      renderSummaryTable({ summary: [mockAmazonProduct] });
+      renderSummaryTable({ summary: [mockAmazonProduct] }) as any;
       
       const amazonButton = screen.getByTestId('view-amazon-AMZ789012');
       expect(amazonButton).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should not render Amazon button for Flipkart products', () => {
-      renderSummaryTable({ summary: [mockFlipkartProduct] });
+      renderSummaryTable({ summary: [mockFlipkartProduct] }) as any;
       
       expect(screen.queryByTestId('view-amazon-AMZ789012')).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('should not render Flipkart button for Amazon products', () => {
-      renderSummaryTable({ summary: [mockAmazonProduct] });
+      renderSummaryTable({ summary: [mockAmazonProduct] }) as any;
       
       expect(screen.queryByTestId('view-flipkart-FLP123456')).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle products with missing metadata', () => {
-      renderSummaryTable({ summary: [mockProductWithoutMetadata] });
+      renderSummaryTable({ summary: [mockProductWithoutMetadata] }) as any;
       
       expect(screen.queryByTestId('view-flipkart-')).not.toBeInTheDocument();
       expect(screen.queryByTestId('view-amazon-')).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle products with undefined metadata', () => {
       const productWithUndefinedMetadata = {
@@ -255,22 +255,22 @@ describe('SummaryTable', () => {
         },
       };
       
-      renderSummaryTable({ summary: [productWithUndefinedMetadata] });
+      renderSummaryTable({ summary: [productWithUndefinedMetadata] }) as any;
       
       expect(screen.queryByTestId('view-flipkart-')).not.toBeInTheDocument();
       expect(screen.queryByTestId('view-amazon-')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('data handling', () => {
     it('should handle mixed platform products', () => {
       renderSummaryTable({ 
         summary: [mockFlipkartProduct, mockAmazonProduct] 
-      });
+      }) as any;
       
       expect(screen.getByTestId('view-flipkart-FLP123456')).toBeInTheDocument();
       expect(screen.getByTestId('view-amazon-AMZ789012')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle large datasets', () => {
       const largeDataset = Array.from({ length: 50 }, (_, index) => ({
@@ -286,11 +286,11 @@ describe('SummaryTable', () => {
         },
       }));
       
-      renderSummaryTable({ summary: largeDataset });
+      renderSummaryTable({ summary: largeDataset }) as any;
       
       expect(screen.getByText('SKU-0')).toBeInTheDocument();
       expect(screen.getByText('Product 0')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle products with special characters in names', () => {
       const specialProduct = {
@@ -299,10 +299,10 @@ describe('SummaryTable', () => {
         SKU: 'SPECIAL-001',
       };
       
-      renderSummaryTable({ summary: [specialProduct] });
+      renderSummaryTable({ summary: [specialProduct] }) as any;
       
       expect(screen.getByText('Product with "quotes" & special chars!')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle products with very long names', () => {
       const longNameProduct = {
@@ -311,11 +311,11 @@ describe('SummaryTable', () => {
         SKU: 'LONG-001',
       };
       
-      renderSummaryTable({ summary: [longNameProduct] });
+      renderSummaryTable({ summary: [longNameProduct] }) as any;
       
       expect(screen.getByText('This is a very long product name that might cause layout issues in the table component')).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('edge cases', () => {
     it('should handle undefined summary prop', () => {
@@ -326,7 +326,7 @@ describe('SummaryTable', () => {
           </ThemeProvider>
         );
       }).not.toThrow();
-    });
+    }) as any;
 
     it('should handle null summary prop', () => {
       expect(() => {
@@ -336,7 +336,7 @@ describe('SummaryTable', () => {
           </ThemeProvider>
         );
       }).not.toThrow();
-    });
+    }) as any;
 
     it('should handle products without product property', () => {
       const productWithoutProduct = {
@@ -348,9 +348,9 @@ describe('SummaryTable', () => {
       };
       
       expect(() => {
-        renderSummaryTable({ summary: [productWithoutProduct] });
+        renderSummaryTable({ summary: [productWithoutProduct] }) as any;
       }).not.toThrow();
-    });
+    }) as any;
 
     it('should handle products with unknown platform', () => {
       const unknownPlatformProduct = {
@@ -364,12 +364,12 @@ describe('SummaryTable', () => {
         },
       };
       
-      renderSummaryTable({ summary: [unknownPlatformProduct] });
+      renderSummaryTable({ summary: [unknownPlatformProduct] }) as any;
       
       expect(screen.getByText('UNKNOWN')).toBeInTheDocument();
       expect(screen.queryByTestId('view-flipkart-')).not.toBeInTheDocument();
       expect(screen.queryByTestId('view-amazon-')).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle empty string values', () => {
       const emptyStringProduct = {
@@ -385,11 +385,11 @@ describe('SummaryTable', () => {
         },
       };
       
-      renderSummaryTable({ summary: [emptyStringProduct] });
+      renderSummaryTable({ summary: [emptyStringProduct] }) as any;
       
       expect(screen.getByTestId('summary-table')).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('component integration', () => {
     it('should work with different themes', () => {
@@ -397,7 +397,7 @@ describe('SummaryTable', () => {
         palette: {
           mode: 'dark',
         },
-      });
+      }) as any;
 
       render(
         <ThemeProvider theme={darkTheme}>
@@ -406,27 +406,27 @@ describe('SummaryTable', () => {
       );
       
       expect(screen.getByTestId('summary-table')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should pass correct props to DataTable', () => {
-      renderSummaryTable({ summary: [mockFlipkartProduct] });
+      renderSummaryTable({ summary: [mockFlipkartProduct] }) as any;
       
       const dataTable = screen.getByTestId('summary-table');
       expect(dataTable).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should render all Material-UI components correctly', () => {
       renderSummaryTable({ 
         summary: [mockFlipkartProduct, mockAmazonProduct] 
-      });
+      }) as any;
       
       // Check that chips are rendered
       expect(screen.getByText('FLIPKART')).toBeInTheDocument();
       expect(screen.getByText('AMAZON')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle re-renders correctly', () => {
-      const { rerender } = renderSummaryTable({ summary: [mockFlipkartProduct] });
+      const { rerender } = renderSummaryTable({ summary: [mockFlipkartProduct] }) as any;
       
       expect(screen.getByText('FLP-001')).toBeInTheDocument();
       
@@ -438,31 +438,31 @@ describe('SummaryTable', () => {
       
       expect(screen.getByText('AMZ-001')).toBeInTheDocument();
       expect(screen.queryByText('FLP-001')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('accessibility', () => {
     it('should have accessible table structure', () => {
-      renderSummaryTable({ summary: [mockFlipkartProduct] });
+      renderSummaryTable({ summary: [mockFlipkartProduct] }) as any;
       
       const table = screen.getByRole('table');
       expect(table).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should have accessible action buttons', () => {
       renderSummaryTable({ 
         summary: [mockFlipkartProduct, mockAmazonProduct] 
-      });
+      }) as any;
       
       const buttons = screen.getAllByRole('button');
       expect(buttons.length).toBeGreaterThan(0);
-    });
+    }) as any;
 
     it('should have proper semantic structure', () => {
-      renderSummaryTable({ summary: [mockFlipkartProduct] });
+      renderSummaryTable({ summary: [mockFlipkartProduct] }) as any;
       
       expect(screen.getByRole('table')).toBeInTheDocument();
       expect(screen.getAllByRole('rowgroup')).toHaveLength(2); // thead and tbody
-    });
-  });
-}); 
+    }) as any;
+  }) as any;
+}) as any; 

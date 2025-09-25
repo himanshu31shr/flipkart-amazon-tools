@@ -89,7 +89,7 @@ describe('CategoryProductsList', () => {
     expect(screen.getByText('Product 1')).toBeInTheDocument();
     expect(screen.getByText('Product 2')).toBeInTheDocument();
     expect(screen.getByText('Product 3')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('does not render when closed', () => {
     renderWithTheme(
@@ -102,7 +102,7 @@ describe('CategoryProductsList', () => {
     );
 
     expect(screen.queryByText('Products in "Electronics" Category')).not.toBeInTheDocument();
-  });
+  }) as any;
 
   it('displays correct product information', () => {
     renderWithTheme(
@@ -122,7 +122,7 @@ describe('CategoryProductsList', () => {
     expect(quantityElements.length).toBeGreaterThan(0);
     expect(screen.getByText('₹1,000')).toBeInTheDocument();
     expect(screen.getByText('₹10,000')).toBeInTheDocument(); // Total value (10 * 1000)
-  });
+  }) as any;
 
   it('sorts products by quantity in descending order', () => {
     renderWithTheme(
@@ -139,7 +139,7 @@ describe('CategoryProductsList', () => {
     
     // First product should be Product 3 (quantity 15) - highest quantity
     expect(quantityCells[0]).toHaveTextContent('15');
-  });
+  }) as any;
 
   it('shows pagination when there are products', () => {
     renderWithTheme(
@@ -153,7 +153,7 @@ describe('CategoryProductsList', () => {
 
     // Check if pagination is present
     expect(screen.getByText('1–3 of 3')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('handles pagination correctly', () => {
     // Create more products to test pagination
@@ -191,7 +191,7 @@ describe('CategoryProductsList', () => {
     expect(screen.getByText('Product 15')).toBeInTheDocument();
     expect(screen.getByText('Product 6')).toBeInTheDocument(); // Product 6 should be on first page
     expect(screen.queryByText('Product 5')).not.toBeInTheDocument(); // Product 5 should be on second page
-  });
+  }) as any;
 
   it('changes rows per page correctly', () => {
     const manyProducts = Array.from({ length: 15 }, (_, i) => ({
@@ -221,16 +221,16 @@ describe('CategoryProductsList', () => {
     );
 
     // Find and click the rows per page selector (it's a combobox, not a button)
-    const rowsPerPageSelect = screen.getByRole('combobox', { name: /rows per page/i });
+    const rowsPerPageSelect = screen.getByRole('combobox', { name: /rows per page/i }) as any;
     fireEvent.mouseDown(rowsPerPageSelect);
     
     // Click on 25 rows per page option
-    const option25 = screen.getByRole('option', { name: '25' });
+    const option25 = screen.getByRole('option', { name: '25' }) as any;
     fireEvent.click(option25);
 
     // Check that pagination text updates
     expect(screen.getByText('1–15 of 15')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('shows empty state when no products', () => {
     renderWithTheme(
@@ -244,7 +244,7 @@ describe('CategoryProductsList', () => {
 
     expect(screen.getByText('0 products found')).toBeInTheDocument();
     expect(screen.getByText('No products found in this category')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('displays category chips for products', () => {
     renderWithTheme(
@@ -259,5 +259,5 @@ describe('CategoryProductsList', () => {
     // Check if category chips are displayed (use getAllByText since there are multiple)
     const electronicsChips = screen.getAllByText('Electronics');
     expect(electronicsChips.length).toBeGreaterThan(0);
-  });
-}); 
+  }) as any;
+}) as any; 

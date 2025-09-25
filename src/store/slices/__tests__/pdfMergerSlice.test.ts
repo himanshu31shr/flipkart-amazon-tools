@@ -21,11 +21,14 @@ describe('pdfMergerSlice', () => {
     flipkartFiles: [],
     finalPdf: null,
     summary: [],
+    inventoryResults: [],
     loading: false,
     error: null,
     selectedDate: new Date('2024-01-01'),
     consolidationProgress: null,
     isConsolidating: false,
+    categoryDeductionPreview: null,
+    hasAutomaticDeductionEnabled: false,
   };
 
   describe('reducers', () => {

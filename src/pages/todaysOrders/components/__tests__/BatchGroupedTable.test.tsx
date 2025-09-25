@@ -24,7 +24,7 @@ const createMockOrder = (overrides: Partial<ActiveOrder> = {}): ActiveOrder => (
     },
   },
   ...overrides,
-});
+}) as any;
 
 const mockBatchGroups = {
   'batch1': [
@@ -72,7 +72,7 @@ describe('BatchGroupedTable', () => {
     expect(screen.getByText('Test_File.pdf')).toBeInTheDocument();
     expect(screen.getByText('Flipkart_File.pdf')).toBeInTheDocument();
     expect(screen.getByText('Legacy Orders')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('displays order counts correctly', () => {
     render(
@@ -85,7 +85,7 @@ describe('BatchGroupedTable', () => {
     // Should show order counts - use getAllByText since counts appear in multiple places
     expect(screen.getAllByText('2 orders')).toHaveLength(1);
     expect(screen.getAllByText('1 orders').length).toBeGreaterThanOrEqual(1);
-  });
+  }) as any;
 
   it('filters by platform correctly', () => {
     render(
@@ -101,7 +101,7 @@ describe('BatchGroupedTable', () => {
     
     // Flipkart batch should not be visible since it has no Amazon orders after filtering
     expect(screen.queryByText('Flipkart_File.pdf')).not.toBeInTheDocument();
-  });
+  }) as any;
 
   it('expands and shows order details', async () => {
     
@@ -119,7 +119,7 @@ describe('BatchGroupedTable', () => {
     // The first accordion should be expanded by default, so check for product names
     expect(screen.getByText('Product 1')).toBeInTheDocument();
     expect(screen.getByText('Product 2')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('shows platform chips correctly', () => {
     render(
@@ -135,7 +135,7 @@ describe('BatchGroupedTable', () => {
     
     expect(amazonChips.length).toBeGreaterThan(0);
     expect(flipkartChips.length).toBeGreaterThan(0);
-  });
+  }) as any;
 
   it('handles empty batch groups', () => {
     render(
@@ -146,7 +146,7 @@ describe('BatchGroupedTable', () => {
     );
 
     expect(screen.getByText('No orders found for the selected filters.')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('sorts batches by upload time with legacy last', () => {
     const batchGroupsWithTimes = {
@@ -202,5 +202,5 @@ describe('BatchGroupedTable', () => {
     expect(titles[0]).toContain('Newest_File.pdf');
     expect(titles[1]).toContain('Oldest_File.pdf');
     expect(titles[2]).toContain('Legacy Orders');
-  });
-});
+  }) as any;
+}) as any;

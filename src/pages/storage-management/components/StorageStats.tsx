@@ -47,13 +47,17 @@ export const StorageStats: React.FC = () => {
       let totalSize = 0;
       
       // Calculate total files and size across all folders
-      for (const folder of folders) {
-        totalFiles += folder.fileCount;
-        totalSize += folder.totalSize;
+      if (Array.isArray(folders)) {
+        for (const folder of folders) {
+          totalFiles += folder.fileCount;
+          totalSize += folder.totalSize;
+        }
+      } else {
+        console.warn('Expected folders to be an array, got:', typeof folders);
       }
       
       setStats({
-        totalFolders: folders.length,
+        totalFolders: Array.isArray(folders) ? folders.length : 0,
         totalFiles,
         totalSize
       });

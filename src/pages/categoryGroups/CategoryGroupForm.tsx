@@ -64,6 +64,10 @@ const CategoryGroupForm: React.FC<CategoryGroupFormProps> = ({
       name: '',
       description: '',
       color: CATEGORY_GROUP_COLORS[0],
+      currentInventory: 0,
+      inventoryUnit: 'pcs',
+      inventoryType: 'qty',
+      minimumThreshold: 10,
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -93,6 +97,10 @@ const CategoryGroupForm: React.FC<CategoryGroupFormProps> = ({
           name: editingGroup.name,
           description: editingGroup.description,
           color: editingGroup.color,
+          currentInventory: editingGroup.currentInventory,
+          inventoryUnit: editingGroup.inventoryUnit,
+          inventoryType: editingGroup.inventoryType,
+          minimumThreshold: editingGroup.minimumThreshold,
         });
         setCustomColor(editingGroup.color);
       } else {
@@ -281,10 +289,10 @@ const CategoryGroupForm: React.FC<CategoryGroupFormProps> = ({
                   }}
                 >
                   <Typography variant="subtitle1" fontWeight="bold">
-                    {formik.values.name || 'Sample Group'}
+                    {formik.values.name || 'New Category Group'}
                   </Typography>
                   <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    {formik.values.description || 'Group description'}
+                    {formik.values.description || 'Enter a description for this group'}
                   </Typography>
                 </Paper>
               </Box>

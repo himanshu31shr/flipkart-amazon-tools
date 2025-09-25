@@ -30,6 +30,7 @@ export interface BatchInfo {
 }
 
 export interface Transaction {
+  id?: string; // Document ID from Firestore
   transactionId: string;
   platform: 'amazon' | 'flipkart';
   orderDate: string;

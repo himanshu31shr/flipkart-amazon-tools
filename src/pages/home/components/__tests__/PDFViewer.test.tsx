@@ -6,7 +6,7 @@ import { PDFViewer } from '../PDFViewer';
 // Mock useMediaQuery
 jest.mock('@mui/material/useMediaQuery', () => {
   return jest.fn().mockReturnValue(false);
-});
+}) as any;
 
 const mockUseMediaQuery = jest.requireMock('@mui/material/useMediaQuery');
 
@@ -29,17 +29,17 @@ describe('PDFViewer', () => {
     jest.clearAllMocks();
     // Default to desktop view
     mockUseMediaQuery.mockReturnValue(false);
-  });
+  }) as any;
 
   describe('rendering', () => {
     it('should render iframe with correct src', () => {
       const testUrl = 'https://example.com/document.pdf';
-      renderPDFViewer({ pdfUrl: testUrl });
+      renderPDFViewer({ pdfUrl: testUrl }) as any;
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toBeInTheDocument();
       expect(iframe).toHaveAttribute('src', testUrl);
-    });
+    }) as any;
 
     it('should render iframe with correct attributes', () => {
       renderPDFViewer();
@@ -48,22 +48,22 @@ describe('PDFViewer', () => {
       expect(iframe).toHaveAttribute('width', '100%');
       expect(iframe).toHaveAttribute('height', '100%');
       expect(iframe).toHaveStyle('display: block');
-    });
+    }) as any;
 
     it('should render within a Paper component', () => {
       renderPDFViewer();
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe.parentElement).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should render within a Box container', () => {
       renderPDFViewer();
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('responsive design', () => {
     it('should handle mobile view', () => {
@@ -74,7 +74,7 @@ describe('PDFViewer', () => {
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle tablet view', () => {
       // Mock tablet breakpoint
@@ -84,7 +84,7 @@ describe('PDFViewer', () => {
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle desktop view', () => {
       // Mock desktop breakpoint
@@ -94,7 +94,7 @@ describe('PDFViewer', () => {
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should render correctly on different screen sizes', () => {
       // Component should render regardless of screen size
@@ -104,8 +104,8 @@ describe('PDFViewer', () => {
       expect(iframe).toBeInTheDocument();
       expect(iframe).toHaveAttribute('width', '100%');
       expect(iframe).toHaveAttribute('height', '100%');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('props handling', () => {
     it('should handle different PDF URLs', () => {
@@ -116,38 +116,38 @@ describe('PDFViewer', () => {
       ];
 
       urls.forEach(url => {
-        const { unmount } = renderPDFViewer({ pdfUrl: url });
+        const { unmount } = renderPDFViewer({ pdfUrl: url }) as any;
         
         const iframe = screen.getByTitle('PDF Preview');
         expect(iframe).toHaveAttribute('src', url);
         
         unmount();
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should handle URLs with query parameters', () => {
       const urlWithParams = 'https://example.com/doc.pdf?page=1&zoom=100';
-      renderPDFViewer({ pdfUrl: urlWithParams });
+      renderPDFViewer({ pdfUrl: urlWithParams }) as any;
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toHaveAttribute('src', urlWithParams);
-    });
+    }) as any;
 
     it('should handle URLs with fragments', () => {
       const urlWithFragment = 'https://example.com/doc.pdf#page=5';
-      renderPDFViewer({ pdfUrl: urlWithFragment });
+      renderPDFViewer({ pdfUrl: urlWithFragment }) as any;
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toHaveAttribute('src', urlWithFragment);
-    });
+    }) as any;
 
     it('should handle empty URL', () => {
-      renderPDFViewer({ pdfUrl: '' });
+      renderPDFViewer({ pdfUrl: '' }) as any;
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toHaveAttribute('src', '');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('styling and layout', () => {
     it('should have correct iframe styling', () => {
@@ -156,15 +156,15 @@ describe('PDFViewer', () => {
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toHaveStyle({
         display: 'block',
-      });
-    });
+      }) as any;
+    }) as any;
 
     it('should render with correct title for accessibility', () => {
       renderPDFViewer();
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toHaveAttribute('title', 'PDF Preview');
-    });
+    }) as any;
 
     it('should have proper container structure', () => {
       renderPDFViewer();
@@ -172,8 +172,8 @@ describe('PDFViewer', () => {
       const iframe = screen.getByTitle('PDF Preview');
       const container = iframe.closest('div');
       expect(container).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('accessibility', () => {
     it('should have accessible title attribute', () => {
@@ -181,7 +181,7 @@ describe('PDFViewer', () => {
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toHaveAttribute('title', 'PDF Preview');
-    });
+    }) as any;
 
     it('should be keyboard accessible', () => {
       renderPDFViewer();
@@ -189,35 +189,35 @@ describe('PDFViewer', () => {
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toBeInTheDocument();
       // iframe elements are naturally keyboard accessible
-    });
+    }) as any;
 
     it('should have proper semantic structure', () => {
       renderPDFViewer();
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe.tagName.toLowerCase()).toBe('iframe');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('edge cases', () => {
     it('should handle very long URLs', () => {
       const longUrl = 'https://example.com/' + 'a'.repeat(1000) + '.pdf';
-      renderPDFViewer({ pdfUrl: longUrl });
+      renderPDFViewer({ pdfUrl: longUrl }) as any;
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toHaveAttribute('src', longUrl);
-    });
+    }) as any;
 
     it('should handle special characters in URL', () => {
       const specialUrl = 'https://example.com/file%20with%20spaces&special=chars.pdf';
-      renderPDFViewer({ pdfUrl: specialUrl });
+      renderPDFViewer({ pdfUrl: specialUrl }) as any;
       
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toHaveAttribute('src', specialUrl);
-    });
+    }) as any;
 
     it('should handle re-renders correctly', () => {
-      const { rerender } = renderPDFViewer({ pdfUrl: 'initial-url.pdf' });
+      const { rerender } = renderPDFViewer({ pdfUrl: 'initial-url.pdf' }) as any;
       
       expect(screen.getByTitle('PDF Preview')).toHaveAttribute('src', 'initial-url.pdf');
       
@@ -228,7 +228,7 @@ describe('PDFViewer', () => {
       );
       
       expect(screen.getByTitle('PDF Preview')).toHaveAttribute('src', 'updated-url.pdf');
-    });
+    }) as any;
 
     it('should not crash with undefined pdfUrl', () => {
       expect(() => {
@@ -238,7 +238,7 @@ describe('PDFViewer', () => {
           </ThemeProvider>
         );
       }).not.toThrow();
-    });
+    }) as any;
 
     it('should handle null pdfUrl gracefully', () => {
       expect(() => {
@@ -248,8 +248,8 @@ describe('PDFViewer', () => {
           </ThemeProvider>
         );
       }).not.toThrow();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('component integration', () => {
     it('should work with different themes', () => {
@@ -257,7 +257,7 @@ describe('PDFViewer', () => {
         palette: {
           mode: 'dark',
         },
-      });
+      }) as any;
 
       render(
         <ThemeProvider theme={darkTheme}>
@@ -266,7 +266,7 @@ describe('PDFViewer', () => {
       );
       
       expect(screen.getByTitle('PDF Preview')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should work with custom theme breakpoints', () => {
       const customTheme = createTheme({
@@ -279,7 +279,7 @@ describe('PDFViewer', () => {
             xl: 1920,
           },
         },
-      });
+      }) as any;
 
       render(
         <ThemeProvider theme={customTheme}>
@@ -288,7 +288,7 @@ describe('PDFViewer', () => {
       );
       
       expect(screen.getByTitle('PDF Preview')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should render all Material-UI components correctly', () => {
       renderPDFViewer();
@@ -296,8 +296,8 @@ describe('PDFViewer', () => {
       // Check that the iframe is rendered within the Material-UI structure
       const iframe = screen.getByTitle('PDF Preview');
       expect(iframe).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('responsive behavior', () => {
     it('should handle breakpoint changes', () => {
@@ -322,7 +322,7 @@ describe('PDFViewer', () => {
       );
       
       expect(screen.getByTitle('PDF Preview')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle all breakpoint combinations', () => {
       const breakpointCombinations = [
@@ -337,12 +337,12 @@ describe('PDFViewer', () => {
           .mockReturnValueOnce(isMobile)
           .mockReturnValueOnce(isTablet);
         
-        const { unmount } = renderPDFViewer({ pdfUrl: `test-${index}.pdf` });
+        const { unmount } = renderPDFViewer({ pdfUrl: `test-${index}.pdf` }) as any;
         
         expect(screen.getByTitle('PDF Preview')).toBeInTheDocument();
         
         unmount();
-      });
-    });
-  });
-}); 
+      }) as any;
+    }) as any;
+  }) as any;
+}) as any; 

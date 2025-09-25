@@ -41,7 +41,7 @@ describe('TableRowComponent', () => {
     expect(screen.getByText('test-1')).toBeInTheDocument();
     expect(screen.getByText('Test Item')).toBeInTheDocument();
     expect(screen.getByText('Active')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('should call onClick when row is clicked', () => {
     const mockOnClick = jest.fn();
@@ -61,7 +61,7 @@ describe('TableRowComponent', () => {
     fireEvent.click(row);
 
     expect(mockOnClick).toHaveBeenCalledWith(mockRow);
-  });
+  }) as any;
 
   it('should render checkbox when enableSelection is true', () => {
     render(
@@ -79,7 +79,7 @@ describe('TableRowComponent', () => {
     );
 
     expect(screen.getByRole('checkbox')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('should not render checkbox when enableSelection is false', () => {
     render(
@@ -91,7 +91,7 @@ describe('TableRowComponent', () => {
     );
 
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
-  });
+  }) as any;
 
   it('should call onSelect when checkbox is clicked but not trigger row onClick', () => {
     const mockOnClick = jest.fn();
@@ -120,7 +120,7 @@ describe('TableRowComponent', () => {
     
     // onClick should NOT be called when clicking checkbox
     expect(mockOnClick).not.toHaveBeenCalled();
-  });
+  }) as any;
 
   it('should stop propagation when clicking checkbox cell', () => {
     const mockOnClick = jest.fn();
@@ -147,7 +147,7 @@ describe('TableRowComponent', () => {
 
     // Row onClick should not be triggered when clicking checkbox cell
     expect(mockOnClick).not.toHaveBeenCalled();
-  });
+  }) as any;
 
   it('should check checkbox when selected is true', () => {
     render(
@@ -166,7 +166,7 @@ describe('TableRowComponent', () => {
 
     const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
     expect(checkbox.checked).toBe(true);
-  });
+  }) as any;
 
   it('should uncheck checkbox when selected is false', () => {
     render(
@@ -185,7 +185,7 @@ describe('TableRowComponent', () => {
 
     const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
     expect(checkbox.checked).toBe(false);
-  });
+  }) as any;
 
   it('should handle checkbox change event correctly', () => {
     const mockOnSelect = jest.fn();
@@ -232,7 +232,7 @@ describe('TableRowComponent', () => {
     const checkboxAgain = screen.getByRole('checkbox');
     fireEvent.click(checkboxAgain);
     expect(mockOnSelect).toHaveBeenCalledWith('test-1', false);
-  });
+  }) as any;
 
   it('should apply hover cursor when onClick is provided', () => {
     render(
@@ -248,7 +248,7 @@ describe('TableRowComponent', () => {
 
     const row = screen.getByRole('row');
     expect(row).toHaveStyle('cursor: pointer');
-  });
+  }) as any;
 
   it('should not apply pointer cursor when onClick is not provided', () => {
     render(
@@ -261,5 +261,5 @@ describe('TableRowComponent', () => {
 
     const row = screen.getByRole('row');
     expect(row).toHaveStyle('cursor: default');
-  });
-}); 
+  }) as any;
+}) as any; 

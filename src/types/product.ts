@@ -3,6 +3,7 @@ export interface Product {
   name: string;
   description: string;
   categoryId?: string; // Optional to match product.service.ts definition
+  categoryGroupId?: string; // Reference to category group document ID
   platform: "amazon" | "flipkart";
   visibility: "visible" | "hidden";
   sellingPrice: number;

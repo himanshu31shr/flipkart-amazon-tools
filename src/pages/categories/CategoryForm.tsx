@@ -11,6 +11,10 @@ interface Category {
   description?: string;
   tag?: string;
   categoryGroupId?: string;
+  inventoryType?: 'weight' | 'qty';
+  inventoryUnit?: 'kg' | 'g' | 'pcs';
+  unitConversionRate?: number;
+  inventoryDeductionQuantity?: number; // Quantity to deduct per product order
   createdAt?: Timestamp | Date | string; // Use more specific types
   updatedAt?: Timestamp | Date | string; // Use more specific types
 }
@@ -24,7 +28,15 @@ import {
   Button,
   Stack,
   CircularProgress,
-  Autocomplete, // Import Autocomplete
+  Autocomplete,
+  FormControl,
+  Select,
+  MenuItem,
+  InputLabel,
+  Box,
+  Typography,
+  Divider,
+  Alert,
 } from '@mui/material';
 import CategoryGroupSelector from '../categoryGroups/components/CategoryGroupSelector';
 
@@ -33,6 +45,8 @@ const categorySchema = z.object({
   description: z.string().optional(),
   tag: z.string().optional(),
   categoryGroupId: z.string().optional().nullable(),
+  inventoryUnit: z.enum(['pcs', 'kg', 'g']).optional(),
+  inventoryDeductionQuantity: z.number().min(0, 'Deduction quantity must be 0 or greater').optional(),
 });
 
 type CategoryFormData = z.infer<typeof categorySchema>;
@@ -55,16 +69,25 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   isSubmitting,
   existingTags,
 }) => {
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
-    control, // Get control from useForm
+    control,
+    watch,
   } = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
-    defaultValues, // Use defaultValues directly
+    defaultValues: {
+      inventoryUnit: 'pcs',
+      ...defaultValues,
+    },
   });
+
+  // Watch inventory unit and deduction quantity to show appropriate labels and examples
+  const inventoryUnit = watch('inventoryUnit');
+  const inventoryDeductionQuantity = watch('inventoryDeductionQuantity');
 
   const handleFormSubmit = async (data: CategoryFormData) => {
     await onSubmit(data);
@@ -140,6 +163,80 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                 />
               )}
             />
+
+            <Divider sx={{ my: 2 }} />
+            
+            <Box>
+              <Typography variant="h6" gutterBottom color="text.secondary">
+                Category Inventory Settings
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Configure how inventory is managed for products in this category
+              </Typography>
+              
+              <Stack spacing={3}>
+                <Controller
+                  name="inventoryUnit"
+                  control={control}
+                  render={({ field }) => (
+                    <FormControl fullWidth sx={{ maxWidth: 300 }}>
+                      <InputLabel>Inventory Unit</InputLabel>
+                      <Select
+                        {...field}
+                        label="Inventory Unit"
+                        disabled={isSubmitting}
+                        error={!!errors.inventoryUnit}
+                      >
+                        <MenuItem value="pcs">Pieces (pcs)</MenuItem>
+                        <MenuItem value="kg">Kilograms (kg)</MenuItem>
+                        <MenuItem value="g">Grams (g)</MenuItem>
+                      </Select>
+                      {errors.inventoryUnit && (
+                        <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                          {errors.inventoryUnit.message}
+                        </Typography>
+                      )}
+                    </FormControl>
+                  )}
+                />
+
+                <TextField
+                  {...register('inventoryDeductionQuantity', { valueAsNumber: true })}
+                  label={`Deduction Quantity per Order (${inventoryUnit || 'pcs'})`}
+                  type="number"
+                  error={!!errors.inventoryDeductionQuantity}
+                  helperText={
+                    errors.inventoryDeductionQuantity?.message || 
+                    `How much inventory to deduct from the category group when an order is placed for a product in this category`
+                  }
+                  disabled={isSubmitting}
+                  inputProps={{ 
+                    min: 0, 
+                    step: inventoryUnit === 'pcs' ? 1 : 0.01 
+                  }}
+                  sx={{ maxWidth: 400 }}
+                />
+
+                {inventoryDeductionQuantity && inventoryDeductionQuantity > 0 && (
+                  <Alert severity="success" sx={{ maxWidth: 500 }}>
+                    <Typography variant="body2">
+                      <strong>Example:</strong> When an order is placed for a product in this category, 
+                      <strong> {inventoryDeductionQuantity} {inventoryUnit || 'pcs'}</strong> will be 
+                      automatically deducted from the associated category group&apos;s inventory.
+                    </Typography>
+                  </Alert>
+                )}
+
+                {(!inventoryDeductionQuantity || inventoryDeductionQuantity === 0) && (
+                  <Alert severity="info" sx={{ maxWidth: 500 }}>
+                    <Typography variant="body2">
+                      <strong>No automatic deduction:</strong> Orders for products in this category will not 
+                      automatically reduce category group inventory. You can manually adjust inventory levels as needed.
+                    </Typography>
+                  </Alert>
+                )}
+              </Stack>
+            </Box>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>

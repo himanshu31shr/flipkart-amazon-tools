@@ -73,7 +73,7 @@ const CategoryGroupSelector: React.FC<CategoryGroupSelectorProps> = ({
     }
   };
 
-  const selectedGroup = groups.find(group => group.id === value);
+  const selectedGroup = groups?.find(group => group.id === value);
 
   return (
     <FormControl fullWidth={fullWidth} error={error} disabled={disabled}>
@@ -123,7 +123,7 @@ const CategoryGroupSelector: React.FC<CategoryGroupSelectorProps> = ({
             No group assigned
           </Box>
         </MenuItem>
-        {groups.map((group) => (
+        {groups?.map((group) => (
           <MenuItem key={group.id} value={group.id}>
             <Box display="flex" alignItems="center" gap={2} width="100%">
               <Chip

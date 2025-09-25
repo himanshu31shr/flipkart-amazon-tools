@@ -75,11 +75,11 @@ const mockOrders: ProductSummary[] = [
 ];
 
 // Create a mock store
-const mockStore = configureStore({
+const mockStore = configureStore({ 
   reducer: {
     dummy: (state = {}) => state,
   },
-});
+}) as any;
 
 // Create a simple theme for testing
 const testTheme = createTheme();
@@ -98,7 +98,7 @@ const renderWithProviders = (component: React.ReactElement) => {
 describe('MergedCategoryTable', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-  });
+  }) as any;
 
   it('renders category table with data', async () => {
     renderWithProviders(
@@ -112,13 +112,13 @@ describe('MergedCategoryTable', () => {
     // Wait for loading to complete
     await waitFor(() => {
       expect(screen.getByText('Electronics')).toBeInTheDocument();
-    });
+    }) as any;
     
     expect(screen.getByText('Electronics')).toBeInTheDocument();
     expect(screen.getByText('Clothing')).toBeInTheDocument();
     expect(screen.getByText('150')).toBeInTheDocument(); // Total orders for Electronics
     expect(screen.getByText('100')).toBeInTheDocument(); // Total orders for Clothing
-  });
+  }) as any;
 
   it('shows products when category row is clicked', async () => {
     renderWithProviders(
@@ -132,7 +132,7 @@ describe('MergedCategoryTable', () => {
     // Wait for loading to complete
     await waitFor(() => {
       expect(screen.getByText('Electronics')).toBeInTheDocument();
-    });
+    }) as any;
     
     // Click on Electronics row
     const electronicsRow = screen.getByText('Electronics').closest('tr');
@@ -143,11 +143,11 @@ describe('MergedCategoryTable', () => {
     // Check if products list appears
     await waitFor(() => {
       expect(screen.getByText('Products in "Electronics" Category')).toBeInTheDocument();
-    });
+    }) as any;
     expect(screen.getByText('2 products found')).toBeInTheDocument();
     expect(screen.getByText('Test Product 1')).toBeInTheDocument();
     expect(screen.getByText('Test Product 2')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('hides products when same category row is clicked again', async () => {
     renderWithProviders(
@@ -161,7 +161,7 @@ describe('MergedCategoryTable', () => {
     // Wait for loading to complete
     await waitFor(() => {
       expect(screen.getByText('Electronics')).toBeInTheDocument();
-    });
+    }) as any;
     
     // Click on Electronics row to show products
     const electronicsRow = screen.getByText('Electronics').closest('tr');
@@ -172,7 +172,7 @@ describe('MergedCategoryTable', () => {
     // Verify products are shown
     await waitFor(() => {
       expect(screen.getByText('Products in "Electronics" Category')).toBeInTheDocument();
-    });
+    }) as any;
     
     // Click again to hide products
     if (electronicsRow) {
@@ -182,8 +182,8 @@ describe('MergedCategoryTable', () => {
     // Verify products are hidden
     await waitFor(() => {
       expect(screen.queryByText('Products in "Electronics" Category')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   it('shows different products when different category is clicked', async () => {
     // Add a product for Clothing category
@@ -218,7 +218,7 @@ describe('MergedCategoryTable', () => {
     // Wait for loading to complete
     await waitFor(() => {
       expect(screen.getByText('Clothing')).toBeInTheDocument();
-    });
+    }) as any;
     
     // Click on Clothing row
     const clothingRow = screen.getByText('Clothing').closest('tr');
@@ -229,10 +229,10 @@ describe('MergedCategoryTable', () => {
     // Check if clothing products appear
     await waitFor(() => {
       expect(screen.getByText('Products in "Clothing" Category')).toBeInTheDocument();
-    });
+    }) as any;
     expect(screen.getByText('1 products found')).toBeInTheDocument();
     expect(screen.getByText('Clothing Product')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('shows loading state briefly then renders data', async () => {
     renderWithProviders(
@@ -246,11 +246,11 @@ describe('MergedCategoryTable', () => {
     // Should show loading briefly, then render data
     await waitFor(() => {
       expect(screen.getByText('Electronics')).toBeInTheDocument();
-    });
+    }) as any;
     
     expect(screen.getByText('Electronics')).toBeInTheDocument();
     expect(screen.getByText('Clothing')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('shows empty state when no data', async () => {
     renderWithProviders(
@@ -264,6 +264,6 @@ describe('MergedCategoryTable', () => {
     // Wait for loading to complete
     await waitFor(() => {
       expect(screen.getByText('No category data available')).toBeInTheDocument();
-    });
-  });
-}); 
+    }) as any;
+  }) as any;
+}) as any; 

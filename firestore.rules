@@ -36,6 +36,63 @@ service cloud.firestore {
         data.metadata is map;
     }
 
+    function isValidInventoryMovement(data) {
+      return data.keys().hasAll(['categoryGroupId', 'movementType', 'quantity', 'unit', 'previousInventory', 'newInventory', 'createdAt']) &&
+        data.categoryGroupId is string &&
+        data.movementType in ['deduction', 'addition', 'adjustment', 'initial'] &&
+        data.quantity is number &&
+        data.quantity != 0 &&
+        data.unit in ['kg', 'g', 'pcs'] &&
+        data.previousInventory is number &&
+        data.newInventory is number &&
+        data.createdAt is timestamp &&
+        // Validate optional fields if present
+        (!data.keys().hasAny(['transactionReference']) || data.transactionReference is string) &&
+        (!data.keys().hasAny(['orderReference']) || data.orderReference is string) &&
+        (!data.keys().hasAny(['productSku']) || data.productSku is string) &&
+        (!data.keys().hasAny(['platform']) || data.platform in ['amazon', 'flipkart']) &&
+        (!data.keys().hasAny(['reason']) || data.reason is string) &&
+        (!data.keys().hasAny(['notes']) || data.notes is string) &&
+        (!data.keys().hasAny(['adjustedBy']) || data.adjustedBy is string) &&
+        // Validate quantity constraints for large adjustments
+        (data.movementType != 'adjustment' || math.abs(data.quantity) <= data.previousInventory * 10);
+    }
+
+    function isValidInventoryAlert(data) {
+      return data.keys().hasAll(['categoryGroupId', 'alertType', 'currentLevel', 'thresholdLevel', 'unit', 'severity', 'isActive', 'createdAt']) &&
+        data.categoryGroupId is string &&
+        data.alertType in ['low_stock', 'zero_stock', 'negative_stock'] &&
+        data.currentLevel is number &&
+        data.thresholdLevel is number &&
+        data.unit in ['kg', 'g', 'pcs'] &&
+        data.severity in ['low', 'medium', 'high', 'critical'] &&
+        data.isActive is bool &&
+        data.createdAt is timestamp &&
+        // Validate optional fields if present
+        (!data.keys().hasAny(['acknowledgedBy']) || data.acknowledgedBy is string) &&
+        (!data.keys().hasAny(['acknowledgedAt']) || data.acknowledgedAt is timestamp) &&
+        (!data.keys().hasAny(['resolvedAt']) || data.resolvedAt is timestamp);
+    }
+
+    function isValidCategoryGroupInventory(data) {
+      return data.keys().hasAll(['name', 'description', 'color', 'currentInventory', 'inventoryUnit', 'inventoryType', 'minimumThreshold']) &&
+        data.name is string &&
+        data.name.size() > 0 &&
+        data.description is string &&
+        data.color is string &&
+        data.color.matches('^#[0-9A-Fa-f]{6}$') &&
+        data.currentInventory is number &&
+        data.currentInventory >= 0 &&
+        data.inventoryUnit in ['kg', 'g', 'pcs'] &&
+        data.inventoryType in ['weight', 'qty'] &&
+        data.minimumThreshold is number &&
+        data.minimumThreshold >= 0 &&
+        // Validate timestamp fields if present
+        (!data.keys().hasAny(['createdAt']) || data.createdAt is timestamp) &&
+        (!data.keys().hasAny(['updatedAt']) || data.updatedAt is timestamp) &&
+        (!data.keys().hasAny(['lastInventoryUpdate']) || data.lastInventoryUpdate is timestamp);
+    }
+
     match /active-orders/{orderId} {
       allow read: if isAuthenticated() || isEmulatorSeeding();
       allow create, update: if isAuthenticated() || isEmulatorSeeding();
@@ -62,7 +119,25 @@ service cloud.firestore {
 
     match /categoryGroups/{groupId} {
       allow read: if isAuthenticated() || isEmulatorSeeding();
-      allow create, update: if isAuthenticated() || isEmulatorSeeding();
+      allow create, update: if (isAuthenticated() && 
+        request.auth.token.email_verified == true &&
+        isValidCategoryGroupInventory(request.resource.data)) || isEmulatorSeeding();
+      allow delete: if isAuthenticated() || isEmulatorSeeding();
+    }
+
+    match /inventoryMovements/{movementId} {
+      allow read: if isAuthenticated() || isEmulatorSeeding();
+      allow create: if (isAuthenticated() && 
+        request.auth.token.email_verified == true &&
+        isValidInventoryMovement(request.resource.data)) || isEmulatorSeeding();
+      allow update, delete: if false || isEmulatorSeeding(); // Immutable records - no updates after creation
+    }
+
+    match /inventoryAlerts/{alertId} {
+      allow read: if isAuthenticated() || isEmulatorSeeding();
+      allow create, update: if (isAuthenticated() && 
+        request.auth.token.email_verified == true &&
+        isValidInventoryAlert(request.resource.data)) || isEmulatorSeeding();
       allow delete: if isAuthenticated() || isEmulatorSeeding();
     }
 

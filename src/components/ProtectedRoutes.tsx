@@ -93,6 +93,13 @@ const DeploymentStatusPage = React.lazy(() =>
   }))
 );
 
+const InventoryPage = React.lazy(() =>
+  import("../pages/inventory/InventoryDashboard").then((module) => ({
+    default: module.InventoryDashboard,
+  }))
+);
+
+
 interface ProtectedRoutesProps {
   toggleTheme: () => void;
   mode: "light" | "dark";
@@ -116,6 +123,7 @@ export const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({
         <Route path="/order-analytics/" element={<OrderAnalytics />} />
         <Route path="/uncategorized-products/" element={<UncategorizedProductsPage />} />
         <Route path="/storage-management/" element={<StorageManagementPage />} />
+        <Route path="/inventory/*" element={<InventoryPage />} />
         <Route path="/health/" element={<HealthPage />} />
         <Route path="/monitoring/" element={<MonitoringDashboard />} />
         <Route path="/deployment-status/" element={<DeploymentStatusPage />} />

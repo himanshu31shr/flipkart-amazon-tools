@@ -41,6 +41,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import { CategoryService, Category } from '../../services/category.service';
 import { CategoryGroupService } from '../../services/categoryGroup.service';
 import CategoryGroupSelector from '../categoryGroups/components/CategoryGroupSelector';
+import { CategoryForm } from './CategoryForm';
 
 const getContrastColor = (hexColor: string): string => {
   try {
@@ -77,13 +78,8 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
   const [groupFilter, setGroupFilter] = useState<string | 'all' | 'assigned' | 'unassigned'>('all');
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [availableGroups, setAvailableGroups] = useState<Array<{ id: string; name: string; color: string }>>([]);
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    tag: '',
-    categoryGroupId: null as string | null,
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [existingTags, setExistingTags] = useState<string[]>([]);
 
   const categoryService = new CategoryService();
   const categoryGroupService = new CategoryGroupService();
@@ -97,6 +93,13 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
       ]);
       setCategories(categoriesData);
       setAvailableGroups(groupsData.filter(group => group.id) as Array<{ id: string; name: string; color: string }>);
+      
+      // Extract existing tags for CategoryForm
+      const tags = categoriesData
+        .map(cat => cat.tag)
+        .filter((tag): tag is string => Boolean(tag))
+        .filter((tag, index, array) => array.indexOf(tag) === index); // unique tags
+      setExistingTags(tags);
     } catch (error) {
       console.error('Error fetching categories:', error);
     } finally {
@@ -109,48 +112,41 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
   }, [refreshTrigger]);
 
   const handleOpenDialog = (category?: Category) => {
-    if (category) {
-      setEditingCategory(category);
-      setFormData({
-        name: category.name,
-        description: category.description || '',
-        tag: category.tag || '',
-        categoryGroupId: category.categoryGroupId || null,
-      });
-    } else {
-      setEditingCategory(null);
-      setFormData({
-        name: '',
-        description: '',
-        tag: '',
-        categoryGroupId: null,
-      });
-    }
+    setEditingCategory(category || null);
     setDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setEditingCategory(null);
-    setFormData({
-      name: '',
-      description: '',
-      tag: '',
-      categoryGroupId: null,
-    });
   };
 
-  const handleSave = async () => {
+  const handleFormSubmit = async (formData: {
+    name: string;
+    description?: string;
+    tag?: string;
+    categoryGroupId?: string | null;
+    inventoryUnit?: 'kg' | 'g' | 'pcs';
+    inventoryDeductionQuantity?: number;
+  }) => {
+    setIsSubmitting(true);
     try {
-      const categoryData = {
-        name: formData.name,
-        description: formData.description,
-        tag: formData.tag,
-      };
-
-      if (editingCategory) {
-        await categoryService.updateCategory(editingCategory.id!, categoryData);
+      if (editingCategory?.id) {
+        const updateData = {
+          ...formData,
+          categoryGroupId: formData.categoryGroupId === null ? undefined : formData.categoryGroupId,
+        };
+        await categoryService.updateCategory(editingCategory.id!, updateData);
       } else {
+        // Ensure we have the required fields for createCategory
+        const categoryData = {
+          name: formData.name,
+          description: formData.description || '',
+          tag: formData.tag || '',
+          categoryGroupId: formData.categoryGroupId === null ? undefined : formData.categoryGroupId,
+          inventoryUnit: formData.inventoryUnit,
+          inventoryDeductionQuantity: formData.inventoryDeductionQuantity,
+        };
         await categoryService.createCategory(categoryData);
       }
 
@@ -159,6 +155,9 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
       onDataChange?.();
     } catch (error) {
       console.error('Error saving category:', error);
+      throw error; // Let CategoryForm handle the error display
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -479,55 +478,15 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
         </Table>
       </TableContainer>
 
-      {/* Edit/Add Dialog */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingCategory ? 'Edit Category' : 'Add New Category'}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Category Name"
-            fullWidth
-            variant="outlined"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            margin="dense"
-            label="Description"
-            fullWidth
-            variant="outlined"
-            multiline
-            rows={3}
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            sx={{ mb: 2 }}
-          />
-          <TextField
-            margin="dense"
-            label="Tag"
-            fullWidth
-            variant="outlined"
-            value={formData.tag}
-            onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
-            sx={{ mb: 2 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button 
-            onClick={handleSave} 
-            variant="contained"
-            disabled={!formData.name.trim()}
-          >
-            {editingCategory ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Enhanced Category Form */}
+      <CategoryForm
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        onSubmit={handleFormSubmit}
+        defaultValues={editingCategory as any || undefined}
+        isSubmitting={isSubmitting}
+        existingTags={existingTags}
+      />
 
       {/* Group Assignment Dialog */}
       <Dialog 

@@ -36,7 +36,7 @@ describe('BatchFilter', () => {
 
   beforeEach(() => {
     mockOnChange.mockClear();
-  });
+  }) as any;
 
   it('renders correctly with default props', () => {
     render(
@@ -49,7 +49,7 @@ describe('BatchFilter', () => {
 
     expect(screen.getByLabelText('Filter by Batch')).toBeInTheDocument();
     expect(screen.getByText('Batch:')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('shows all batch options including "All Batches"', async () => {
     const user = userEvent.setup();
@@ -70,8 +70,8 @@ describe('BatchFilter', () => {
       expect(screen.getByRole('option', { name: 'All Batches' })).toBeInTheDocument();
       expect(screen.getByRole('option', { name: 'Test_File_1.pdf (5 orders)' })).toBeInTheDocument();
       expect(screen.getByRole('option', { name: 'Test_File_2.pdf (3 orders)' })).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   it('calls onChange when a batch is selected', async () => {
     const user = userEvent.setup();
@@ -90,14 +90,14 @@ describe('BatchFilter', () => {
 
     // Select a specific batch
     await waitFor(() => {
-      const batchOption = screen.getByRole('option', { name: 'Test_File_1.pdf (5 orders)' });
+      const batchOption = screen.getByRole('option', { name: 'Test_File_1.pdf (5 orders)' }) as any;
       expect(batchOption).toBeInTheDocument();
-    });
+    }) as any;
     
     await user.click(screen.getByRole('option', { name: 'Test_File_1.pdf (5 orders)' }));
 
     expect(mockOnChange).toHaveBeenCalledWith('batch1');
-  });
+  }) as any;
 
   it('displays loading state correctly', () => {
     render(
@@ -111,7 +111,7 @@ describe('BatchFilter', () => {
 
     const select = screen.getByRole('combobox');
     expect(select).toHaveAttribute('aria-disabled', 'true');
-  });
+  }) as any;
 
   it('works with custom label and size', () => {
     render(
@@ -125,7 +125,7 @@ describe('BatchFilter', () => {
     );
 
     expect(screen.getByText('Custom Label:')).toBeInTheDocument();
-  });
+  }) as any;
 
   it('handles empty batches array', async () => {
     const user = userEvent.setup();
@@ -143,12 +143,12 @@ describe('BatchFilter', () => {
     await user.click(select);
 
     await waitFor(() => {
-      const allBatchesOption = screen.getByRole('option', { name: 'All Batches' });
+      const allBatchesOption = screen.getByRole('option', { name: 'All Batches' }) as any;
       expect(allBatchesOption).toBeInTheDocument();
       
       // Should only show "All Batches" option when no batches are available
       const options = screen.getAllByRole('option');
       expect(options).toHaveLength(1);
-    });
-  });
-});
+    }) as any;
+  }) as any;
+}) as any;

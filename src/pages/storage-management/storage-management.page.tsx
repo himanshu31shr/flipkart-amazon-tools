@@ -462,9 +462,10 @@ export const StorageManagementPage: React.FC = () => {
             exclusive
             onChange={(e, newValue) => newValue !== null && handleViewToggle(newValue)}
             color="primary"
+            data-testid="toggle-group"
           >
-            <ToggleButton value={false}>My Files</ToggleButton>
-            <ToggleButton value={true}>All Users</ToggleButton>
+            <ToggleButton value={false} data-testid="toggle-button-false">My Files</ToggleButton>
+            <ToggleButton value={true} data-testid="toggle-button-true">All Users</ToggleButton>
           </ToggleButtonGroup>
         )}
       </Box>

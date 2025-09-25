@@ -126,10 +126,10 @@ export const DefaultContainer = ({
   // Update section states based on current route
   React.useEffect(() => {
     const path = location.pathname;
-    setOrdersOpen(path.includes('/home/') || path.includes('/activeOrders/'));
-    setProductsOpen(path.includes('/products/') || path.includes('/hidden-products/') || path.includes('/uncategorized-products/'));
-    setCategoriesOpen(path.includes('/categories/') || path.includes('/category-groups/'));
-    setManagementOpen(path.includes('/storage-management/'));
+    setOrdersOpen(path.includes('/flipkart-amazon-tools/home/') || path.includes('/flipkart-amazon-tools/activeOrders/'));
+    setProductsOpen(path.includes('/flipkart-amazon-tools/products/') || path.includes('/flipkart-amazon-tools/hidden-products/') || path.includes('/flipkart-amazon-tools/uncategorized-products/'));
+    setCategoriesOpen(path.includes('/flipkart-amazon-tools/categories/') || path.includes('/flipkart-amazon-tools/category-groups/'));
+    setManagementOpen(path.includes('/flipkart-amazon-tools/storage-management/') || path.includes('/flipkart-amazon-tools/inventory/'));
   }, [location.pathname]);
 
   const toggleDrawer = (newOpen: boolean) => () => {
@@ -357,6 +357,22 @@ export const DefaultContainer = ({
         </ListItem>
         <Collapse in={managementOpen} timeout="auto" unmountOnExit>
           <List component="div" disablePadding sx={{ pl: 1 }}>
+            <Link
+              component={RouterLink}
+              to={"/flipkart-amazon-tools/inventory/"}
+              data-testid="inventory-management"
+              style={{ textDecoration: 'none', color: 'inherit' }}
+              onClick={handleNavigation}
+            >
+              <ListItem key={"Inventory Management"} disablePadding>
+                <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/inventory/")}>
+                  <StyledListItemIcon>
+                    <ManagementIcon />
+                  </StyledListItemIcon>
+                  <StyledListItemText primary={"Inventory Management"} />
+                </StyledListItemButton>
+              </ListItem>
+            </Link>
             <Link
               component={RouterLink}
               to={"/flipkart-amazon-tools/storage-management/"}

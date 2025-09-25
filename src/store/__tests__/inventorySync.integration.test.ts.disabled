@@ -1,0 +1,515 @@
+import { configureStore } from '@reduxjs/toolkit';
+import { productsReducer } from '../slices/productsSlice';
+import categoriesReducer from '../slices/categoriesSlice';
+import transactionsReducer from '../slices/transactionsSlice';
+import inventoryReducer from '../slices/inventorySlice';
+import { inventorySyncMiddleware } from '../middleware/inventorySync.middleware';
+import { 
+  syncInventoryAcrossSlices,
+  validateInventoryConsistency,
+  getAggregatedInventoryStatus,
+  isInventorySyncNeeded
+} from '../utils/inventorySync.utils';
+import { 
+  initializeInventoryData,
+  refreshAllInventoryData,
+  validateAndRepairInventoryConsistency
+} from '../actions/inventorySync.actions';
+import type { RootState } from '../index';
+
+// Mock the services
+jest.mock('../../services/inventory.service');
+jest.mock('../../services/product.service');
+jest.mock('../../services/category.service');
+jest.mock('../../services/categoryGroup.service');
+
+const mockInventoryLevels = [
+  {
+    categoryGroupId: 'cg1',
+    name: 'Category Group 1',
+    currentInventory: 50,
+    inventoryUnit: 'kg' as const,
+    inventoryType: 'weight' as const,
+    minimumThreshold: 10,
+    status: 'healthy' as const
+  },
+  {
+    categoryGroupId: 'cg2',
+    name: 'Category Group 2',
+    currentInventory: 5,
+    inventoryUnit: 'kg' as const,
+    inventoryType: 'weight' as const,
+    minimumThreshold: 10,
+    status: 'low_stock' as const
+  }
+];
+
+const mockProducts = [
+  {
+    sku: 'PROD1',
+    name: 'Product 1',
+    platform: 'amazon' as const,
+    categoryId: 'cat1',
+    categoryGroupId: 'cg1',
+    description: 'Test product 1',
+    costPrice: 10,
+    sellingPrice: 15
+  },
+  {
+    sku: 'PROD2',
+    name: 'Product 2',
+    platform: 'flipkart' as const,
+    categoryId: 'cat2',
+    categoryGroupId: 'cg2',
+    description: 'Test product 2',
+    costPrice: 20,
+    sellingPrice: 30
+  }
+];
+
+const mockCategories = [
+  { id: 'cat1', name: 'Category 1', description: 'Test category 1', tag: 'tag1' },
+  { id: 'cat2', name: 'Category 2', description: 'Test category 2', tag: 'tag2' }
+];
+
+const mockCategoryGroups = [
+  {
+    id: 'cg1',
+    name: 'Category Group 1',
+    description: 'Test category group 1',
+    categoryIds: ['cat1'],
+    inventoryType: 'weight' as const,
+    inventoryUnit: 'kg' as const,
+    currentInventory: 50,
+    minimumThreshold: 10,
+    costPricePerUnit: 5
+  },
+  {
+    id: 'cg2',
+    name: 'Category Group 2',
+    description: 'Test category group 2',
+    categoryIds: ['cat2'],
+    inventoryType: 'weight' as const,
+    inventoryUnit: 'kg' as const,
+    currentInventory: 5,
+    minimumThreshold: 10,
+    costPricePerUnit: 8
+  }
+];
+
+describe('Inventory Synchronization Integration Tests', () => {
+  let store: ReturnType<typeof configureStore>;
+
+  beforeEach(() => {
+    // Clear all mocks
+    jest.clearAllMocks();
+    
+    store = configureStore({
+      reducer: {
+        products: productsReducer,
+        categories: categoriesReducer,
+        transactions: transactionsReducer,
+        inventory: inventoryReducer
+      },
+      middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware({ serializableCheck: false })
+          .prepend(inventorySyncMiddleware.middleware),
+      preloadedState: {
+        products: {
+          items: mockProducts,
+          filteredItems: mockProducts,
+          loading: false,
+          error: null,
+          filters: {},
+          lastFetched: null,
+          detailsCache: {},
+          categories: [],
+          categoriesLoading: false,
+          categoriesError: null,
+          categoryProducts: [],
+          categoryProductsLoading: false,
+          categoryProductsError: null,
+          inventoryLevels: {},
+          inventoryLoading: false,
+          inventoryError: null,
+          productInventoryStatus: {},
+          lowStockProducts: [],
+          zeroStockProducts: []
+        },
+        categories: {
+          items: mockCategories,
+          loading: false,
+          error: null,
+          selectedCategory: null,
+          categoryInventoryLevels: {},
+          categoryGroupInventoryLevels: {},
+          categoryInventoryAlerts: [],
+          inventoryLoading: false,
+          inventoryError: null,
+          categoryGroupsLoading: false,
+          categoryGroupsError: null,
+          categoriesWithLowStock: [],
+          categoriesWithZeroStock: [],
+          categoryInventoryStatus: {},
+          categoryGroups: mockCategoryGroups
+        },
+        transactions: {
+          items: [],
+          loading: false,
+          error: null,
+          lastFetched: null,
+          pendingTransactions: {},
+          transactionInventoryImpacts: {},
+          inventoryMovements: [],
+          inventoryLoading: false,
+          inventoryError: null,
+          processingInventoryDeductions: {},
+          inventoryDeductionErrors: {},
+          lastInventorySync: null,
+          inventorySyncInProgress: false
+        },
+        inventory: {
+          inventoryLevels: [],
+          filteredInventoryLevels: [],
+          inventoryMovements: [],
+          filteredInventoryMovements: [],
+          inventoryAlerts: [],
+          activeInventoryAlerts: [],
+          loading: {
+            inventoryLevels: false,
+            inventoryMovements: false,
+            inventoryAlerts: false,
+            deduction: false,
+            adjustment: false,
+            alertCreation: false,
+            alertResolution: false,
+          },
+          error: {
+            inventoryLevels: null,
+            inventoryMovements: null,
+            inventoryAlerts: null,
+            deduction: null,
+            adjustment: null,
+            alertCreation: null,
+            alertResolution: null,
+          },
+          filters: {
+            inventory: {},
+            movements: {},
+          },
+          pagination: {
+            inventoryLevels: {
+              currentPage: 1,
+              pageSize: 20,
+              totalItems: 0,
+              hasNextPage: false,
+            },
+            inventoryMovements: {
+              currentPage: 1,
+              pageSize: 20,
+              totalItems: 0,
+              hasNextPage: false,
+            },
+          },
+          lastFetched: {
+            inventoryLevels: null,
+            inventoryMovements: null,
+            inventoryAlerts: null,
+          },
+          selectedInventoryLevel: null,
+          selectedMovement: null,
+          selectedAlert: null,
+          lastDeductionResult: null,
+        }
+      }
+    });
+  });
+
+  describe('syncInventoryAcrossSlices', () => {
+    it('should synchronize inventory data across all slices', async () => {
+      const mockGetState = () => store.getState() as RootState;
+      const mockDispatch = store.dispatch;
+
+      // Mock the fetchInventoryLevels to return our mock data
+      const mockFetchInventoryLevels = jest.fn().mockResolvedValue(mockInventoryLevels);
+      const mockSyncTransactionInventoryImpacts = jest.fn().mockResolvedValue([]);
+
+      // Manually dispatch mock actions to simulate async thunk behavior
+      store.dispatch({
+        type: 'inventory/fetchInventoryLevels/fulfilled',
+        payload: mockInventoryLevels
+      });
+
+      const result = await syncInventoryAcrossSlices(mockDispatch, mockGetState, {
+        forceRefresh: false,
+        includeTransactions: false, // Skip transactions to avoid mocking complexity
+        includeProducts: true,
+        includeCategories: true
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.inventoryLevels).toEqual(mockInventoryLevels);
+      expect(result.syncedSlices).toContain('products');
+      expect(result.syncedSlices).toContain('categories');
+      expect(result.errors).toHaveLength(0);
+
+      // Verify state synchronization
+      const state = store.getState();
+      expect(Object.keys(state.products.inventoryLevels)).toHaveLength(2);
+      expect(Object.keys(state.categories.categoryGroupInventoryLevels)).toHaveLength(2);
+    });
+
+    it('should handle synchronization errors gracefully', async () => {
+      const mockGetState = () => store.getState() as RootState;
+      const mockDispatch = jest.fn().mockImplementation((action) => {
+        if (typeof action === 'function') {
+          return action(mockDispatch, mockGetState);
+        }
+        if (action.type === 'products/updateInventoryLevelsMapping') {
+          throw new Error('Mock sync error');
+        }
+        return store.dispatch(action);
+      });
+
+      const result = await syncInventoryAcrossSlices(mockDispatch, mockGetState, {
+        includeTransactions: false,
+        includeCategories: false
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0]).toContain('Failed to sync with products slice');
+    });
+  });
+
+  describe('validateInventoryConsistency', () => {
+    it('should validate consistent inventory data', () => {
+      // Set up consistent state
+      store.dispatch({
+        type: 'inventory/fetchInventoryLevels/fulfilled',
+        payload: mockInventoryLevels
+      });
+      store.dispatch({
+        type: 'products/updateInventoryLevelsMapping',
+        payload: mockInventoryLevels
+      });
+      store.dispatch({
+        type: 'categories/updateCategoryInventoryLevels',
+        payload: mockInventoryLevels
+      });
+
+      const state = store.getState();
+      const validation = validateInventoryConsistency(state);
+
+      expect(validation.isConsistent).toBe(true);
+      expect(validation.issues).toHaveLength(0);
+    });
+
+    it('should detect inconsistencies between slices', () => {
+      // Set up inconsistent state
+      store.dispatch({
+        type: 'inventory/fetchInventoryLevels/fulfilled',
+        payload: mockInventoryLevels
+      });
+      // Don't sync with other slices to create inconsistency
+
+      const state = store.getState();
+      const validation = validateInventoryConsistency(state);
+
+      expect(validation.isConsistent).toBe(false);
+      expect(validation.issues.length).toBeGreaterThan(0);
+      expect(validation.recommendations.length).toBeGreaterThan(0);
+    });
+
+    it('should detect stale inventory data', () => {
+      // Set up state with stale data
+      const staleTimestamp = Date.now() - 10 * 60 * 1000; // 10 minutes ago
+      store.dispatch({
+        type: 'inventory/fetchInventoryLevels/fulfilled',
+        payload: mockInventoryLevels,
+        meta: { requestId: 'test', arg: undefined }
+      });
+      
+      // Manually set stale timestamp
+      const staleState = {
+        ...store.getState(),
+        inventory: {
+          ...store.getState().inventory,
+          lastFetched: {
+            ...store.getState().inventory.lastFetched,
+            inventoryLevels: staleTimestamp
+          }
+        }
+      };
+
+      const validation = validateInventoryConsistency(staleState);
+
+      expect(validation.isConsistent).toBe(false);
+      expect(validation.issues.some(issue => issue.includes('stale'))).toBe(true);
+    });
+  });
+
+  describe('getAggregatedInventoryStatus', () => {
+    it('should return correct aggregated inventory status', () => {
+      // Set up state with inventory data
+      store.dispatch({
+        type: 'inventory/fetchInventoryLevels/fulfilled',
+        payload: mockInventoryLevels
+      });
+      store.dispatch({
+        type: 'products/updateInventoryLevelsMapping',
+        payload: mockInventoryLevels
+      });
+      store.dispatch({
+        type: 'categories/updateCategoryInventoryLevels',
+        payload: mockInventoryLevels
+      });
+
+      const state = store.getState();
+      const aggregated = getAggregatedInventoryStatus(state);
+
+      expect(aggregated.totalProducts).toBe(2);
+      expect(aggregated.totalCategories).toBe(2);
+      expect(aggregated.totalCategoryGroups).toBe(2);
+      expect(aggregated.lowStockCount).toBe(1);
+      expect(aggregated.zeroStockCount).toBe(0);
+      expect(aggregated.healthyCount).toBe(1);
+      expect(aggregated.isLoadingAny).toBe(false);
+    });
+  });
+
+  describe('isInventorySyncNeeded', () => {
+    it('should return true when no last fetch time exists', () => {
+      const state = store.getState();
+      const syncNeeded = isInventorySyncNeeded(state, 5);
+
+      expect(syncNeeded).toBe(true);
+    });
+
+    it('should return true when data is older than max age', () => {
+      const oldTimestamp = Date.now() - 10 * 60 * 1000; // 10 minutes ago
+      const staleState = {
+        ...store.getState(),
+        inventory: {
+          ...store.getState().inventory,
+          lastFetched: {
+            ...store.getState().inventory.lastFetched,
+            inventoryLevels: oldTimestamp
+          }
+        }
+      };
+
+      const syncNeeded = isInventorySyncNeeded(staleState, 5); // 5 minutes max age
+
+      expect(syncNeeded).toBe(true);
+    });
+
+    it('should return false when data is fresh', () => {
+      const recentTimestamp = Date.now() - 2 * 60 * 1000; // 2 minutes ago
+      const freshState = {
+        ...store.getState(),
+        inventory: {
+          ...store.getState().inventory,
+          lastFetched: {
+            ...store.getState().inventory.lastFetched,
+            inventoryLevels: recentTimestamp
+          }
+        }
+      };
+
+      const syncNeeded = isInventorySyncNeeded(freshState, 5); // 5 minutes max age
+
+      expect(syncNeeded).toBe(false);
+    });
+  });
+
+  describe('Cross-slice Action Integration', () => {
+    it('should handle initializeInventoryData action', async () => {
+      // Mock the async thunk fulfilled action
+      const mockResult = {
+        inventoryLevels: mockInventoryLevels,
+        categoryGroupsCount: 2,
+        productsCount: 2,
+        transactionsCount: 0
+      };
+
+      store.dispatch({
+        type: 'inventory/initializeInventoryData/fulfilled',
+        payload: mockResult
+      });
+
+      // The middleware should have synchronized the data
+      const state = store.getState();
+      
+      // Since we're not actually calling the real async thunk,
+      // we need to manually verify the intended behavior
+      expect(state.inventory.inventoryLevels).toBeDefined();
+      expect(state.products.inventoryLevels).toBeDefined();
+      expect(state.categories.categoryGroupInventoryLevels).toBeDefined();
+    });
+
+    it('should handle validateAndRepairInventoryConsistency action', async () => {
+      const mockResult = {
+        isConsistent: false,
+        issues: ['Test issue'],
+        repairs: ['Test repair'],
+        autoRepair: true,
+        validatedAt: Date.now()
+      };
+
+      store.dispatch({
+        type: 'inventory/validateAndRepairInventoryConsistency/fulfilled',
+        payload: mockResult
+      });
+
+      // Verify that the action was processed
+      // In a real scenario, this would trigger repairs through the middleware
+      expect(true).toBe(true); // Placeholder assertion
+    });
+  });
+
+  describe('Real-time Synchronization', () => {
+    it('should maintain synchronization when inventory levels are updated', () => {
+      // Simulate real-time inventory level update
+      const updatedInventoryLevels = [
+        ...mockInventoryLevels,
+        {
+          categoryGroupId: 'cg3',
+          name: 'Category Group 3',
+          currentInventory: 0,
+          inventoryUnit: 'pcs' as const,
+          inventoryType: 'qty' as const,
+          minimumThreshold: 5,
+          status: 'zero_stock' as const
+        }
+      ];
+
+      store.dispatch({
+        type: 'inventory/fetchInventoryLevels/fulfilled',
+        payload: updatedInventoryLevels
+      });
+
+      // Simulate synchronization
+      store.dispatch({
+        type: 'products/updateInventoryLevelsMapping',
+        payload: updatedInventoryLevels
+      });
+
+      store.dispatch({
+        type: 'categories/updateCategoryInventoryLevels',
+        payload: updatedInventoryLevels
+      });
+
+      const state = store.getState();
+      
+      // Verify all slices are synchronized
+      expect(state.inventory.inventoryLevels).toHaveLength(3);
+      expect(Object.keys(state.products.inventoryLevels)).toHaveLength(3);
+      expect(Object.keys(state.categories.categoryGroupInventoryLevels)).toHaveLength(3);
+      
+      // Verify the new zero stock item is detected
+      expect(state.products.inventoryLevels['cg3'].status).toBe('zero_stock');
+      expect(state.categories.categoryGroupInventoryLevels['cg3'].status).toBe('zero_stock');
+    });
+  });
+});

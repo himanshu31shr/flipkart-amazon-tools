@@ -7,6 +7,20 @@ describe('transactionsSlice', () => {
     error: null,
     lastFetched: null,
     pendingTransactions: {},
+    
+    // Inventory impact tracking
+    transactionInventoryImpacts: {},
+    inventoryMovements: [],
+    inventoryLoading: false,
+    inventoryError: null,
+    
+    // Processing state for inventory deductions
+    processingInventoryDeductions: {},
+    inventoryDeductionErrors: {},
+    
+    // Inventory sync status
+    lastInventorySync: null,
+    inventorySyncInProgress: false,
   };
 
   const mockTransactions = [

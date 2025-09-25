@@ -38,7 +38,7 @@ const createMockProduct = (overrides: Partial<Product> = {}): Product => ({
     moq: '1',
   },
   ...overrides,
-});
+}) as any;
 
 const createMockCompetitionAnalysis = (competitorPrice: string) => ({
   competitorName: 'Test Competitor',
@@ -47,7 +47,7 @@ const createMockCompetitionAnalysis = (competitorPrice: string) => ({
   visibility: 'visible',
   existsOnSellerPage: true,
   totalSellers: 5,
-});
+}) as any;
 
 const renderWithProviders = (component: React.ReactElement) => {
   return render(
@@ -65,15 +65,15 @@ describe('HiddenProductsWidget', () => {
       renderWithProviders(<HiddenProductsWidget products={[]} loading={true} />);
       
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should not show content when loading', () => {
       renderWithProviders(<HiddenProductsWidget products={[]} loading={true} />);
       
       expect(screen.queryByText('Hidden Products')).not.toBeInTheDocument();
       expect(screen.queryByText('No hidden products found.')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('empty state', () => {
     it('should show empty message when no hidden products and not loading', () => {
@@ -85,7 +85,7 @@ describe('HiddenProductsWidget', () => {
       renderWithProviders(<HiddenProductsWidget products={visibleProducts} loading={false} />);
       
       expect(screen.getByText('No hidden products found.')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should not show header when no hidden products', () => {
       const visibleProducts = [createMockProduct({ existsOnSellerPage: true })];
@@ -93,8 +93,8 @@ describe('HiddenProductsWidget', () => {
       renderWithProviders(<HiddenProductsWidget products={visibleProducts} loading={false} />);
       
       expect(screen.queryByText('Hidden Products')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('with hidden products', () => {
     const hiddenProducts = [
@@ -117,34 +117,34 @@ describe('HiddenProductsWidget', () => {
       
       expect(screen.getByText('Hidden Products')).toBeInTheDocument();
       expect(screen.getByTestId('VisibilityOffIcon')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should show count of hidden products', () => {
       renderWithProviders(<HiddenProductsWidget products={hiddenProducts} loading={false} />);
       
       expect(screen.getByText('2')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should render product list', () => {
       renderWithProviders(<HiddenProductsWidget products={hiddenProducts} loading={false} />);
       
       expect(screen.getByText('Hidden Product 1')).toBeInTheDocument();
       expect(screen.getByText('Hidden Product 2')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should show SKU information', () => {
       renderWithProviders(<HiddenProductsWidget products={hiddenProducts} loading={false} />);
       
       expect(screen.getByText('SKU: HIDDEN-001')).toBeInTheDocument();
       expect(screen.getByText('SKU: HIDDEN-002')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should show platform chips with correct colors', () => {
       renderWithProviders(<HiddenProductsWidget products={hiddenProducts} loading={false} />);
       
       expect(screen.getByText('amazon')).toBeInTheDocument();
       expect(screen.getByText('flipkart')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should show "Manage Hidden Products" link when items <= 5', () => {
       renderWithProviders(<HiddenProductsWidget products={hiddenProducts} loading={false} />);
@@ -152,8 +152,8 @@ describe('HiddenProductsWidget', () => {
       const manageLink = screen.getByText('Manage Hidden Products');
       expect(manageLink).toBeInTheDocument();
       expect(manageLink.closest('a')).toHaveAttribute('href', '/flipkart-amazon-tools/hidden-products/');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('product name truncation', () => {
     it('should truncate long product names', () => {
@@ -161,38 +161,38 @@ describe('HiddenProductsWidget', () => {
         name: 'This is a very long product name that should be truncated because it exceeds the limit',
         sku: 'LONG-NAME',
         existsOnSellerPage: false,
-      });
+      }) as any;
 
       renderWithProviders(<HiddenProductsWidget products={[longNameProduct]} loading={false} />);
       
       expect(screen.getByText('This is a very long product na...')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should not truncate short product names', () => {
       const shortNameProduct = createMockProduct({
         name: 'Short Name',
         sku: 'SHORT',
         existsOnSellerPage: false,
-      });
+      }) as any;
 
       renderWithProviders(<HiddenProductsWidget products={[shortNameProduct]} loading={false} />);
       
       expect(screen.getByText('Short Name')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should show full name in title attribute', () => {
       const longNameProduct = createMockProduct({
         name: 'This is a very long product name that should be truncated because it exceeds the limit',
         sku: 'LONG-NAME',
         existsOnSellerPage: false,
-      });
+      }) as any;
 
       renderWithProviders(<HiddenProductsWidget products={[longNameProduct]} loading={false} />);
       
       const truncatedElement = screen.getByText('This is a very long product na...');
       expect(truncatedElement).toHaveAttribute('title', 'This is a very long product name that should be truncated because it exceeds the limit');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('pagination and overflow', () => {
     it('should show only first 5 items when more than 5 hidden products', () => {
@@ -213,7 +213,7 @@ describe('HiddenProductsWidget', () => {
       // Should not show 6th and beyond
       expect(screen.queryByText('Hidden Product 6')).not.toBeInTheDocument();
       expect(screen.queryByText('Hidden Product 8')).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('should show "View X more" button when more than 5 hidden products', () => {
       const manyHiddenProducts = Array.from({ length: 8 }, (_, i) =>
@@ -229,7 +229,7 @@ describe('HiddenProductsWidget', () => {
       const viewMoreButton = screen.getByText('View 3 more hidden products');
       expect(viewMoreButton).toBeInTheDocument();
       expect(viewMoreButton.closest('a')).toHaveAttribute('href', '/flipkart-amazon-tools/hidden-products/');
-    });
+    }) as any;
 
     it('should not show "View more" button when 5 or fewer hidden products', () => {
       const fewHiddenProducts = Array.from({ length: 3 }, (_, i) =>
@@ -243,8 +243,8 @@ describe('HiddenProductsWidget', () => {
       renderWithProviders(<HiddenProductsWidget products={fewHiddenProducts} loading={false} />);
       
       expect(screen.queryByText(/View \d+ more hidden products/)).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('filtering logic', () => {
     it('should only show products where existsOnSellerPage is false', () => {
@@ -259,7 +259,7 @@ describe('HiddenProductsWidget', () => {
       expect(screen.getByText('Hidden Product')).toBeInTheDocument();
       expect(screen.queryByText('Visible Product')).not.toBeInTheDocument();
       expect(screen.queryByText('Another Visible')).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle products with undefined existsOnSellerPage', () => {
       const productsWithUndefined = [
@@ -271,17 +271,17 @@ describe('HiddenProductsWidget', () => {
       
       expect(screen.getByText('Undefined Product')).toBeInTheDocument();
       expect(screen.getByText('Hidden Product')).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('accessibility', () => {
     it('should have proper heading structure', () => {
       const hiddenProducts = [createMockProduct({ existsOnSellerPage: false })];
       renderWithProviders(<HiddenProductsWidget products={hiddenProducts} loading={false} />);
       
-      const heading = screen.getByRole('heading', { name: 'Hidden Products' });
+      const heading = screen.getByRole('heading', { name: 'Hidden Products' }) as any;
       expect(heading).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should have accessible list structure', () => {
       const hiddenProducts = [
@@ -295,17 +295,17 @@ describe('HiddenProductsWidget', () => {
       
       const listItems = screen.getAllByRole('listitem');
       expect(listItems).toHaveLength(2);
-    });
+    }) as any;
 
     it('should have accessible links', () => {
       const hiddenProducts = [createMockProduct({ existsOnSellerPage: false })];
       renderWithProviders(<HiddenProductsWidget products={hiddenProducts} loading={false} />);
       
-      const manageLink = screen.getByRole('link', { name: 'Manage Hidden Products' });
+      const manageLink = screen.getByRole('link', { name: 'Manage Hidden Products' }) as any;
       expect(manageLink).toBeInTheDocument();
-    });
-  });
-});
+    }) as any;
+  }) as any;
+}) as any;
 
 describe('HighPricedProductsWidget', () => {
   describe('loading state', () => {
@@ -313,15 +313,15 @@ describe('HighPricedProductsWidget', () => {
       renderWithProviders(<HighPricedProductsWidget products={[]} loading={true} />);
       
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should not show content when loading', () => {
       renderWithProviders(<HighPricedProductsWidget products={[]} loading={true} />);
       
       expect(screen.queryByText('High-Priced Products')).not.toBeInTheDocument();
       expect(screen.queryByText('No high-priced products found.')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('empty state', () => {
     it('should show empty message when no high-priced products and not loading', () => {
@@ -335,7 +335,7 @@ describe('HighPricedProductsWidget', () => {
       renderWithProviders(<HighPricedProductsWidget products={normalPricedProducts} loading={false} />);
       
       expect(screen.getByText('No high-priced products found.')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should not show header when no high-priced products', () => {
       const normalPricedProducts = [
@@ -348,8 +348,8 @@ describe('HighPricedProductsWidget', () => {
       renderWithProviders(<HighPricedProductsWidget products={normalPricedProducts} loading={false} />);
       
       expect(screen.queryByText('High-Priced Products')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('with high-priced products', () => {
           const highPricedProducts = [
@@ -374,20 +374,20 @@ describe('HighPricedProductsWidget', () => {
       
       expect(screen.getByText('High-Priced Products')).toBeInTheDocument();
       expect(screen.getByTestId('TrendingUpIcon')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should show count of high-priced products', () => {
       renderWithProviders(<HighPricedProductsWidget products={highPricedProducts} loading={false} />);
       
       expect(screen.getByText('2')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should render product list', () => {
       renderWithProviders(<HighPricedProductsWidget products={highPricedProducts} loading={false} />);
       
       expect(screen.getByText('High Priced Product 1')).toBeInTheDocument();
       expect(screen.getByText('High Priced Product 2')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should show price comparison', () => {
       renderWithProviders(<HighPricedProductsWidget products={highPricedProducts} loading={false} />);
@@ -398,21 +398,21 @@ describe('HighPricedProductsWidget', () => {
       // Check for formatted currency components
       const currencyElements = screen.getAllByTestId('formatted-currency');
       expect(currencyElements.length).toBeGreaterThan(0);
-    });
+    }) as any;
 
     it('should show SKU information', () => {
       renderWithProviders(<HighPricedProductsWidget products={highPricedProducts} loading={false} />);
       
       expect(screen.getByText('SKU: HIGH-001')).toBeInTheDocument();
       expect(screen.getByText('SKU: HIGH-002')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should show platform chips with correct colors', () => {
       renderWithProviders(<HighPricedProductsWidget products={highPricedProducts} loading={false} />);
       
       expect(screen.getByText('amazon')).toBeInTheDocument();
       expect(screen.getByText('flipkart')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should show "Manage Pricing" link when items <= 5', () => {
       renderWithProviders(<HighPricedProductsWidget products={highPricedProducts} loading={false} />);
@@ -420,8 +420,8 @@ describe('HighPricedProductsWidget', () => {
       const manageLink = screen.getByText('Manage Pricing');
       expect(manageLink).toBeInTheDocument();
       expect(manageLink.closest('a')).toHaveAttribute('href', '/flipkart-amazon-tools/hidden-products/');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('filtering logic', () => {
     it('should only show products where our price is higher than competitor', () => {
@@ -448,7 +448,7 @@ describe('HighPricedProductsWidget', () => {
       expect(screen.getByText('High Priced Product')).toBeInTheDocument();
       expect(screen.queryByText('Normal Priced Product')).not.toBeInTheDocument();
       expect(screen.queryByText('Another Normal Product')).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle products without competition analysis', () => {
       const productsWithoutAnalysis = [
@@ -464,7 +464,7 @@ describe('HighPricedProductsWidget', () => {
       
       expect(screen.getByText('High Priced Product')).toBeInTheDocument();
       expect(screen.queryByText('No Analysis Product')).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle products with zero competitor price', () => {
       const productsWithZeroPrice = [
@@ -484,8 +484,8 @@ describe('HighPricedProductsWidget', () => {
       
       expect(screen.getByText('High Priced Product')).toBeInTheDocument();
       expect(screen.queryByText('Zero Competitor Price')).not.toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('pagination and overflow', () => {
     it('should show only first 5 items when more than 5 high-priced products', () => {
@@ -507,7 +507,7 @@ describe('HighPricedProductsWidget', () => {
       // Should not show 6th and beyond
       expect(screen.queryByText('High Priced Product 6')).not.toBeInTheDocument();
       expect(screen.queryByText('High Priced Product 8')).not.toBeInTheDocument();
-    });
+    }) as any;
 
     it('should show "View X more" button when more than 5 high-priced products', () => {
       const manyHighPricedProducts = Array.from({ length: 8 }, (_, i) =>
@@ -524,8 +524,8 @@ describe('HighPricedProductsWidget', () => {
       const viewMoreButton = screen.getByText('View 3 more high-priced products');
       expect(viewMoreButton).toBeInTheDocument();
       expect(viewMoreButton.closest('a')).toHaveAttribute('href', '/flipkart-amazon-tools/hidden-products/');
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('accessibility', () => {
     it('should have proper heading structure', () => {
@@ -535,9 +535,9 @@ describe('HighPricedProductsWidget', () => {
       })];
       renderWithProviders(<HighPricedProductsWidget products={highPricedProducts} loading={false} />);
       
-      const heading = screen.getByRole('heading', { name: 'High-Priced Products' });
+      const heading = screen.getByRole('heading', { name: 'High-Priced Products' }) as any;
       expect(heading).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should have accessible list structure', () => {
       const highPricedProducts = [
@@ -558,7 +558,7 @@ describe('HighPricedProductsWidget', () => {
       
       const listItems = screen.getAllByRole('listitem');
       expect(listItems).toHaveLength(2);
-    });
+    }) as any;
 
     it('should have accessible links', () => {
       const highPricedProducts = [createMockProduct({ 
@@ -567,17 +567,17 @@ describe('HighPricedProductsWidget', () => {
       })];
       renderWithProviders(<HighPricedProductsWidget products={highPricedProducts} loading={false} />);
       
-      const manageLink = screen.getByRole('link', { name: 'Manage Pricing' });
+      const manageLink = screen.getByRole('link', { name: 'Manage Pricing' }) as any;
       expect(manageLink).toBeInTheDocument();
-    });
-  });
+    }) as any;
+  }) as any;
 
   describe('edge cases', () => {
     it('should handle empty products array', () => {
       renderWithProviders(<HighPricedProductsWidget products={[]} loading={false} />);
       
       expect(screen.getByText('No high-priced products found.')).toBeInTheDocument();
-    });
+    }) as any;
 
     it('should handle products with invalid competitor price strings', () => {
       const productsWithInvalidPrice = [
@@ -591,6 +591,6 @@ describe('HighPricedProductsWidget', () => {
       renderWithProviders(<HighPricedProductsWidget products={productsWithInvalidPrice} loading={false} />);
       
       expect(screen.getByText('No high-priced products found.')).toBeInTheDocument();
-    });
-  });
-}); 
+    }) as any;
+  }) as any;
+}) as any; 

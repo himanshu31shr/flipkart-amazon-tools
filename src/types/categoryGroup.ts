@@ -5,6 +5,11 @@ export interface CategoryGroup {
   name: string;
   description: string;
   color: string; // Hex color code (e.g., "#FF5722")
+  currentInventory: number;
+  inventoryUnit: 'kg' | 'g' | 'pcs';
+  inventoryType: 'weight' | 'qty';
+  minimumThreshold: number;
+  lastInventoryUpdate?: Timestamp;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -17,6 +22,10 @@ export interface CategoryGroupFormData {
   name: string;
   description: string;
   color: string;
+  currentInventory: number;
+  inventoryUnit: 'kg' | 'g' | 'pcs';
+  inventoryType: 'weight' | 'qty';
+  minimumThreshold: number;
 }
 
 export interface CategoryGroupValidationResult {
@@ -25,6 +34,10 @@ export interface CategoryGroupValidationResult {
     name?: string;
     description?: string;
     color?: string;
+    currentInventory?: string;
+    inventoryUnit?: string;
+    inventoryType?: string;
+    minimumThreshold?: string;
   };
 }
 
