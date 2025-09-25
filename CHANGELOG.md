@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.6.0
+
+### Minor Changes
+
+- [#56](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/56) [`edea406`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/edea4061533f9d04579b05edde7967619ddde860) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - feat: updated category group dropdown; chore: release packages; Implement comprehensive inventory...
+
 ## 9.5.0
 
 ### Minor Changes
