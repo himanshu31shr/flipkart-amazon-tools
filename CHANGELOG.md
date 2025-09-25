@@ -1,5 +1,15 @@
 # Changelog
 
+## 9.7.0
+
+### Minor Changes
+
+- [#58](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/58) [`15b2cf5`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/15b2cf5ae8da864961a7d9d96384c8f2262d247c) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - feat: updated category group dropdown; chore: release packages; Implement comprehensive inventory...
+
+### Patch Changes
+
+- [#58](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/58) [`15b2cf5`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/15b2cf5ae8da864961a7d9d96384c8f2262d247c) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - Refactor SimpleCategoryTable to use DataTable component and enhance category display
+
 ## 9.6.0
 
 ### Minor Changes
