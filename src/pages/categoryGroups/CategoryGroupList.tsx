@@ -2,13 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   IconButton,
   Tooltip,
   Chip,
@@ -19,6 +12,7 @@ import {
   DialogActions,
   CircularProgress,
   Alert,
+  Paper,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -34,6 +28,7 @@ import {
   clearError,
 } from '../../store/slices/categoryGroupsSlice';
 import { CategoryGroupWithStats } from '../../types/categoryGroup';
+import { DataTable, Column } from '../../components/DataTable/DataTable';
 
 interface CategoryGroupListProps {
   onEditGroup: (group: CategoryGroupWithStats) => void;
@@ -53,6 +48,100 @@ const CategoryGroupList: React.FC<CategoryGroupListProps> = ({
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<CategoryGroupWithStats | null>(null);
+
+  // Define DataTable columns (removed description column)
+  const columns: Column<CategoryGroupWithStats>[] = [
+    {
+      id: 'name',
+      label: 'Group Name',
+      filter: true,
+      priorityOnMobile: true,
+      format: (value) => (
+        <Box display="flex" alignItems="center">
+          <GroupIcon sx={{ mr: 1, color: 'text.secondary' }} />
+          <Typography variant="subtitle1" fontWeight="medium">
+            {String(value)}
+          </Typography>
+        </Box>
+      )
+    },
+    {
+      id: 'color',
+      label: 'Color',
+      align: 'center' as const,
+      filter: true,
+      filterValue: (row) => row.color,
+      format: (value) => (
+        <Chip
+          label={String(value)}
+          size="small"
+          sx={{
+            backgroundColor: String(value),
+            color: getContrastColor(String(value)),
+            fontWeight: 'medium',
+            minWidth: 80,
+          }}
+        />
+      )
+    },
+    {
+      id: 'categoryCount',
+      label: 'Categories',
+      align: 'center' as const,
+      format: (value, row) => (
+        <Box display="flex" alignItems="center" justifyContent="center">
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewGroupDetails(row!);
+            }}
+            startIcon={<CategoryIcon sx={{ fontSize: 20 }} />}
+            sx={{ minWidth: 80 }}
+          >
+            {String(value)}
+          </Button>
+        </Box>
+      )
+    },
+    {
+      id: 'actions',
+      label: 'Actions',
+      align: 'center' as const,
+      format: (_, row) => (
+        <Box display="flex" justifyContent="center" gap={1}>
+          <Tooltip title="Edit Group">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditGroup(row!);
+              }}
+              color="primary"
+            >
+              <EditIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={row!.categoryCount > 0 ? "Cannot delete group with categories" : "Delete Group"}>
+            <span>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteClick(row!);
+                }}
+                color="error"
+                disabled={row!.categoryCount > 0}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
+      )
+    }
+  ];
 
   useEffect(() => {
     dispatch(fetchCategoryGroups());
@@ -78,9 +167,9 @@ const CategoryGroupList: React.FC<CategoryGroupListProps> = ({
         await dispatch(deleteCategoryGroup(groupToDelete.id!)).unwrap();
         setDeleteDialogOpen(false);
         setGroupToDelete(null);
-      } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_) {
         // Error is handled by Redux state
-        console.error('Failed to delete category group:', err);
         setDeleteDialogOpen(false);
         setGroupToDelete(null);
       }
@@ -105,14 +194,6 @@ const CategoryGroupList: React.FC<CategoryGroupListProps> = ({
     return luminance > 0.5 ? '#000000' : '#ffffff';
   };
 
-  if (loading && groups.length === 0) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
   return (
     <Box>
       {error && (
@@ -121,7 +202,11 @@ const CategoryGroupList: React.FC<CategoryGroupListProps> = ({
         </Alert>
       )}
 
-      {groups.length === 0 ? (
+      {loading && groups.length === 0 ? (
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
+          <CircularProgress />
+        </Box>
+      ) : groups.length === 0 ? (
         <Paper sx={{ p: 4, textAlign: 'center' }}>
           <GroupIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
@@ -132,92 +217,15 @@ const CategoryGroupList: React.FC<CategoryGroupListProps> = ({
           </Typography>
         </Paper>
       ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>
-                  <Box display="flex" alignItems="center">
-                    <GroupIcon sx={{ mr: 1 }} />
-                    Group Name
-                  </Box>
-                </TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell align="center">Color</TableCell>
-                <TableCell align="center">
-                  <Box display="flex" alignItems="center" justifyContent="center">
-                    <CategoryIcon sx={{ mr: 1, fontSize: 20 }} />
-                    Categories
-                  </Box>
-                </TableCell>
-                <TableCell align="center">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {groups.map((group) => (
-                <TableRow key={group.id} hover>
-                  <TableCell>
-                    <Typography variant="subtitle1" fontWeight="medium">
-                      {group.name}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {group.description || 'No description'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={group.color}
-                      size="small"
-                      sx={{
-                        backgroundColor: group.color,
-                        color: getContrastColor(group.color),
-                        fontWeight: 'medium',
-                        minWidth: 80,
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => onViewGroupDetails(group)}
-                      sx={{ minWidth: 80 }}
-                    >
-                      {group.categoryCount}
-                    </Button>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Box display="flex" justifyContent="center" gap={1}>
-                      <Tooltip title="Edit Group">
-                        <IconButton
-                          size="small"
-                          onClick={() => onEditGroup(group)}
-                          color="primary"
-                        >
-                          <EditIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title={group.categoryCount > 0 ? "Cannot delete group with categories" : "Delete Group"}>
-                        <span>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeleteClick(group)}
-                            color="error"
-                            disabled={group.categoryCount > 0}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <DataTable
+          columns={columns}
+          data={groups}
+          defaultSortColumn="name"
+          defaultSortDirection="asc"
+          rowsPerPageOptions={[10, 25, 50]}
+          defaultRowsPerPage={25}
+          getRowId={(row) => row.id!}
+        />
       )}
 
       {/* Delete Confirmation Dialog */}

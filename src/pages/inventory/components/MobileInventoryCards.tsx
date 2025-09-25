@@ -153,7 +153,14 @@ const MobileInventoryCards: React.FC<MobileInventoryCardsProps> = ({
                       size="small"
                       sx={{
                         backgroundColor: statusColor,
-                        color: theme.palette.getContrastText(statusColor),
+                        color: '#ffffff', // Pure white for AAA compliance
+                        '& .MuiChip-icon': {
+                          color: '#ffffff',
+                        },
+                        '&:hover': {
+                          backgroundColor: statusColor,
+                          filter: 'brightness(0.9)',
+                        },
                       }}
                     />
                   </Box>

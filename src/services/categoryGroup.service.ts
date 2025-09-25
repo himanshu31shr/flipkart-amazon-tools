@@ -109,6 +109,18 @@ export class CategoryGroupService extends FirebaseService {
     if (groupData.color !== undefined) {
       sanitizedUpdates.color = groupData.color;
     }
+    if (groupData.currentInventory !== undefined) {
+      sanitizedUpdates.currentInventory = groupData.currentInventory;
+    }
+    if (groupData.inventoryUnit !== undefined) {
+      sanitizedUpdates.inventoryUnit = groupData.inventoryUnit;
+    }
+    if (groupData.inventoryType !== undefined) {
+      sanitizedUpdates.inventoryType = groupData.inventoryType;
+    }
+    if (groupData.minimumThreshold !== undefined) {
+      sanitizedUpdates.minimumThreshold = groupData.minimumThreshold;
+    }
 
     await this.updateDocument(this.COLLECTION_NAME, id, sanitizedUpdates);
   }

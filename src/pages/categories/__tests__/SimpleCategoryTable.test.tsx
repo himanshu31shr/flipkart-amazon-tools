@@ -189,7 +189,7 @@ describe('SimpleCategoryTable', () => {
       renderWithTheme(<SimpleCategoryTable />, store);
       
       await waitFor(() => {
-        expect(screen.getByText('Categories (3 of 3)')).toBeInTheDocument();
+        expect(screen.getByText('Categories (3)')).toBeInTheDocument();
       }) as any;
 
       expect(screen.getByText('Electronics')).toBeInTheDocument();
@@ -213,15 +213,14 @@ describe('SimpleCategoryTable', () => {
         expect(screen.getByText('Electronics')).toBeInTheDocument();
       }) as any;
 
-      // Check descriptions
-      expect(screen.getByText('Electronic products')).toBeInTheDocument();
-      expect(screen.getByText('Educational books')).toBeInTheDocument();
-      expect(screen.getByText('Fashion items')).toBeInTheDocument();
-
-      // Check tags
+      // Check tags (descriptions are no longer displayed as we removed that column)
       expect(screen.getByText('tech')).toBeInTheDocument();
       expect(screen.getByText('education')).toBeInTheDocument();
       expect(screen.getByText('fashion')).toBeInTheDocument();
+
+      // Check category groups
+      expect(screen.getByText('Tech Group')).toBeInTheDocument();
+      expect(screen.getByText('Fashion Group')).toBeInTheDocument();
 
     }) as any;
 
@@ -257,13 +256,12 @@ describe('SimpleCategoryTable', () => {
       renderWithTheme(<SimpleCategoryTable />, store);
       
       await waitFor(() => {
-        expect(screen.getByText('Categories (0 of 0)')).toBeInTheDocument();
+        expect(screen.getByText('Categories (0)')).toBeInTheDocument();
       }) as any;
 
-      // Wait for the table to render with empty state
-      await waitFor(() => {
-        expect(screen.getByText('No categories found')).toBeInTheDocument();
-      }, { timeout: 2000 }) as any;
+      // The DataTable shows no data row instead of a custom empty state message
+      // So we just verify the categories count is 0
+      expect(screen.getByText('Categories (0)')).toBeInTheDocument();
     }) as any;
   }) as any;
 
@@ -367,7 +365,7 @@ describe('SimpleCategoryTable', () => {
   describe('Data Validation', () => {
 
 
-    it('shows dash for empty description and tag', async () => {
+    it('shows dash for empty tag', async () => {
       mockGetCategoriesWithGroups.mockResolvedValue([
         {
           id: '1',
@@ -392,9 +390,10 @@ describe('SimpleCategoryTable', () => {
         expect(screen.getByText('Test Category')).toBeInTheDocument();
       }) as any;
 
+      // Check that dash appears for empty tag (description column was removed)
       const rows = screen.getAllByRole('row');
       const testRow = rows.find(row => row.textContent?.includes('Test Category'));
-      expect(testRow?.textContent).toMatch(/-.*-/); // Should contain dashes for empty fields
+      expect(testRow?.textContent).toMatch(/-/); // Should contain dash for empty tag
     }) as any;
   }) as any;
 }) as any;

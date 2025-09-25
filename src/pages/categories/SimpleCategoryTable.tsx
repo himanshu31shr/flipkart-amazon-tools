@@ -3,28 +3,16 @@ import {
   Box,
   Typography,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   IconButton,
   Tooltip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   CircularProgress,
   Chip,
-  Checkbox,
   Menu,
   MenuItem,
-  InputAdornment,
-  Grid,
-  Collapse,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -32,13 +20,10 @@ import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import GroupIcon from '@mui/icons-material/Group';
 import AssignmentIcon from '@mui/icons-material/Assignment';
-import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import ClearIcon from '@mui/icons-material/Clear';
 import { CategoryService, Category } from '../../services/category.service';
 import CategoryGroupSelector from '../categoryGroups/components/CategoryGroupSelector';
-import CategoryGroupFilterSelector from '../categoryGroups/components/CategoryGroupFilterSelector';
 import { CategoryForm } from './CategoryForm';
+import { DataTable, Column } from '../../components/DataTable/DataTable';
 
 const getContrastColor = (hexColor: string): string => {
   try {
@@ -57,27 +42,125 @@ interface SimpleCategoryTableProps {
   onDataChange?: () => void;
 }
 
+type CategoryTableData = Category & { 
+  categoryGroup?: { id: string; name: string; color: string } 
+};
+
 const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({ 
   refreshTrigger = 0,
   onDataChange 
 }) => {
-  const [categories, setCategories] = useState<Array<Category & { categoryGroup?: { id: string; name: string; color: string } }>>([]);
+  const [categories, setCategories] = useState<CategoryTableData[]>([]);
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [groupAssignmentOpen, setGroupAssignmentOpen] = useState<string | null>(null);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<(string | number)[]>([]);
   const [bulkMenuAnchor, setBulkMenuAnchor] = useState<null | HTMLElement>(null);
   const [bulkGroupAssignmentOpen, setBulkGroupAssignmentOpen] = useState(false);
-  
-  // Filter and search state
-  const [searchTerm, setSearchTerm] = useState('');
-  const [groupFilter, setGroupFilter] = useState<string | 'all' | 'assigned' | 'unassigned'>('all');
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingTags, setExistingTags] = useState<string[]>([]);
 
   const categoryService = new CategoryService();
+
+  // Define DataTable columns
+  const columns: Column<CategoryTableData>[] = [
+    {
+      id: 'name',
+      label: 'Name',
+      filter: true,
+      priorityOnMobile: true,
+      format: (value) => (
+        <Typography variant="body2" fontWeight="medium">
+          {String(value)}
+        </Typography>
+      )
+    },
+    {
+      id: 'categoryGroup',
+      label: 'Category Group',
+      filter: true,
+      filterValue: (row) => row.categoryGroup?.name || 'Unassigned',
+      format: (value, row) => {
+        if (row?.categoryGroup) {
+          return (
+            <Chip
+              label={row.categoryGroup.name}
+              size="small"
+              sx={{
+                backgroundColor: row.categoryGroup.color,
+                color: getContrastColor(row.categoryGroup.color),
+                fontWeight: 'medium',
+                cursor: 'pointer'
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setGroupAssignmentOpen(row.id!);
+              }}
+            />
+          );
+        } else {
+          return (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<GroupIcon />}
+              onClick={(e) => {
+                e.stopPropagation();
+                setGroupAssignmentOpen(row!.id!);
+              }}
+              sx={{ minWidth: 120 }}
+            >
+              Assign Group
+            </Button>
+          );
+        }
+      }
+    },
+    {
+      id: 'tag',
+      label: 'Tag (Legacy)',
+      filter: true,
+      format: (value) => 
+        value ? (
+          <Chip label={String(value)} size="small" color="default" />
+        ) : (
+          <Typography variant="body2" color="text.secondary">-</Typography>
+        )
+    },
+    {
+      id: 'actions',
+      label: 'Actions',
+      align: 'center' as const,
+      format: (_, row) => (
+        <Box>
+          <Tooltip title="Edit category">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenDialog(row!);
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Delete category">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(row!.id!);
+              }}
+              color="error"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )
+    }
+  ];
 
   const fetchCategories = async () => {
     setLoading(true);
@@ -164,15 +247,15 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
     }
   };
 
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = (checked: boolean, visibleIds: (string | number)[]) => {
     if (checked) {
-      setSelectedCategories(filteredCategories.map(cat => cat.id!));
+      setSelectedCategories(visibleIds);
     } else {
       setSelectedCategories([]);
     }
   };
 
-  const handleSelectCategory = (categoryId: string, checked: boolean) => {
+  const handleSelectCategory = (categoryId: string | number, checked: boolean) => {
     if (checked) {
       setSelectedCategories(prev => [...prev, categoryId]);
     } else {
@@ -182,7 +265,10 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
 
   const handleBulkGroupAssignment = async (groupId: string | null) => {
     try {
-      await categoryService.assignMultipleCategoriesToGroup(selectedCategories, groupId);
+      await categoryService.assignMultipleCategoriesToGroup(
+        selectedCategories.map(id => String(id)), 
+        groupId
+      );
       await fetchCategories();
       onDataChange?.();
       setSelectedCategories([]);
@@ -193,71 +279,20 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
     }
   };
 
-  // Filter and search logic
-  const filteredCategories = React.useMemo(() => {
-    return categories.filter(category => {
-      // Search filter
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        const matchesName = category.name.toLowerCase().includes(searchLower);
-        const matchesDescription = category.description?.toLowerCase().includes(searchLower) || false;
-        const matchesTag = category.tag?.toLowerCase().includes(searchLower) || false;
-        const matchesGroup = category.categoryGroup?.name.toLowerCase().includes(searchLower) || false;
-        
-        if (!matchesName && !matchesDescription && !matchesTag && !matchesGroup) {
-          return false;
-        }
-      }
-      
-      // Group filter
-      if (groupFilter !== 'all') {
-        if (groupFilter === 'assigned') {
-          return !!category.categoryGroup;
-        } else if (groupFilter === 'unassigned') {
-          return !category.categoryGroup;
-        } else {
-          // Specific group ID
-          return category.categoryGroup?.id === groupFilter;
-        }
-      }
-      
-      return true;
-    });
-  }, [categories, searchTerm, groupFilter]);
-
-  const handleClearFilters = () => {
-    setSearchTerm('');
-    setGroupFilter('all');
-    setSelectedCategories([]);
-  };
-
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Box>
           <Typography variant="h6" component="h2">
-            Categories ({filteredCategories.length} of {categories.length})
+            Categories ({categories.length})
           </Typography>
           {selectedCategories.length > 0 && (
             <Typography variant="body2" color="primary">
               {selectedCategories.length} selected
             </Typography>
           )}
-          {(searchTerm || groupFilter !== 'all') && (
-            <Typography variant="body2" color="text.secondary">
-              Filters active
-            </Typography>
-          )}
         </Box>
         <Box>
-          <Button
-            variant="outlined"
-            onClick={() => setFiltersExpanded(!filtersExpanded)}
-            startIcon={<FilterListIcon />}
-            sx={{ mr: 1 }}
-          >
-            Filters
-          </Button>
           {selectedCategories.length > 0 && (
             <Button
               variant="outlined"
@@ -287,172 +322,40 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
         </Box>
       </Box>
 
-      {/* Filters Section */}
-      <Collapse in={filtersExpanded}>
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                size="small"
-                label="Search categories"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                  endAdornment: searchTerm && (
-                    <InputAdornment position="end">
-                      <IconButton
-                        size="small"
-                        onClick={() => setSearchTerm('')}
-                      >
-                        <ClearIcon />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                placeholder="Search by name, description, tag, or group..."
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <CategoryGroupFilterSelector
-                value={groupFilter}
-                onChange={(value) => setGroupFilter(value)}
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={12} md={2}>
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={handleClearFilters}
-                startIcon={<ClearIcon />}
-                disabled={!searchTerm && groupFilter === 'all'}
-              >
-                Clear All
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
-      </Collapse>
-
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  indeterminate={selectedCategories.length > 0 && selectedCategories.length < filteredCategories.length}
-                  checked={filteredCategories.length > 0 && selectedCategories.length === filteredCategories.length}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                />
-              </TableCell>
-              <TableCell>Name</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell>Category Group</TableCell>
-              <TableCell>Tag (Legacy)</TableCell>
-              <TableCell align="center">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  <CircularProgress />
-                </TableCell>
-              </TableRow>
-            ) : filteredCategories.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  {categories.length === 0 ? 'No categories found' : 'No categories match the current filters'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredCategories.map((category) => (
-                <TableRow key={category.id}>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedCategories.includes(category.id!)}
-                      onChange={(e) => handleSelectCategory(category.id!, e.target.checked)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="medium">
-                      {category.name}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {category.description || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    {category.categoryGroup ? (
-                      <Chip
-                        label={category.categoryGroup.name}
-                        size="small"
-                        sx={{
-                          backgroundColor: category.categoryGroup.color,
-                          color: getContrastColor(category.categoryGroup.color),
-                          fontWeight: 'medium',
-                        }}
-                        onClick={() => setGroupAssignmentOpen(category.id!)}
-                      />
-                    ) : (
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<GroupIcon />}
-                        onClick={() => setGroupAssignmentOpen(category.id!)}
-                        sx={{ minWidth: 120 }}
-                      >
-                        Assign Group
-                      </Button>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {category.tag ? (
-                      <Chip label={category.tag} size="small" color="default" />
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">-</Typography>
-                    )}
-                  </TableCell>
-                  <TableCell align="center">
-                    <Tooltip title="Edit category">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenDialog(category)}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete category">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDelete(category.id!)}
-                        color="error"
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={categories}
+          defaultSortColumn="name"
+          defaultSortDirection="asc"
+          enableSelection={true}
+          selected={selectedCategories}
+          onSelect={handleSelectCategory}
+          onSelectAll={handleSelectAll}
+          getRowId={(row) => row.id!}
+          rowsPerPageOptions={[10, 25, 50]}
+          defaultRowsPerPage={25}
+        />
+      )}
 
       {/* Enhanced Category Form */}
       <CategoryForm
         open={dialogOpen}
         onClose={handleCloseDialog}
         onSubmit={handleFormSubmit}
-        defaultValues={editingCategory as any || undefined}
+        defaultValues={editingCategory ? {
+          id: editingCategory.id,
+          name: editingCategory.name,
+          description: editingCategory.description,
+          tag: editingCategory.tag,
+          categoryGroupId: editingCategory.categoryGroupId,
+          inventoryUnit: editingCategory.inventoryUnit,
+          inventoryDeductionQuantity: editingCategory.inventoryDeductionQuantity,
+        } : undefined}
         isSubmitting={isSubmitting}
         existingTags={existingTags}
       />

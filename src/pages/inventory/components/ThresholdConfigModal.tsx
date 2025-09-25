@@ -166,7 +166,10 @@ const ThresholdConfigModal: React.FC<ThresholdConfigModalProps> = ({
 
         await Promise.all(updatePromises);
         
-        // Refresh inventory levels to reflect threshold changes
+        // Refresh category groups first to ensure latest threshold values are available
+        await dispatch(fetchCategoryGroups()).unwrap();
+        
+        // Then refresh inventory levels to reflect threshold changes
         dispatch(fetchInventoryLevels());
         
         handleClose();
