@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.5.0
+
+### Minor Changes
+
+- [#54](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/54) [`57d0678`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/57d06789633bbddf498abe8c39c0eea63bed55bd) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - Implement comprehensive inventory management system with deduction tracking, error handling, and monitoring capabilities
+
 ## 9.4.0
 
 ### Minor Changes
