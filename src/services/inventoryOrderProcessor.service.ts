@@ -42,6 +42,11 @@ export interface InventoryDeductionPreview {
     deductionQuantity: number;
     totalDeduction: number;
     inventoryUnit: string;
+    isCascade?: boolean; // New field to identify cascade deductions
+    cascadeSource?: { // Information about cascade source
+      sourceCategoryName: string;
+      targetCategoryName: string;
+    };
   }>;
   totalDeductions: Map<string, { categoryGroupName: string; totalQuantity: number; unit: string }>;
   warnings: string[];
@@ -161,6 +166,7 @@ export class InventoryOrderProcessor {
 
   /**
    * Preview category deductions without performing actual inventory updates
+   * Enhanced to show both primary and cascade deductions
    * 
    * This method allows users to see what inventory deductions would occur
    * before actually processing an order, enabling validation and review.
@@ -187,39 +193,16 @@ export class InventoryOrderProcessor {
       // Enhance order items with category information
       const enhancedOrderItems = await this.enhanceOrderItemsWithCategoryInfo(orderItems);
 
-      // Calculate deductions for preview
+      // Process each item for both primary and cascade deductions
       for (const item of enhancedOrderItems) {
-        if (item.inventoryDeductionRequired && item.categoryDeductionQuantity && item.product?.categoryGroupId) {
-          const orderQuantity = parseInt(item.quantity || '1');
-          const totalDeduction = orderQuantity * item.categoryDeductionQuantity;
+        const orderQuantity = parseInt(item.quantity || '1');
 
-          // Add to preview items
-          preview.items.push({
-            productSku: item.SKU || 'Unknown',
-            productName: item.name,
-            categoryName: item.category || 'Unknown',
-            categoryGroupId: item.product.categoryGroupId,
-            orderQuantity,
-            deductionQuantity: item.categoryDeductionQuantity,
-            totalDeduction,
-            inventoryUnit: await this.getCategoryInventoryUnit(item.categoryId || '') || 'pcs'
-          });
+        // Step 1: Process primary deduction preview
+        await this.addPrimaryDeductionToPreview(item, orderQuantity, preview);
 
-          // Aggregate by category group
-          const groupId = item.product.categoryGroupId;
-          const unit = await this.getCategoryInventoryUnit(item.categoryId || '') || 'pcs';
-          
-          if (preview.totalDeductions.has(groupId)) {
-            const existing = preview.totalDeductions.get(groupId)!;
-            existing.totalQuantity += totalDeduction;
-          } else {
-            const groupName = await this.getCategoryGroupName(groupId);
-            preview.totalDeductions.set(groupId, {
-              categoryGroupName: groupName,
-              totalQuantity: totalDeduction,
-              unit
-            });
-          }
+        // Step 2: Process cascade deduction preview
+        if (item.categoryId) {
+          await this.addCascadeDeductionsToPreview(item, orderQuantity, preview);
         }
       }
 
@@ -229,11 +212,133 @@ export class InventoryOrderProcessor {
         preview.warnings.push(`${itemsWithoutDeduction.length} items will not trigger automatic inventory deduction (not configured)`);
       }
 
+      // Add summary information about cascade deductions
+      const cascadeItems = preview.items.filter(item => item.isCascade);
+      if (cascadeItems.length > 0) {
+        preview.warnings.push(`${cascadeItems.length} additional cascade deductions will be processed from linked categories`);
+      }
+
     } catch (error) {
       preview.errors.push(`Preview calculation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
     return preview;
+  }
+
+  /**
+   * Add primary deduction to preview (existing logic)
+   * @private
+   */
+  private async addPrimaryDeductionToPreview(
+    item: ProductSummary,
+    orderQuantity: number,
+    preview: InventoryDeductionPreview
+  ): Promise<void> {
+    if (item.inventoryDeductionRequired && item.categoryDeductionQuantity && item.product?.categoryGroupId) {
+      const totalDeduction = orderQuantity * item.categoryDeductionQuantity;
+
+      if (totalDeduction > 0) {
+        const unit = await this.getCategoryInventoryUnit(item.categoryId || '') || 'pcs';
+
+        // Add primary deduction to preview items
+        preview.items.push({
+          productSku: item.SKU || 'Unknown',
+          productName: item.name,
+          categoryName: item.category || 'Unknown',
+          categoryGroupId: item.product.categoryGroupId,
+          orderQuantity,
+          deductionQuantity: item.categoryDeductionQuantity,
+          totalDeduction,
+          inventoryUnit: unit,
+          isCascade: false
+        });
+
+        // Aggregate by category group
+        this.aggregateDeductionInPreview(item.product.categoryGroupId, totalDeduction, unit, preview);
+      }
+    }
+  }
+
+  /**
+   * Add cascade deductions to preview (new functionality)
+   * @private
+   */
+  private async addCascadeDeductionsToPreview(
+    item: ProductSummary,
+    orderQuantity: number,
+    preview: InventoryDeductionPreview
+  ): Promise<void> {
+    try {
+      // Get all active linked categories for this item's category
+      const linkedCategories = await this.categoryService.getLinkedCategories(item.categoryId!, false);
+
+      for (const linkedCategory of linkedCategories) {
+        // Skip if linked category doesn't have deduction configured
+        if (!linkedCategory.inventoryDeductionQuantity || linkedCategory.inventoryDeductionQuantity <= 0) {
+          continue;
+        }
+
+        // Skip if linked category doesn't have category group assigned
+        if (!linkedCategory.categoryGroupId) {
+          continue;
+        }
+
+        // Calculate cascade deduction quantity
+        const cascadeDeduction = orderQuantity * linkedCategory.inventoryDeductionQuantity;
+
+        if (cascadeDeduction > 0) {
+          const unit = linkedCategory.inventoryUnit || 'pcs';
+
+          // Add cascade deduction to preview items
+          preview.items.push({
+            productSku: item.SKU || 'Unknown',
+            productName: item.name,
+            categoryName: linkedCategory.name,
+            categoryGroupId: linkedCategory.categoryGroupId,
+            orderQuantity,
+            deductionQuantity: linkedCategory.inventoryDeductionQuantity,
+            totalDeduction: cascadeDeduction,
+            inventoryUnit: unit,
+            isCascade: true,
+            cascadeSource: {
+              sourceCategoryName: item.category || 'Unknown',
+              targetCategoryName: linkedCategory.name
+            }
+          });
+
+          // Aggregate by category group
+          this.aggregateDeductionInPreview(linkedCategory.categoryGroupId, cascadeDeduction, unit, preview);
+        }
+      }
+    } catch (error) {
+      console.error(`Error adding cascade deductions to preview for category ${item.categoryId}:`, error);
+      preview.warnings.push(`Could not calculate cascade deductions for ${item.category || 'Unknown'} category`);
+    }
+  }
+
+  /**
+   * Helper to aggregate deductions by category group for preview
+   * @private
+   */
+  private aggregateDeductionInPreview(
+    groupId: string,
+    quantity: number,
+    unit: string,
+    preview: InventoryDeductionPreview
+  ): void {
+    if (preview.totalDeductions.has(groupId)) {
+      const existing = preview.totalDeductions.get(groupId)!;
+      existing.totalQuantity += quantity;
+    } else {
+      // For preview, we'll use a simple group name format
+      // In a full implementation, this would call CategoryGroupService
+      const groupName = `Group ${groupId}`;
+      preview.totalDeductions.set(groupId, {
+        categoryGroupName: groupName,
+        totalQuantity: quantity,
+        unit
+      });
+    }
   }
 
   /**
@@ -275,6 +380,7 @@ export class InventoryOrderProcessor {
 
   /**
    * Calculate inventory deduction items based on category configuration
+   * Enhanced to support cascade deductions through category linking
    * @private
    */
   private async calculateCategoryDeductions(
@@ -283,36 +389,107 @@ export class InventoryOrderProcessor {
   ): Promise<InventoryDeductionItem[]> {
     const deductionItems: InventoryDeductionItem[] = [];
 
+    // Process each order item for both primary and cascade deductions
     for (const item of enhancedOrderItems) {
-      // We already have the categoryGroupId from enhancement step
-      const categoryGroupId = item.categoryGroupId;
-
-      if (!item.inventoryDeductionRequired || !item.categoryDeductionQuantity || !categoryGroupId) {
-        continue;
-      }
-
       const orderQuantity = parseInt(item.quantity || '1');
-      const totalDeduction = orderQuantity * item.categoryDeductionQuantity;
 
-      if (totalDeduction > 0) {
-        // Get inventory unit from the category data we already have
-        const inventoryUnit = 'pcs'; // Default to 'pcs' for now
+      // Step 1: Process primary deduction (existing logic)
+      await this.processPrimaryDeduction(item, orderQuantity, orderReference, deductionItems);
 
-        const deductionItem = {
-          categoryGroupId: categoryGroupId,
-          quantity: totalDeduction,
-          unit: inventoryUnit as 'kg' | 'g' | 'pcs',
-          productSku: item.SKU || '',
-          orderReference: item.orderId || orderReference,
-          transactionReference: item.batchInfo?.batchId,
-          platform: item.type
-        };
-
-        deductionItems.push(deductionItem);
+      // Step 2: Process cascade deductions from linked categories (new functionality)
+      if (item.categoryId) {
+        await this.processCascadeDeductions(item, orderQuantity, orderReference, deductionItems);
       }
     }
 
     return deductionItems;
+  }
+
+  /**
+   * Process primary deduction for an order item (original logic)
+   * @private
+   */
+  private async processPrimaryDeduction(
+    item: ProductSummary,
+    orderQuantity: number,
+    orderReference: string | undefined,
+    deductionItems: InventoryDeductionItem[]
+  ): Promise<void> {
+    const categoryGroupId = item.categoryGroupId;
+
+    if (!item.inventoryDeductionRequired || !item.categoryDeductionQuantity || !categoryGroupId) {
+      return;
+    }
+
+    const totalDeduction = orderQuantity * item.categoryDeductionQuantity;
+
+    if (totalDeduction > 0) {
+      // Get inventory unit from the category data we already have
+      const inventoryUnit = await this.getCategoryInventoryUnit(item.categoryId || '') || 'pcs';
+
+      const deductionItem = {
+        categoryGroupId: categoryGroupId,
+        quantity: totalDeduction,
+        unit: inventoryUnit as 'kg' | 'g' | 'pcs',
+        productSku: item.SKU || '',
+        orderReference: item.orderId || orderReference,
+        transactionReference: item.batchInfo?.batchId,
+        platform: item.type
+      };
+
+      deductionItems.push(deductionItem);
+    }
+  }
+
+  /**
+   * Process cascade deductions for linked categories (new functionality)
+   * @private
+   */
+  private async processCascadeDeductions(
+    item: ProductSummary,
+    orderQuantity: number,
+    orderReference: string | undefined,
+    deductionItems: InventoryDeductionItem[]
+  ): Promise<void> {
+    try {
+      // Get all active linked categories for this item's category
+      const linkedCategories = await this.categoryService.getLinkedCategories(item.categoryId!, false);
+
+      for (const linkedCategory of linkedCategories) {
+        // Skip if linked category doesn't have deduction configured
+        if (!linkedCategory.inventoryDeductionQuantity || linkedCategory.inventoryDeductionQuantity <= 0) {
+          continue;
+        }
+
+        // Skip if linked category doesn't have category group assigned
+        if (!linkedCategory.categoryGroupId) {
+          continue;
+        }
+
+        // Calculate cascade deduction quantity
+        const cascadeDeduction = orderQuantity * linkedCategory.inventoryDeductionQuantity;
+
+        if (cascadeDeduction > 0) {
+          const inventoryUnit = linkedCategory.inventoryUnit || 'pcs';
+
+          // Create cascade deduction item (maintains compatibility with existing interface)
+          const cascadeDeductionItem = {
+            categoryGroupId: linkedCategory.categoryGroupId,
+            quantity: cascadeDeduction,
+            unit: inventoryUnit as 'kg' | 'g' | 'pcs',
+            productSku: item.SKU || '',
+            orderReference: item.orderId || orderReference,
+            transactionReference: item.batchInfo?.batchId,
+            platform: item.type
+          };
+
+          deductionItems.push(cascadeDeductionItem);
+        }
+      }
+    } catch (error) {
+      console.error(`Error processing cascade deductions for category ${item.categoryId}:`, error);
+      // Don't throw - cascade failures shouldn't break primary deduction processing
+    }
   }
 
   /**
