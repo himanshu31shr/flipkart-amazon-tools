@@ -1,7 +1,8 @@
 import { Timestamp, orderBy, where } from 'firebase/firestore';
 import { FirebaseService } from './firebase.service';
-import { Category } from '../types/category';
+import { Category, CategoryLink } from '../types/category';
 import { inventoryDeductionValidator } from '../utils/inventoryDeductionValidation';
+import { circularDependencyValidator } from '../utils/circularDependencyValidator';
 import { ValidationResult } from '../types/categoryExportImport.types';
 
 // Re-export Category interface for backward compatibility
@@ -72,6 +73,9 @@ export class CategoryService extends FirebaseService {
     }
     if (category.inventoryDeductionQuantity !== undefined) {
       sanitizedUpdates.inventoryDeductionQuantity = category.inventoryDeductionQuantity;
+    }
+    if (category.linkedCategories !== undefined) {
+      sanitizedUpdates.linkedCategories = category.linkedCategories;
     }
     
     await this.updateDocument(this.COLLECTION_NAME, id, sanitizedUpdates);
@@ -315,5 +319,310 @@ export class CategoryService extends FirebaseService {
    */
   async disableInventoryDeduction(categoryId: string): Promise<void> {
     await this.updateInventoryDeductionQuantity(categoryId, null);
+  }
+
+  // Category Linking Methods
+
+  /**
+   * Add a link from one category to another with circular dependency validation
+   * @param sourceId ID of the source category
+   * @param targetId ID of the target category to link
+   * @param isActive Whether the link should be active (default true)
+   * @returns Promise<ValidationResult> Result of adding the link
+   */
+  async addCategoryLink(sourceId: string, targetId: string, isActive: boolean = true): Promise<ValidationResult> {
+    const allCategories = await this.getCategories();
+    
+    // Validate the link before adding
+    const validation = circularDependencyValidator.validateLink(sourceId, targetId, allCategories);
+    
+    if (!validation.isValid) {
+      return validation;
+    }
+
+    const sourceCategory = await this.getCategory(sourceId);
+    if (!sourceCategory) {
+      return {
+        isValid: false,
+        errors: [`Source category with ID '${sourceId}' not found`],
+        warnings: []
+      };
+    }
+
+    // Check if link already exists
+    const existingLinks = sourceCategory.linkedCategories || [];
+    const linkExists = existingLinks.some(link => link.categoryId === targetId);
+    
+    if (linkExists) {
+      return {
+        isValid: false,
+        errors: ['Link already exists between these categories'],
+        warnings: []
+      };
+    }
+
+    // Create new link
+    const newLink: CategoryLink = {
+      categoryId: targetId,
+      isActive,
+      createdAt: Timestamp.now()
+    };
+
+    // Update the source category with the new link
+    const updatedLinks = [...existingLinks, newLink];
+    await this.updateCategory(sourceId, { linkedCategories: updatedLinks });
+
+    return {
+      isValid: true,
+      errors: [],
+      warnings: validation.warnings
+    };
+  }
+
+  /**
+   * Remove a link between categories
+   * @param sourceId ID of the source category
+   * @param targetId ID of the target category to unlink
+   * @returns Promise<ValidationResult> Result of removing the link
+   */
+  async removeCategoryLink(sourceId: string, targetId: string): Promise<ValidationResult> {
+    const sourceCategory = await this.getCategory(sourceId);
+    if (!sourceCategory) {
+      return {
+        isValid: false,
+        errors: [`Source category with ID '${sourceId}' not found`],
+        warnings: []
+      };
+    }
+
+    const existingLinks = sourceCategory.linkedCategories || [];
+    const linkIndex = existingLinks.findIndex(link => link.categoryId === targetId);
+    
+    if (linkIndex === -1) {
+      return {
+        isValid: false,
+        errors: ['Link does not exist between these categories'],
+        warnings: []
+      };
+    }
+
+    // Remove the link
+    const updatedLinks = existingLinks.filter((_, index) => index !== linkIndex);
+    await this.updateCategory(sourceId, { linkedCategories: updatedLinks });
+
+    return {
+      isValid: true,
+      errors: [],
+      warnings: []
+    };
+  }
+
+  /**
+   * Update a category link (enable/disable or modify properties)
+   * @param sourceId ID of the source category
+   * @param targetId ID of the target category
+   * @param updates Updates to apply to the link
+   * @returns Promise<ValidationResult> Result of updating the link
+   */
+  async updateCategoryLink(sourceId: string, targetId: string, updates: Partial<CategoryLink>): Promise<ValidationResult> {
+    const sourceCategory = await this.getCategory(sourceId);
+    if (!sourceCategory) {
+      return {
+        isValid: false,
+        errors: [`Source category with ID '${sourceId}' not found`],
+        warnings: []
+      };
+    }
+
+    const existingLinks = sourceCategory.linkedCategories || [];
+    const linkIndex = existingLinks.findIndex(link => link.categoryId === targetId);
+    
+    if (linkIndex === -1) {
+      return {
+        isValid: false,
+        errors: ['Link does not exist between these categories'],
+        warnings: []
+      };
+    }
+
+    // Update the link
+    const updatedLinks = [...existingLinks];
+    updatedLinks[linkIndex] = {
+      ...updatedLinks[linkIndex],
+      ...updates,
+      categoryId: targetId // Ensure categoryId cannot be changed
+    };
+
+    await this.updateCategory(sourceId, { linkedCategories: updatedLinks });
+
+    return {
+      isValid: true,
+      errors: [],
+      warnings: []
+    };
+  }
+
+  /**
+   * Get all categories that are linked from a source category
+   * @param sourceId ID of the source category
+   * @param includeInactive Whether to include inactive links (default false)
+   * @returns Promise<Category[]> Array of linked categories
+   */
+  async getLinkedCategories(sourceId: string, includeInactive: boolean = false): Promise<Category[]> {
+    const sourceCategory = await this.getCategory(sourceId);
+    if (!sourceCategory || !sourceCategory.linkedCategories) {
+      return [];
+    }
+
+    // Filter links based on active status
+    const links = includeInactive 
+      ? sourceCategory.linkedCategories
+      : sourceCategory.linkedCategories.filter(link => link.isActive !== false);
+
+    // Fetch the actual category objects
+    const linkedCategories: Category[] = [];
+    for (const link of links) {
+      const category = await this.getCategory(link.categoryId);
+      if (category) {
+        linkedCategories.push(category);
+      }
+    }
+
+    return linkedCategories;
+  }
+
+  /**
+   * Get all categories that link TO a target category (reverse lookup)
+   * @param targetId ID of the target category
+   * @param includeInactive Whether to include inactive links (default false)
+   * @returns Promise<Category[]> Array of categories that link to the target
+   */
+  async getCategoriesLinkingTo(targetId: string, includeInactive: boolean = false): Promise<Category[]> {
+    const allCategories = await this.getCategories();
+    const linkingCategories: Category[] = [];
+
+    for (const category of allCategories) {
+      if (category.linkedCategories) {
+        const hasLink = category.linkedCategories.some(link => 
+          link.categoryId === targetId && 
+          (includeInactive || link.isActive !== false)
+        );
+        
+        if (hasLink) {
+          linkingCategories.push(category);
+        }
+      }
+    }
+
+    return linkingCategories;
+  }
+
+  /**
+   * Get all active category links with detailed information
+   * @param sourceId ID of the source category
+   * @returns Promise<Array> Array of link details with target category info
+   */
+  async getCategoryLinkDetails(sourceId: string): Promise<Array<CategoryLink & { targetCategory?: Category }>> {
+    const sourceCategory = await this.getCategory(sourceId);
+    if (!sourceCategory || !sourceCategory.linkedCategories) {
+      return [];
+    }
+
+    const linkDetails = [];
+    for (const link of sourceCategory.linkedCategories) {
+      const targetCategory = await this.getCategory(link.categoryId);
+      linkDetails.push({
+        ...link,
+        targetCategory
+      });
+    }
+
+    return linkDetails;
+  }
+
+  /**
+   * Validate all category links for circular dependencies
+   * @param categoryId Optional specific category to validate (validates all if not provided)
+   * @returns Promise<ValidationResult> Comprehensive validation result
+   */
+  async validateCategoryLinks(categoryId?: string): Promise<ValidationResult> {
+    if (categoryId) {
+      const allCategories = await this.getCategories();
+      return circularDependencyValidator.checkCircularDependency(categoryId, allCategories);
+    } else {
+      const allCategories = await this.getCategories();
+      return circularDependencyValidator.validateAllCategoryLinks(allCategories);
+    }
+  }
+
+  /**
+   * Get a summary of category link configuration
+   * @param categoryId ID of the category
+   * @returns Promise<string> User-friendly link summary
+   */
+  async getCategoryLinkSummary(categoryId: string): Promise<string> {
+    const category = await this.getCategory(categoryId);
+    if (!category) {
+      return 'Category not found';
+    }
+
+    const allCategories = await this.getCategories();
+    return circularDependencyValidator.getLinkValidationSummary(category, allCategories);
+  }
+
+  /**
+   * Bulk add multiple category links with validation
+   * @param links Array of {sourceId, targetId, isActive} objects
+   * @returns Promise<ValidationResult[]> Array of validation results for each link
+   */
+  async bulkAddCategoryLinks(links: Array<{sourceId: string, targetId: string, isActive?: boolean}>): Promise<ValidationResult[]> {
+    const results: ValidationResult[] = [];
+    
+    // Process links one by one to ensure proper validation after each addition
+    for (const link of links) {
+      const result = await this.addCategoryLink(link.sourceId, link.targetId, link.isActive);
+      results.push(result);
+      
+      // Stop processing if we encounter an error to prevent inconsistent state
+      if (!result.isValid) {
+        break;
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Enable or disable a category link
+   * @param sourceId ID of the source category
+   * @param targetId ID of the target category
+   * @param isActive Whether the link should be active
+   * @returns Promise<ValidationResult> Result of the operation
+   */
+  async setCategoryLinkActive(sourceId: string, targetId: string, isActive: boolean): Promise<ValidationResult> {
+    return this.updateCategoryLink(sourceId, targetId, { isActive });
+  }
+
+  /**
+   * Get categories that have cascade deduction potential (have linked categories)
+   * @returns Promise<Category[]> Categories with active links configured
+   */
+  async getCategoriesWithCascadeDeduction(): Promise<Category[]> {
+    const allCategories = await this.getCategories();
+    return allCategories.filter(category => {
+      const activeLinks = category.linkedCategories?.filter(link => link.isActive !== false) || [];
+      return activeLinks.length > 0;
+    });
+  }
+
+  /**
+   * Get dependency chains starting from a category
+   * @param categoryId ID of the starting category
+   * @param maxDepth Maximum depth to traverse (default 10)
+   * @returns Promise<string[]> Array of dependency chain descriptions
+   */
+  async getDependencyChains(categoryId: string, maxDepth: number = 10): Promise<string[]> {
+    const allCategories = await this.getCategories();
+    return circularDependencyValidator.getDependencyChains(categoryId, allCategories, maxDepth);
   }
 }

@@ -1,3 +1,9 @@
+export interface CategoryLink {
+  categoryId: string; // Target category to deduct from
+  isActive?: boolean; // Allow temporary disable without deletion
+  createdAt?: Date | number | string | { toDate(): Date; toMillis(): number }; // When link was created
+}
+
 export interface Category {
   id?: string;
   name: string;
@@ -10,6 +16,7 @@ export interface Category {
   inventoryUnit?: 'kg' | 'g' | 'pcs'; // Unit of measurement
   unitConversionRate?: number; // Conversion rate for weight units (e.g., g to kg)
   inventoryDeductionQuantity?: number; // Quantity to deduct per product order for automatic inventory management
+  linkedCategories?: CategoryLink[]; // Array of linked categories for cascade deductions
   createdAt?: Date | number | string | { toDate(): Date; toMillis(): number };
   updatedAt?: Date | number | string | { toDate(): Date; toMillis(): number };
 }

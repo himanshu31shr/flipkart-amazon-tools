@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/category-linking-cascade-deduction/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-26T03:26:09.568Z",
+      "trigger": "initial",
+      "approvalId": "approval_1758857169566_ss32f3v1r",
+      "approvalTitle": "Design Document for Category Linking Cascade Deduction"
+    }
+  ]
+}

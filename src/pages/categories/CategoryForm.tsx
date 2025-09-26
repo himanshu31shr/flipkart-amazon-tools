@@ -39,6 +39,7 @@ import {
   Alert,
 } from '@mui/material';
 import CategoryGroupSelector from '../categoryGroups/components/CategoryGroupSelector';
+import CategoryLinkManager from './components/CategoryLinkManager';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -237,6 +238,28 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                 )}
               </Stack>
             </Box>
+
+            {/* Category Links Section - only show for existing categories */}
+            {defaultValues?.id && (
+              <>
+                <Divider sx={{ my: 2 }} />
+                
+                <Box>
+                  <Typography variant="h6" gutterBottom color="text.secondary">
+                    Category Links & Cascade Deductions
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    Configure which categories should also have inventory deducted when orders are placed for products in this category
+                  </Typography>
+                  
+                  <CategoryLinkManager
+                    categoryId={defaultValues.id}
+                    categoryName={defaultValues.name}
+                    disabled={isSubmitting}
+                  />
+                </Box>
+              </>
+            )}
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>

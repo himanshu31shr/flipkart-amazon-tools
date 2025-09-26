@@ -100,6 +100,7 @@ describe('InventoryOrderProcessor', () => {
     mockProductService.getProducts.mockResolvedValue([mockProduct]);
     mockCategoryService.getCategories.mockResolvedValue([mockCategory, mockCategoryWithoutDeduction]);
     mockCategoryService.getCategory.mockResolvedValue(mockCategory);
+    mockCategoryService.getLinkedCategories.mockResolvedValue([]); // No linked categories by default
     mockInventoryService.deductInventoryFromOrder.mockResolvedValue(mockInventoryDeductionResult);
   });
 
