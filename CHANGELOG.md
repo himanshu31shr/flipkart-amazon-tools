@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.8.0
+
+### Minor Changes
+
+- [#60](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/60) [`76ed55a`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/76ed55a1796b1b006977e4170fe94ca3f643f94a) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - Added multiple category groups feature for enhanced inventory management and category linking functionality. This includes category dropdown updates, incremental category updates, and comprehensive inventory deduction capabilities with category associations.
+
 ## 9.7.0
 
 ### Minor Changes
