@@ -167,7 +167,12 @@ export const InventoryMovementsTable: React.FC<Props> = ({
           label={movement.platform.charAt(0).toUpperCase() + movement.platform.slice(1)}
           size="small"
           variant="outlined"
-          sx={{ fontSize: '0.75rem' }}
+          sx={{ 
+            fontSize: '0.75rem',
+            color: 'rgba(25, 30, 55, 1)', // High contrast dark blue
+            borderColor: 'rgba(25, 30, 55, 0.5)',
+            backgroundColor: 'rgba(245, 247, 250, 1)',
+          }}
         />
       );
     }
@@ -186,8 +191,17 @@ export const InventoryMovementsTable: React.FC<Props> = ({
           sx={{ 
             textDecoration: 'underline',
             cursor: 'pointer',
-            color: 'primary.main',
-            fontSize: '0.75rem'
+            color: 'rgba(25, 118, 210, 1)', // High contrast blue for links
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            '&:hover': {
+              color: 'rgba(21, 101, 192, 1)', // Darker blue on hover
+              backgroundColor: 'rgba(25, 118, 210, 0.04)',
+            },
+            '&:focus': {
+              outline: '2px solid rgba(25, 118, 210, 0.5)',
+              outlineOffset: '2px',
+            }
           }}
         >
           Order: {movement.orderReference}
@@ -209,8 +223,17 @@ export const InventoryMovementsTable: React.FC<Props> = ({
           sx={{ 
             textDecoration: 'underline',
             cursor: 'pointer',
-            color: 'primary.main',
-            fontSize: '0.75rem'
+            color: 'rgba(25, 118, 210, 1)', // High contrast blue for links
+            fontSize: '0.75rem',
+            fontWeight: 500,
+            '&:hover': {
+              color: 'rgba(21, 101, 192, 1)', // Darker blue on hover
+              backgroundColor: 'rgba(25, 118, 210, 0.04)',
+            },
+            '&:focus': {
+              outline: '2px solid rgba(25, 118, 210, 0.5)',
+              outlineOffset: '2px',
+            }
           }}
         >
           Txn: {movement.transactionReference}
@@ -226,11 +249,14 @@ export const InventoryMovementsTable: React.FC<Props> = ({
           variant="caption"
           sx={{ 
             fontFamily: 'monospace',
-            backgroundColor: 'grey.100',
+            backgroundColor: 'rgba(245, 245, 245, 1)', // Light grey background
+            color: 'rgba(33, 33, 33, 1)', // High contrast dark text
             px: 0.5,
             py: 0.25,
             borderRadius: 0.5,
-            fontSize: '0.7rem'
+            fontSize: '0.7rem',
+            fontWeight: 500,
+            border: '1px solid rgba(189, 189, 189, 1)', // Subtle border for definition
           }}
         >
           SKU: {movement.productSku}
@@ -245,9 +271,10 @@ export const InventoryMovementsTable: React.FC<Props> = ({
           key="reason"
           variant="caption"
           sx={{ 
-            color: 'text.secondary',
+            color: 'rgba(97, 97, 97, 1)', // High contrast secondary text
             fontStyle: 'italic',
-            fontSize: '0.75rem'
+            fontSize: '0.75rem',
+            fontWeight: 500,
           }}
         >
           Reason: {movement.reason.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
@@ -262,8 +289,9 @@ export const InventoryMovementsTable: React.FC<Props> = ({
           key="adjustedBy"
           variant="caption"
           sx={{ 
-            color: 'text.secondary',
-            fontSize: '0.75rem'
+            color: 'rgba(97, 97, 97, 1)', // High contrast secondary text
+            fontSize: '0.75rem',
+            fontWeight: 500,
           }}
         >
           By: {movement.adjustedBy}
@@ -272,7 +300,7 @@ export const InventoryMovementsTable: React.FC<Props> = ({
     }
 
     if (context.length === 0) {
-      return <Typography variant="caption" color="text.secondary">—</Typography>;
+      return <Typography variant="caption" sx={{ color: 'rgba(97, 97, 97, 1)' }}>—</Typography>;
     }
 
     return (

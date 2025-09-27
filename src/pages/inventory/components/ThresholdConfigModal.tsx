@@ -427,7 +427,7 @@ const ThresholdConfigModal: React.FC<ThresholdConfigModalProps> = ({
             {/* Current Threshold Display (Single Mode) */}
             {!formik.values.bulkMode && currentThreshold !== null && currentInventoryLevel && (
               <Grid item xs={12}>
-                <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
+                <Paper sx={{ p: 2, bgcolor: 'grey.30' }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Current Configuration
                   </Typography>
@@ -508,10 +508,26 @@ const ThresholdConfigModal: React.FC<ThresholdConfigModalProps> = ({
                     </Typography>
                     
                     {alertsCount > 0 && (
-                      <Alert severity="warning" sx={{ mb: 2 }}>
+                      <Alert 
+                        severity="warning" 
+                        sx={{ 
+                          mb: 2,
+                          '& .MuiAlert-message': {
+                            color: 'rgba(51, 51, 51, 1)', // Very dark grey for maximum readability
+                          },
+                          '& .MuiAlert-icon': {
+                            color: 'rgba(51, 51, 51, 1)', // Matching icon color
+                          },
+                          backgroundColor: 'rgba(255, 248, 225, 1)', // Very light cream background
+                          border: '2px solid rgba(255, 193, 7, 1)', // Strong yellow border for warning
+                        }}
+                      >
                         <Box display="flex" alignItems="center" gap={1}>
-                          <WarningIcon />
-                          <Typography>
+                          <WarningIcon sx={{ color: 'rgba(51, 51, 51, 1)' }} />
+                          <Typography sx={{ 
+                            color: 'rgba(51, 51, 51, 1)', // Very dark grey for maximum contrast
+                            fontWeight: 500 
+                          }}>
                             This threshold will trigger immediate alerts for {alertsCount} category group{alertsCount > 1 ? 's' : ''}
                           </Typography>
                         </Box>
@@ -585,15 +601,37 @@ const ThresholdConfigModal: React.FC<ThresholdConfigModalProps> = ({
             {/* Confirmation Dialog Content */}
             {showConfirmation && (
               <Grid item xs={12}>
-                <Alert severity="warning">
-                  <Typography variant="subtitle2" gutterBottom>
+                <Alert 
+                  severity="warning"
+                  sx={{
+                    '& .MuiAlert-message': {
+                      color: 'rgba(51, 51, 51, 1)', // Very dark grey for maximum readability
+                    },
+                    '& .MuiAlert-icon': {
+                      color: 'rgba(51, 51, 51, 1)', // Matching icon color
+                    },
+                    backgroundColor: 'rgba(255, 248, 225, 1)', // Very light cream background
+                    border: '2px solid rgba(255, 193, 7, 1)', // Strong yellow border for warning
+                  }}
+                >
+                  <Typography variant="subtitle2" gutterBottom sx={{ 
+                    color: 'rgba(51, 51, 51, 1)', // Very dark grey for maximum contrast
+                    fontWeight: 600 
+                  }}>
                     Confirmation Required
                   </Typography>
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ 
+                    color: 'rgba(51, 51, 51, 1)', // Very dark grey for maximum contrast
+                    fontWeight: 500 
+                  }}>
                     The new threshold will trigger immediate alerts for {alertsCount} category group{alertsCount > 1 ? 's' : ''}. 
                     This means the current inventory levels are below the new threshold you&apos;re setting.
                   </Typography>
-                  <Typography variant="body2" sx={{ mt: 1 }}>
+                  <Typography variant="body2" sx={{ 
+                    mt: 1, 
+                    color: 'rgba(51, 51, 51, 1)', // Very dark grey for maximum contrast
+                    fontWeight: 500 
+                  }}>
                     Are you sure you want to proceed? These alerts will be created immediately.
                   </Typography>
                 </Alert>
