@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.9.0
+
+### Minor Changes
+
+- [#62](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/62) [`38c5ec5`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/38c5ec569a2cf8b76624af252580a9e81a9a2a0c) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - Remove group assignment and hidden products functionality, update category page
+
 ## 9.8.0
 
 ### Minor Changes
