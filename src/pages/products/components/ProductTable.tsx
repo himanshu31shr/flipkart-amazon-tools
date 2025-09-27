@@ -25,7 +25,6 @@ interface Props {
   onEdit: (product: Product | ProductWithCategoryGroup) => void;
   onFilterChange: (filter: ProductFilter) => void;
   onBulkCategoryUpdate?: (skus: string[], categoryId: string) => void;
-  onBulkGroupUpdate?: (skus: string[], groupId: string | null) => void;
 }
 
 export const ProductTable: React.FC<Props> = ({
@@ -34,7 +33,6 @@ export const ProductTable: React.FC<Props> = ({
   onEdit,
   onFilterChange,
   onBulkCategoryUpdate,
-  onBulkGroupUpdate,
 }) => {
   const dispatch = useAppDispatch();
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -229,13 +227,11 @@ export const ProductTable: React.FC<Props> = ({
       <ProductTableToolbar
         platform={currentFilters.platform}
         search={currentFilters.search}
-        groupFilter={currentFilters.groupFilter}
         selectedProducts={selectedProducts}
         categories={categories}
         allProducts={allProducts || products}
         onFilterChange={handleFilterChange}
         onBulkCategoryUpdate={handleBulkCategoryUpdate}
-        onBulkGroupUpdate={onBulkGroupUpdate}
       />
 
       <DataTable

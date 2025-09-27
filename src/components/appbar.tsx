@@ -44,8 +44,6 @@ const getRouteTitle = (pathname: string): string => {
       return "Active Orders";    
     case "/flipkart-amazon-tools/products/":
       return "Products";
-    case "/flipkart-amazon-tools/hidden-products/":
-      return "Hidden Products";
     case "/flipkart-amazon-tools/order-analytics/":
       return "Order Analytics";
     case "/flipkart-amazon-tools/storage-management/":

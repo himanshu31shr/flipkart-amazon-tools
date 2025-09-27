@@ -118,15 +118,55 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
       }
     },
     {
-      id: 'tag',
-      label: 'Tag (Legacy)',
+      id: 'linkedCategories',
+      label: 'Linked Categories',
       filter: true,
-      format: (value) => 
-        value ? (
-          <Chip label={String(value)} size="small" color="default" />
-        ) : (
-          <Typography variant="body2" color="text.secondary">-</Typography>
-        )
+      filterValue: (row) => {
+        if (!row?.linkedCategories || row.linkedCategories.length === 0) return 'None';
+        return row.linkedCategories.length > 1 ? 'Multiple' : '1 Link';
+      },
+      format: (value, row) => {
+        if (!row?.linkedCategories || row.linkedCategories.length === 0) {
+          return (
+            <Typography variant="body2" color="text.secondary">None</Typography>
+          );
+        }
+        
+        const activeLinks = row.linkedCategories.filter(link => link.isActive !== false);
+        const inactiveLinks = row.linkedCategories.filter(link => link.isActive === false);
+        
+        return (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+            {activeLinks.slice(0, 2).map((link, index) => (
+              <Chip
+                key={`${link.categoryId}-${index}`}
+                label={categories.find(c => c.id === link.categoryId)?.name || 'Unknown'}
+                size="small"
+                color="primary"
+                variant="outlined"
+              />
+            ))}
+            {inactiveLinks.slice(0, 1).map((link, index) => (
+              <Chip
+                key={`inactive-${link.categoryId}-${index}`}
+                label={categories.find(c => c.id === link.categoryId)?.name || 'Unknown'}
+                size="small"
+                color="default"
+                variant="outlined"
+                sx={{ opacity: 0.6 }}
+              />
+            ))}
+            {row.linkedCategories.length > 3 && (
+              <Chip
+                label={`+${row.linkedCategories.length - 3} more`}
+                size="small"
+                variant="outlined"
+                color="default"
+              />
+            )}
+          </Box>
+        );
+      }
     },
     {
       id: 'actions',

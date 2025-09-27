@@ -10,10 +10,8 @@ import {
   Button,
   Divider,
   CircularProgress,
-  Link,
-  Stack
+  Link
 } from '@mui/material';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { Link as RouterLink } from 'react-router-dom';
 import { Product } from '../../../services/product.service';
@@ -24,116 +22,6 @@ interface ProductAlertWidgetProps {
   loading: boolean;
 }
 
-// Hidden Products Widget
-export const HiddenProductsWidget: React.FC<ProductAlertWidgetProps> = ({ products, loading }) => {
-  // Filter to only hidden products
-  const hiddenProducts = products.filter(product => !product.existsOnSellerPage);
-  
-  // Show at most 5 items in the widget
-  const displayItems = hiddenProducts.slice(0, 5);
-  const remainingCount = hiddenProducts.length - 5;
-
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <CircularProgress size={24} />
-      </Box>
-    );
-  }
-
-  if (hiddenProducts.length === 0) {
-    return (
-      <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
-          No hidden products found.
-        </Typography>
-      </Box>
-    );
-  }
-
-  return (
-    <Paper sx={{ p: 2, height: '100%', border: '1px solid', borderColor: 'info.main' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-        <VisibilityOffIcon sx={{ mr: 1, color: 'info.main' }} />
-        <Typography variant="h6" component="h2" sx={{ color: 'info.dark', fontWeight: 'bold' }}>
-          Hidden Products
-        </Typography>
-        <Chip 
-          label={hiddenProducts.length} 
-          color="primary" 
-          size="small" 
-          sx={{ ml: 1 }}
-        />
-      </Box>
-      
-      <Divider sx={{ mb: 2 }} />
-      
-      <List dense sx={{ mb: 1 }}>
-        {displayItems.map((product) => (
-          <ListItem 
-            key={`${product.sku}-${product.platform}`}
-            sx={{ 
-              mb: 1, 
-              borderRadius: 1,
-              bgcolor: 'background.paper',
-              '&:hover': { bgcolor: 'action.hover' },
-              py: 1
-            }}
-          >
-            <ListItemText
-              primary={
-                <Typography variant="body2" noWrap title={product.name}>
-                  {product.name.length > 30 ? `${product.name.substring(0, 30)}...` : product.name}
-                </Typography>
-              }
-              secondary={
-                <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.5 }}>
-                  <Chip 
-                    size="small" 
-                    color={product.platform === 'amazon' ? 'primary' : 'secondary'} 
-                    label={product.platform} 
-                    sx={{ height: 20 }}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    SKU: {product.sku}
-                  </Typography>
-                </Stack>
-              }
-            />
-          </ListItem>
-        ))}
-      </List>
-      
-      {remainingCount > 0 && (
-        <Box sx={{ textAlign: 'center' }}>
-          <Button 
-            variant="outlined" 
-            size="small"
-            component={RouterLink}
-            to="/flipkart-amazon-tools/hidden-products/"
-            sx={{ fontSize: '0.75rem' }}
-          >
-            View {remainingCount} more hidden products
-          </Button>
-        </Box>
-      )}
-      
-      {hiddenProducts.length > 0 && hiddenProducts.length <= 5 && (
-        <Box sx={{ textAlign: 'center' }}>
-          <Link 
-            component={RouterLink}
-            to="/flipkart-amazon-tools/hidden-products/"
-            color="primary"
-            underline="hover"
-            sx={{ fontSize: '0.875rem' }}
-          >
-            Manage Hidden Products
-          </Link>
-        </Box>
-      )}
-    </Paper>
-  );
-};
 
 // High-Priced Products Widget
 export const HighPricedProductsWidget: React.FC<ProductAlertWidgetProps> = ({ products, loading }) => {
@@ -201,27 +89,24 @@ export const HighPricedProductsWidget: React.FC<ProductAlertWidgetProps> = ({ pr
                 </Typography>
               }
               secondary={
-                <Stack spacing={0.5} mt={0.5}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="caption" color="error">
+                <span>
+                  <span style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                    <Typography variant="caption" color="error" component="span">
                       Our price: <FormattedCurrency value={product.sellingPrice} />
                     </Typography>
-                    <Typography variant="caption" color="success.main">
+                    <Typography variant="caption" color="success.main" component="span">
                       Competitor: <FormattedCurrency value={Number(product.competitionAnalysis?.competitorPrice || 0)} />
                     </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Chip 
-                      size="small" 
-                      color={product.platform === 'amazon' ? 'primary' : 'secondary'} 
-                      label={product.platform} 
-                      sx={{ mr: 1, height: 20 }}
-                    />
-                    <Typography variant="caption" color="text.secondary">
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', marginTop: '4px' }}>
+                    <Typography variant="caption" color={product.platform === 'amazon' ? 'primary' : 'secondary'} component="span" sx={{ mr: 1, fontWeight: 'bold', textTransform: 'uppercase' }}>
+                      {product.platform}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" component="span">
                       SKU: {product.sku}
                     </Typography>
-                  </Box>
-                </Stack>
+                  </span>
+                </span>
               }
             />
           </ListItem>

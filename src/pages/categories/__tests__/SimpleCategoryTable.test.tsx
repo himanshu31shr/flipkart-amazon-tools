@@ -91,6 +91,10 @@ const mockCategories = [
     name: 'Electronics',
     description: 'Electronic products',
     tag: 'tech',
+    linkedCategories: [
+      { categoryId: '2', isActive: true },
+      { categoryId: '3', isActive: false }
+    ],
     categoryGroup: {
       id: 'group-1',
       name: 'Tech Group',
@@ -101,13 +105,17 @@ const mockCategories = [
     id: '2',
     name: 'Books',
     description: 'Educational books',
-    tag: 'education'
+    tag: 'education',
+    linkedCategories: [
+      { categoryId: '1', isActive: true }
+    ]
   },
   {
     id: '3',
     name: 'Clothing',
     description: 'Fashion items',
     tag: 'fashion',
+    linkedCategories: [],
     categoryGroup: {
       id: 'group-2',
       name: 'Fashion Group',
@@ -192,9 +200,9 @@ describe('SimpleCategoryTable', () => {
         expect(screen.getByText('Categories (3)')).toBeInTheDocument();
       }) as any;
 
-      expect(screen.getByText('Electronics')).toBeInTheDocument();
-      expect(screen.getByText('Books')).toBeInTheDocument();
-      expect(screen.getByText('Clothing')).toBeInTheDocument();
+      expect(screen.getAllByText('Electronics')).toHaveLength(2); // Name and linked category
+      expect(screen.getAllByText('Books')).toHaveLength(2); // Name and linked category  
+      expect(screen.getAllByText('Clothing')).toHaveLength(2); // Name and linked category
     }) as any;
 
     it('displays category details correctly', async () => {
@@ -210,13 +218,12 @@ describe('SimpleCategoryTable', () => {
       renderWithTheme(<SimpleCategoryTable />, store);
       
       await waitFor(() => {
-        expect(screen.getByText('Electronics')).toBeInTheDocument();
+        expect(screen.getAllByText('Electronics')).toHaveLength(2); // Name and linked category
       }) as any;
 
-      // Check tags (descriptions are no longer displayed as we removed that column)
-      expect(screen.getByText('tech')).toBeInTheDocument();
-      expect(screen.getByText('education')).toBeInTheDocument();
-      expect(screen.getByText('fashion')).toBeInTheDocument();
+      // Check linked categories (replaced tags column)
+      expect(screen.getAllByText('Books')).toHaveLength(2); // Name and linked category
+      expect(screen.getByText('None')).toBeInTheDocument(); // Clothing has no links
 
       // Check category groups
       expect(screen.getByText('Tech Group')).toBeInTheDocument();
@@ -365,13 +372,14 @@ describe('SimpleCategoryTable', () => {
   describe('Data Validation', () => {
 
 
-    it('shows dash for empty tag', async () => {
+    it('shows "None" for empty linkedCategories', async () => {
       mockGetCategoriesWithGroups.mockResolvedValue([
         {
           id: '1',
           name: 'Test Category',
           description: '',
           tag: '',
+          linkedCategories: [],
         }
       ]);
 
@@ -390,10 +398,10 @@ describe('SimpleCategoryTable', () => {
         expect(screen.getByText('Test Category')).toBeInTheDocument();
       }) as any;
 
-      // Check that dash appears for empty tag (description column was removed)
+      // Check that "None" appears for empty linkedCategories
       const rows = screen.getAllByRole('row');
       const testRow = rows.find(row => row.textContent?.includes('Test Category'));
-      expect(testRow?.textContent).toMatch(/-/); // Should contain dash for empty tag
+      expect(testRow?.textContent).toMatch(/None/); // Should contain "None" for empty linkedCategories
     }) as any;
   }) as any;
 }) as any;

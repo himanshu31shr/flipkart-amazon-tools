@@ -4,7 +4,6 @@ import LabelIcon from "@mui/icons-material/Label";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import ManagementIcon from "@mui/icons-material/Warehouse";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import CategoryIcon from "@mui/icons-material/Category";
 import GroupIcon from "@mui/icons-material/Group";
 import WarningIcon from "@mui/icons-material/Warning";
@@ -127,7 +126,7 @@ export const DefaultContainer = ({
   React.useEffect(() => {
     const path = location.pathname;
     setOrdersOpen(path.includes('/flipkart-amazon-tools/home/') || path.includes('/flipkart-amazon-tools/activeOrders/'));
-    setProductsOpen(path.includes('/flipkart-amazon-tools/products/') || path.includes('/flipkart-amazon-tools/hidden-products/') || path.includes('/flipkart-amazon-tools/uncategorized-products/'));
+    setProductsOpen(path.includes('/flipkart-amazon-tools/products/') || path.includes('/flipkart-amazon-tools/uncategorized-products/'));
     setCategoriesOpen(path.includes('/flipkart-amazon-tools/categories/') || path.includes('/flipkart-amazon-tools/category-groups/'));
     setManagementOpen(path.includes('/flipkart-amazon-tools/storage-management/') || path.includes('/flipkart-amazon-tools/inventory/'));
   }, [location.pathname]);
@@ -260,22 +259,6 @@ export const DefaultContainer = ({
                     <ShoppingCartIcon />
                   </StyledListItemIcon>
                   <StyledListItemText primary={"All Products"} />
-                </StyledListItemButton>
-              </ListItem>
-            </Link>
-            <Link
-              component={RouterLink}
-              to={"/flipkart-amazon-tools/hidden-products/"}
-              data-testid="hidden-products"
-              style={{ textDecoration: 'none', color: 'inherit' }}
-              onClick={handleNavigation}
-            >
-              <ListItem key={"Hidden Products"} disablePadding>
-                <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/hidden-products/")}>
-                  <StyledListItemIcon>
-                    <VisibilityOffIcon />
-                  </StyledListItemIcon>
-                  <StyledListItemText primary={"Hidden Products"} />
                 </StyledListItemButton>
               </ListItem>
             </Link>

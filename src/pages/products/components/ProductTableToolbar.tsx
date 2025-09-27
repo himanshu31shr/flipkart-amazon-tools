@@ -1,12 +1,10 @@
-import { Box, MenuItem, TextField, Button, Autocomplete, CircularProgress, IconButton, Tooltip, Chip } from "@mui/material";
-import React, { useState, useEffect } from "react";
+import { Box, MenuItem, TextField, Button, Autocomplete, CircularProgress, IconButton, Tooltip } from "@mui/material";
+import React, { useState } from "react";
 import { createFilterOptions, FilterOptionsState } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import { useAppDispatch } from '../../../store/hooks';
 import { addCategory, fetchCategories } from '../../../store/slices/productsSlice';
 import { Category } from '../../../services/category.service';
-import { CategoryGroupService } from '../../../services/categoryGroup.service';
-import { CategoryGroup } from '../../../types/categoryGroup';
 import { Product, ProductFilter } from '../../../services/product.service';
 import { exportProductsToCSV } from '../../../utils/csvExport';
 
@@ -20,13 +18,11 @@ interface CategorySuggestion {
 interface Props {
   platform: ProductFilter['platform'];
   search: ProductFilter['search'];
-  groupFilter?: ProductFilter['groupFilter'];
   selectedProducts: string[];
   categories: Category[];
   allProducts: Product[]; // All products for CSV export
   onFilterChange: (filter: ProductFilter) => void;
   onBulkCategoryUpdate: (skus: string[], categoryId: string) => void;
-  onBulkGroupUpdate?: (skus: string[], groupId: string | null) => void;
 }
 
 const filter = createFilterOptions<Category>();
@@ -34,42 +30,23 @@ const filter = createFilterOptions<Category>();
 export const ProductTableToolbar: React.FC<Props> = ({
   platform,
   search,
-  groupFilter,
   selectedProducts,
   categories,
   allProducts,
   onFilterChange,
   onBulkCategoryUpdate,
-  onBulkGroupUpdate,
 }) => {
   const dispatch = useAppDispatch();
   const [selectedCategoryForAssign, setSelectedCategoryForAssign] = useState<string | null>(null);
-  const [selectedGroupForAssign, setSelectedGroupForAssign] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [addingCategory, setAddingCategory] = useState(false);
-  const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([]);
-  const categoryGroupService = new CategoryGroupService();
 
-  useEffect(() => {
-    const fetchCategoryGroups = async () => {
-      try {
-        const groups = await categoryGroupService.getCategoryGroups();
-        setCategoryGroups(groups.filter(group => group.id)); // Only groups with IDs
-      } catch (error) {
-        console.error('Failed to fetch category groups:', error);
-        setCategoryGroups([]);
-      }
-    };
-
-    fetchCategoryGroups();
-  }, []);
 
   const handlePlatformChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value as "" | "amazon" | "flipkart";
     onFilterChange({
       platform: value === "" ? undefined : value,
       search,
-      groupFilter,
     });
   };
 
@@ -78,30 +55,10 @@ export const ProductTableToolbar: React.FC<Props> = ({
     onFilterChange({
       platform,
       search: value,
-      groupFilter,
     });
   };
 
-  const handleGroupFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    onFilterChange({
-      platform,
-      search,
-      groupFilter: value === "all" ? "all" : value || undefined,
-    });
-  };
 
-  const getContrastColor = (hexColor: string): string => {
-    try {
-      const r = parseInt(hexColor.slice(1, 3), 16);
-      const g = parseInt(hexColor.slice(3, 5), 16);
-      const b = parseInt(hexColor.slice(5, 7), 16);
-      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      return luminance > 0.5 ? '#000000' : '#ffffff';
-    } catch {
-      return '#000000';
-    }
-  };
 
   const handleCSVExport = () => {
     exportProductsToCSV(allProducts, categories);
@@ -155,18 +112,6 @@ export const ProductTableToolbar: React.FC<Props> = ({
     }
   };
 
-  const handleAssignGroup = async () => {
-    if (selectedProducts.length > 0 && onBulkGroupUpdate) {
-      try {
-        await onBulkGroupUpdate(selectedProducts, selectedGroupForAssign);
-        
-        // Clear states after successful assignment
-        setSelectedGroupForAssign(null);
-      } catch {
-        // Error handling - could show toast notification
-      }
-    }
-  };
 
   return (
     <Box sx={{
@@ -191,35 +136,6 @@ export const ProductTableToolbar: React.FC<Props> = ({
         <MenuItem value="flipkart">Flipkart</MenuItem>
       </TextField>
 
-      <TextField
-        select
-        label="Group"
-        value={groupFilter ?? "all"}
-        onChange={handleGroupFilterChange}
-        sx={{
-          minWidth: { xs: "100%", sm: 200 },
-          flexGrow: { xs: 1, sm: 0 }
-        }}
-      >
-        <MenuItem value="all">All Groups</MenuItem>
-        <MenuItem value="assigned">With Groups</MenuItem>
-        <MenuItem value="unassigned">No Group</MenuItem>
-        {categoryGroups.map((group) => (
-          <MenuItem key={group.id} value={group.id}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Chip
-                label={group.name}
-                size="small"
-                sx={{
-                  backgroundColor: group.color,
-                  color: getContrastColor(group.color),
-                  fontWeight: 'medium',
-                }}
-              />
-            </Box>
-          </MenuItem>
-        ))}
-      </TextField>
 
       <TextField
         label="Search"
@@ -335,49 +251,6 @@ export const ProductTableToolbar: React.FC<Props> = ({
             {addingCategory ? "Adding..." : newCategoryName ? "Add & Assign" : "Assign"} ({selectedProducts.length})
           </Button>
 
-          {/* Group Assignment Section */}
-          {onBulkGroupUpdate && (
-            <>
-              <TextField
-                select
-                label="Assign to Group"
-                value={selectedGroupForAssign ?? ""}
-                onChange={(event) => setSelectedGroupForAssign(event.target.value || null)}
-                sx={{
-                  minWidth: { xs: "100%", sm: 200 },
-                  flexGrow: { xs: 1, sm: 0.5 }
-                }}
-              >
-                <MenuItem value="">None</MenuItem>
-                {categoryGroups.map((group) => (
-                  <MenuItem key={group.id} value={group.id}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Chip
-                        label={group.name}
-                        size="small"
-                        sx={{
-                          backgroundColor: group.color,
-                          color: getContrastColor(group.color),
-                          fontWeight: 'medium',
-                        }}
-                      />
-                    </Box>
-                  </MenuItem>
-                ))}
-              </TextField>
-              <Button
-                variant="outlined"
-                onClick={handleAssignGroup}
-                disabled={selectedProducts.length === 0}
-                sx={{
-                  minWidth: { xs: "100%", sm: 120 },
-                  flexGrow: { xs: 1, sm: 0 }
-                }}
-              >
-                Assign Group ({selectedProducts.length})
-              </Button>
-            </>
-          )}
         </>
       )}
     </Box>
