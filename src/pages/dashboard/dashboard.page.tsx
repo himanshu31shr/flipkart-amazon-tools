@@ -29,7 +29,7 @@ import {
     selectInventoryLevels,
     selectInventoryLoading 
 } from '../../store/slices/inventorySlice';
-import { HiddenProductsWidget, HighPricedProductsWidget } from './components/ProductAlertWidgets';
+import { HighPricedProductsWidget } from './components/ProductAlertWidgets';
 import UncategorizedProductsWidget from './components/UncategorizedProductsWidget';
 import InventoryAlertsWidget from './components/InventoryAlertsWidget';
 import InventorySummaryWidget from './components/InventorySummaryWidget';
@@ -219,13 +219,6 @@ export const DashboardPage = () => {
 
             {/* Additional Alert Widgets */}
             <Grid container spacing={3} sx={{ mt: 1 }}>
-                {/* Hidden Products Widget */}
-                <Grid item xs={12} md={4}>
-                    <HiddenProductsWidget
-                        products={products}
-                        loading={productsLoading}
-                    />
-                </Grid>
 
                 {/* High-Priced Products Widget */}
                 <Grid item xs={12} md={4}>

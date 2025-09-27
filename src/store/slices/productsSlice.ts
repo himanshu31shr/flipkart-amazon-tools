@@ -1,12 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { Product, ProductFilter, ProductService } from '../../services/product.service';
+import { Product, ProductFilter, ProductService, ProductWithCategoryGroup } from '../../services/product.service';
 import { Category, CategoryService } from '../../services/category.service';
 import { InventoryLevel, InventoryStatus } from '../../types/inventory';
 import { InventoryService } from '../../services/inventory.service';
 
 export interface ProductsState {
-  items: Product[];
-  filteredItems: Product[];
+  items: ProductWithCategoryGroup[];
+  filteredItems: ProductWithCategoryGroup[];
   loading: boolean;
   error: string | null;
   filters: ProductFilter;
@@ -15,7 +15,7 @@ export interface ProductsState {
   categories: Category[];
   categoriesLoading: boolean;
   categoriesError: string | null;
-  categoryProducts: Product[];
+  categoryProducts: ProductWithCategoryGroup[];
   categoryProductsLoading: boolean;
   categoryProductsError: string | null;
   
@@ -59,7 +59,7 @@ const inventoryService = new InventoryService();
 export const fetchProducts = createAsyncThunk(
   'products/fetchProducts',
   async (filters: ProductFilter) => {
-    return await productService.getProducts(filters);
+    return await productService.getProductsWithCategoryGroups(filters);
   }
 );
 
@@ -130,7 +130,7 @@ export const addCategory = createAsyncThunk(
 export const fetchProductsByCategory = createAsyncThunk(
   'products/fetchProductsByCategory',
   async (categoryId: string) => {
-    return await productService.getProducts({ categoryId });
+    return await productService.getProductsWithCategoryGroups({ categoryId });
   }
 );
 

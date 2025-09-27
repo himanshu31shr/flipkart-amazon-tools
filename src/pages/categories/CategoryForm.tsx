@@ -26,7 +26,6 @@ import {
   DialogActions,
   TextField,
   Button,
-  Stack,
   CircularProgress,
   Autocomplete,
   FormControl,
@@ -37,6 +36,7 @@ import {
   Typography,
   Divider,
   Alert,
+  Grid,
 } from '@mui/material';
 import CategoryGroupSelector from '../categoryGroups/components/CategoryGroupSelector';
 import CategoryLinkManager from './components/CategoryLinkManager';
@@ -100,73 +100,85 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
   }, [defaultValues, open, reset]);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         {defaultValues?.id ? 'Edit Category' : 'Add New Category'}
       </DialogTitle>
       <form onSubmit={handleSubmit(handleFormSubmit)}>
-        <DialogContent>
-          <Stack spacing={3} sx={{ mt: 1 }}>
-            <TextField
-              {...register('name')}
-              label="Category Name"
-              fullWidth
-              error={!!errors.name}
-              helperText={errors.name?.message}
-              disabled={isSubmitting}
-            />
-            <TextField
-              {...register('description')}
-              label="Description"
-              fullWidth
-              multiline
-              rows={3}
-              error={!!errors.description}
-              helperText={errors.description?.message}
-              disabled={isSubmitting}
-            />
-            <Controller
-              name="categoryGroupId"
-              control={control}
-              render={({ field }) => (
-                <CategoryGroupSelector
-                  value={field.value}
-                  onChange={(groupId) => field.onChange(groupId)}
-                  error={!!errors.categoryGroupId}
-                  helperText={errors.categoryGroupId?.message}
+        <DialogContent sx={{ minHeight: '400px' }}>
+          <Box sx={{ mt: 1 }}>
+            {/* Basic Information Section */}
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  {...register('name')}
+                  label="Category Name"
+                  fullWidth
+                  error={!!errors.name}
+                  helperText={errors.name?.message}
                   disabled={isSubmitting}
                 />
-              )}
-            />
-            <Controller
-              name="tag"
-              control={control}
-              render={({ field }) => (
-                <Autocomplete
-                  options={existingTags}
-                  freeSolo
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Tag (Legacy)"
-                      fullWidth
-                      error={!!errors.tag}
-                      helperText={errors.tag?.message || 'Legacy tag field - consider using Category Groups instead'}
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Controller
+                  name="categoryGroupId"
+                  control={control}
+                  render={({ field }) => (
+                    <CategoryGroupSelector
+                      value={field.value}
+                      onChange={(groupId) => field.onChange(groupId)}
+                      error={!!errors.categoryGroupId}
+                      helperText={errors.categoryGroupId?.message}
                       disabled={isSubmitting}
                     />
                   )}
-                  onChange={(event, newValue) => {
-                    // Ensure we always pass a string or null to Firestore
-                    const sanitizedValue = typeof newValue === 'string' ? newValue : (newValue || '');
-                    field.onChange(sanitizedValue);
-                  }}
-                  value={field.value || ''}
                 />
-              )}
-            />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  {...register('description')}
+                  label="Description"
+                  fullWidth
+                  multiline
+                  rows={3}
+                  error={!!errors.description}
+                  helperText={errors.description?.message}
+                  disabled={isSubmitting}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Controller
+                  name="tag"
+                  control={control}
+                  render={({ field }) => (
+                    <Autocomplete
+                      options={existingTags}
+                      freeSolo
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Tag (Legacy)"
+                          fullWidth
+                          error={!!errors.tag}
+                          helperText={errors.tag?.message || 'Legacy tag field - consider using Category Groups instead'}
+                          disabled={isSubmitting}
+                        />
+                      )}
+                      onChange={(event, newValue) => {
+                        // Ensure we always pass a string or null to Firestore
+                        const sanitizedValue = typeof newValue === 'string' ? newValue : (newValue || '');
+                        field.onChange(sanitizedValue);
+                      }}
+                      value={field.value || ''}
+                    />
+                  )}
+                />
+              </Grid>
+            </Grid>
 
             <Divider sx={{ my: 2 }} />
             
+            {/* Inventory Settings Section */}
             <Box>
               <Typography variant="h6" gutterBottom color="text.secondary">
                 Category Inventory Settings
@@ -175,68 +187,74 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                 Configure how inventory is managed for products in this category
               </Typography>
               
-              <Stack spacing={3}>
-                <Controller
-                  name="inventoryUnit"
-                  control={control}
-                  render={({ field }) => (
-                    <FormControl fullWidth sx={{ maxWidth: 300 }}>
-                      <InputLabel>Inventory Unit</InputLabel>
-                      <Select
-                        {...field}
-                        label="Inventory Unit"
-                        disabled={isSubmitting}
-                        error={!!errors.inventoryUnit}
-                      >
-                        <MenuItem value="pcs">Pieces (pcs)</MenuItem>
-                        <MenuItem value="kg">Kilograms (kg)</MenuItem>
-                        <MenuItem value="g">Grams (g)</MenuItem>
-                      </Select>
-                      {errors.inventoryUnit && (
-                        <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                          {errors.inventoryUnit.message}
-                        </Typography>
-                      )}
-                    </FormControl>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={4}>
+                  <Controller
+                    name="inventoryUnit"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth>
+                        <InputLabel>Inventory Unit</InputLabel>
+                        <Select
+                          {...field}
+                          label="Inventory Unit"
+                          disabled={isSubmitting}
+                          error={!!errors.inventoryUnit}
+                        >
+                          <MenuItem value="pcs">Pieces (pcs)</MenuItem>
+                          <MenuItem value="kg">Kilograms (kg)</MenuItem>
+                          <MenuItem value="g">Grams (g)</MenuItem>
+                        </Select>
+                        {errors.inventoryUnit && (
+                          <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                            {errors.inventoryUnit.message}
+                          </Typography>
+                        )}
+                      </FormControl>
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={8}>
+                  <TextField
+                    {...register('inventoryDeductionQuantity', { valueAsNumber: true })}
+                    label={`Deduction Quantity per Order (${inventoryUnit || 'pcs'})`}
+                    type="number"
+                    fullWidth
+                    error={!!errors.inventoryDeductionQuantity}
+                    helperText={
+                      errors.inventoryDeductionQuantity?.message || 
+                      `How much inventory to deduct from the category group when an order is placed for a product in this category`
+                    }
+                    disabled={isSubmitting}
+                    inputProps={{ 
+                      min: 0, 
+                      step: inventoryUnit === 'pcs' ? 1 : 0.01 
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  {inventoryDeductionQuantity && inventoryDeductionQuantity > 0 && (
+                    <Alert severity="success">
+                      <Typography variant="body2">
+                        <strong>Example:</strong> When an order is placed for a product in this category, 
+                        <strong> {inventoryDeductionQuantity} {inventoryUnit || 'pcs'}</strong> will be 
+                        automatically deducted from the associated category group&apos;s inventory.
+                      </Typography>
+                    </Alert>
                   )}
-                />
 
-                <TextField
-                  {...register('inventoryDeductionQuantity', { valueAsNumber: true })}
-                  label={`Deduction Quantity per Order (${inventoryUnit || 'pcs'})`}
-                  type="number"
-                  error={!!errors.inventoryDeductionQuantity}
-                  helperText={
-                    errors.inventoryDeductionQuantity?.message || 
-                    `How much inventory to deduct from the category group when an order is placed for a product in this category`
-                  }
-                  disabled={isSubmitting}
-                  inputProps={{ 
-                    min: 0, 
-                    step: inventoryUnit === 'pcs' ? 1 : 0.01 
-                  }}
-                  sx={{ maxWidth: 400 }}
-                />
-
-                {inventoryDeductionQuantity && inventoryDeductionQuantity > 0 && (
-                  <Alert severity="success" sx={{ maxWidth: 500 }}>
-                    <Typography variant="body2">
-                      <strong>Example:</strong> When an order is placed for a product in this category, 
-                      <strong> {inventoryDeductionQuantity} {inventoryUnit || 'pcs'}</strong> will be 
-                      automatically deducted from the associated category group&apos;s inventory.
-                    </Typography>
-                  </Alert>
-                )}
-
-                {(!inventoryDeductionQuantity || inventoryDeductionQuantity === 0) && (
-                  <Alert severity="info" sx={{ maxWidth: 500 }}>
-                    <Typography variant="body2">
-                      <strong>No automatic deduction:</strong> Orders for products in this category will not 
-                      automatically reduce category group inventory. You can manually adjust inventory levels as needed.
-                    </Typography>
-                  </Alert>
-                )}
-              </Stack>
+                  {(!inventoryDeductionQuantity || inventoryDeductionQuantity === 0) && (
+                    <Alert severity="info">
+                      <Typography variant="body2">
+                        <strong>No automatic deduction:</strong> Orders for products in this category will not 
+                        automatically reduce category group inventory. You can manually adjust inventory levels as needed.
+                      </Typography>
+                    </Alert>
+                  )}
+                </Grid>
+              </Grid>
             </Box>
 
             {/* Category Links Section - only show for existing categories */}
@@ -260,7 +278,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
                 </Box>
               </>
             )}
-          </Stack>
+          </Box>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0 }}>
           <Button onClick={onClose} disabled={isSubmitting}>

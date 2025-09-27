@@ -115,7 +115,6 @@ describe('AppBar', () => {
       { path: '/flipkart-amazon-tools/transactions/', title: 'Transaction Analytics' },
       { path: '/flipkart-amazon-tools/activeOrders/', title: 'Active Orders' },
       { path: '/flipkart-amazon-tools/products/', title: 'Products' },
-      { path: '/flipkart-amazon-tools/hidden-products/', title: 'Hidden Products' },
       { path: '/flipkart-amazon-tools/order-analytics/', title: 'Order Analytics' },
       { path: '/unknown-route/', title: 'Label Merger' },
     ];
