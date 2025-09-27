@@ -20,10 +20,12 @@ import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import GroupIcon from '@mui/icons-material/Group';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import LinkIcon from '@mui/icons-material/Link';
 import { CategoryService, Category } from '../../services/category.service';
 import CategoryGroupSelector from '../categoryGroups/components/CategoryGroupSelector';
 import { CategoryForm } from './CategoryForm';
 import { DataTable, Column } from '../../components/DataTable/DataTable';
+import CategoryLinkManager from './components/CategoryLinkManager';
 
 const getContrastColor = (hexColor: string): string => {
   try {
@@ -58,6 +60,8 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
   const [selectedCategories, setSelectedCategories] = useState<(string | number)[]>([]);
   const [bulkMenuAnchor, setBulkMenuAnchor] = useState<null | HTMLElement>(null);
   const [bulkGroupAssignmentOpen, setBulkGroupAssignmentOpen] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState<string | null>(null);
+  const [bulkLinkDialogOpen, setBulkLinkDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingTags, setExistingTags] = useState<string[]>([]);
 
@@ -174,6 +178,18 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
       align: 'center' as const,
       format: (_, row) => (
         <Box>
+          <Tooltip title="Manage category links">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLinkDialogOpen(row!.id!);
+              }}
+              color="primary"
+            >
+              <LinkIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Edit category">
             <IconButton
               size="small"
@@ -448,6 +464,13 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
           <GroupIcon sx={{ mr: 1 }} />
           Assign to Group
         </MenuItem>
+        <MenuItem onClick={() => {
+          setBulkLinkDialogOpen(true);
+          setBulkMenuAnchor(null);
+        }}>
+          <LinkIcon sx={{ mr: 1 }} />
+          Manage Links
+        </MenuItem>
       </Menu>
 
       {/* Bulk Group Assignment Dialog */}
@@ -470,6 +493,99 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
         <DialogActions>
           <Button onClick={() => setBulkGroupAssignmentOpen(false)}>
             Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Category Link Management Dialog */}
+      <Dialog 
+        open={!!linkDialogOpen} 
+        onClose={() => setLinkDialogOpen(null)} 
+        maxWidth="lg" 
+        fullWidth
+      >
+        <DialogTitle>
+          Manage Category Links - {categories.find(c => c.id === linkDialogOpen)?.name}
+        </DialogTitle>
+        <DialogContent>
+          {linkDialogOpen && (
+            <CategoryLinkManager
+              categoryId={linkDialogOpen}
+              categoryName={categories.find(c => c.id === linkDialogOpen)?.name}
+              onLinksChanged={() => {
+                fetchCategories();
+                onDataChange?.();
+              }}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLinkDialogOpen(null)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Bulk Link Management Dialog */}
+      <Dialog 
+        open={bulkLinkDialogOpen} 
+        onClose={() => setBulkLinkDialogOpen(false)} 
+        maxWidth="lg" 
+        fullWidth
+      >
+        <DialogTitle>
+          Bulk Link Management ({selectedCategories.length} categories selected)
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Manage links for multiple categories. Changes will be applied to all selected categories.
+            </Typography>
+            <Typography variant="h6" sx={{ mb: 2 }}>Selected Categories:</Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
+              {selectedCategories.map((id) => {
+                const category = categories.find(c => c.id === id);
+                return (
+                  <Chip 
+                    key={id} 
+                    label={category?.name || 'Unknown'} 
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                );
+              })}
+            </Box>
+            
+            {selectedCategories.length > 0 && (
+              <Box>
+                {selectedCategories.map((id) => {
+                  const category = categories.find(c => c.id === id);
+                  if (!category) return null;
+                  
+                  return (
+                    <Box key={id} sx={{ mb: 4, p: 2, border: 1, borderColor: 'grey.300', borderRadius: 1 }}>
+                      <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>
+                        {category.name}
+                      </Typography>
+                      <CategoryLinkManager
+                        categoryId={String(id)}
+                        categoryName={category.name}
+                        onLinksChanged={() => {
+                          fetchCategories();
+                          onDataChange?.();
+                        }}
+                      />
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBulkLinkDialogOpen(false)}>
+            Close
           </Button>
         </DialogActions>
       </Dialog>
