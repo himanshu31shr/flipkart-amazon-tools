@@ -6,6 +6,8 @@ import {
   Paper,
   Button,
   IconButton,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -24,6 +26,7 @@ import {
   selectFilteredOrders,
   setBatchFilter,
   setPlatformFilter,
+  setCompletionFilter,
   clearAllFilters
 } from "../../store/slices/ordersSlice";
 import { SummaryTable } from "../home/components/SummaryTable";
@@ -31,7 +34,9 @@ import { CategoryGroupedTable } from "./components/CategoryGroupedTable";
 import { groupOrdersByCategory } from "./utils/groupingUtils";
 import { Platform } from "./components/PlatformFilter";
 import { FilesModal } from "./components/FilesModal";
-import { ModernFilters, ViewMode } from "./components/ModernFilters";
+import { BarcodeScanner } from "./components/BarcodeScanner";
+import { ModernFilters, ViewMode, CompletionFilter } from "./components/ModernFilters";
+import { ScanningResult } from "../../types/barcode";
 
 
 export const TodaysOrderPage: React.FC = () => {
@@ -42,12 +47,18 @@ export const TodaysOrderPage: React.FC = () => {
     batches, 
     batchesLoading,
     batchFilter,
-    platformFilter
+    platformFilter,
+    completionFilter
   } = useAppSelector(state => state.orders);
   
   const [viewMode, setViewMode] = useState<ViewMode>('grouped');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [filesModalOpen, setFilesModalOpen] = useState(false);
+  const [scannerModalOpen, setScannerModalOpen] = useState(false);
+  const [scanFeedback, setScanFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     const dateString = format(selectedDate, 'yyyy-MM-dd');
@@ -92,6 +103,37 @@ export const TodaysOrderPage: React.FC = () => {
     dispatch(setBatchFilter(batchId));
   };
 
+  const handleCompletionFilterChange = (status: CompletionFilter) => {
+    dispatch(setCompletionFilter(status));
+  };
+
+  const handleScanSuccess = (result: ScanningResult) => {
+    if (result.success && result.orderData) {
+      setScanFeedback({
+        type: 'success',
+        message: `Order completed: ${result.orderData.productName}`
+      });
+      setScannerModalOpen(false);
+      
+      // Refresh orders to show updated completion status
+      const dateString = format(selectedDate, 'yyyy-MM-dd');
+      const today = format(new Date(), 'yyyy-MM-dd');
+      
+      if (dateString === today) {
+        dispatch(fetchOrders());
+      } else {
+        dispatch(fetchOrdersForDate(dateString));
+      }
+    }
+  };
+
+  const handleScanError = (error: string) => {
+    setScanFeedback({
+      type: 'error',
+      message: error
+    });
+  };
+
   const filteredOrders = useAppSelector(selectFilteredOrders);
 
   // Memoized data for different view modes
@@ -100,23 +142,40 @@ export const TodaysOrderPage: React.FC = () => {
   }, [filteredOrders]);
 
   // Calculate filter status
-  const isFiltered = platformFilter !== 'all' || (batchFilter && batchFilter !== 'all');
+  const isFiltered = platformFilter !== 'all' || (batchFilter && batchFilter !== 'all') || completionFilter !== 'all';
   const totalOrdersCount = orders.length;
   const filteredOrdersCount = filteredOrders.length;
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <ShoppingCartIcon sx={{ fontSize: 32, mr: 2, color: 'primary.main' }} />
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 1, sm: 2, md: 3 }, px: { xs: 1, sm: 2 } }}>
+      <Paper sx={{ p: { xs: 2, sm: 3 }, mb: 4, borderRadius: 2 }}>
+        {/* Mobile-first Header Layout */}
+        <Box sx={{ mb: 3 }}>
+          {/* Title Row */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 2, md: 0 } }}>
+            <ShoppingCartIcon sx={{ fontSize: { xs: 24, md: 32 }, mr: { xs: 1, md: 2 }, color: 'primary.main' }} />
+            <Typography 
+              variant="h4" 
+              component="h1" 
+              sx={{ 
+                fontWeight: 'bold', 
+                color: 'primary.dark', 
+                flexGrow: 1,
+                fontSize: { xs: '1.5rem', md: '2.125rem' }
+              }}
+            >
               {format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "Today's Orders" : "Orders"}
             </Typography>
           </Box>
           
-          {/* Date Navigation beside heading */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
+          {/* Date Navigation - Full width on mobile */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: { xs: 0.5, md: 1 },
+            flexWrap: 'wrap',
+            justifyContent: { xs: 'center', md: 'flex-end' }
+          }}>
             <IconButton onClick={handlePreviousDay} color="primary" size="small">
               <ArrowBackIcon fontSize="small" />
             </IconButton>
@@ -128,7 +187,7 @@ export const TodaysOrderPage: React.FC = () => {
                 sx={{ 
                   '& .MuiInputBase-root': { 
                     fontSize: '0.875rem',
-                    minWidth: '160px'
+                    minWidth: { xs: '140px', md: '160px' }
                   }
                 }}
                 slotProps={{
@@ -148,7 +207,7 @@ export const TodaysOrderPage: React.FC = () => {
               variant={format(selectedDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') ? "contained" : "outlined"}
               size="small" 
               onClick={handleTodayButton}
-              sx={{ minWidth: 'auto', px: 2 }}
+              sx={{ minWidth: 'auto', px: { xs: 1.5, md: 2 } }}
             >
               Today
             </Button>
@@ -166,7 +225,10 @@ export const TodaysOrderPage: React.FC = () => {
           onBatchFilterChange={handleBatchFilterChange}
           batches={batches}
           batchesLoading={batchesLoading}
+          completionFilter={completionFilter}
+          onCompletionFilterChange={handleCompletionFilterChange}
           onFilesClick={() => setFilesModalOpen(true)}
+          onScannerClick={() => setScannerModalOpen(true)}
           onClearAllFilters={() => dispatch(clearAllFilters())}
           totalCount={totalOrdersCount}
           filteredCount={filteredOrdersCount}
@@ -179,6 +241,35 @@ export const TodaysOrderPage: React.FC = () => {
           onClose={() => setFilesModalOpen(false)}
           selectedDate={selectedDate}
         />
+
+        {/* Barcode Scanner Modal */}
+        <BarcodeScanner
+          open={scannerModalOpen}
+          onClose={() => setScannerModalOpen(false)}
+          onScanSuccess={handleScanSuccess}
+          onScanError={handleScanError}
+          options={{
+            enableManualEntry: true,
+            cameraTimeout: 30000,
+          }}
+        />
+
+        {/* Scan Feedback Snackbar */}
+        <Snackbar
+          open={!!scanFeedback}
+          autoHideDuration={6000}
+          onClose={() => setScanFeedback(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <Alert
+            onClose={() => setScanFeedback(null)}
+            severity={scanFeedback?.type || 'info'}
+            variant="filled"
+            sx={{ width: '100%' }}
+          >
+            {scanFeedback?.message}
+          </Alert>
+        </Snackbar>
 
         <Box sx={{ mb: 2 }}>
           {/* Section Header */}

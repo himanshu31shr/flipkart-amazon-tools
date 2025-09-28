@@ -39,6 +39,8 @@ const defaultProps = {
   onBatchFilterChange: jest.fn(),
   batches: mockBatches,
   batchesLoading: false,
+  completionFilter: 'all' as const,
+  onCompletionFilterChange: jest.fn(),
   onFilesClick: jest.fn(),
   onClearAllFilters: jest.fn(),
   totalCount: 100,
@@ -154,4 +156,16 @@ describe('ModernFilters', () => {
     
     expect(screen.getByText('This_Is_A_Very_Long_...')).toBeInTheDocument();
   }) as any;
+
+  it('displays completion filter as active filter chip when set', () => {
+    render(
+      <ModernFilters 
+        {...defaultProps} 
+        completionFilter="completed"
+      />
+    );
+    
+    expect(screen.getByText('Completed')).toBeInTheDocument();
+  }) as any;
+
 }) as any;

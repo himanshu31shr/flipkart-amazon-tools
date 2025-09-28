@@ -20,6 +20,10 @@ export interface ProductSummary {
   category?: string;
   categoryId?: string;
   batchInfo?: BatchInfo;
+  // Barcode completion status
+  isCompleted?: boolean;
+  completedAt?: string;
+  completedBy?: string;
 }
 
 export class BaseTransformer {

@@ -9,12 +9,18 @@ import { BaseTransformer, ProductSummary, TextItem } from "./base.transformer";
 import { BatchInfo } from "../../../types/transaction.type";
 import { InventoryOrderProcessor, InventoryDeductionPreview } from "../../../services/inventoryOrderProcessor.service";
 import { InventoryDeductionResult } from "../../../types/inventory";
+import { BarcodeService } from "../../../services/barcode.service";
+import { PDFBarcodeEmbedder } from "../../../utils/pdfBarcode";
+import { BarcodeGenerationResult } from "../../../types/barcode";
+import { format } from "date-fns";
 
 export class AmazonPDFTransformer extends BaseTransformer {
   protected filePath: Uint8Array;
   protected declare pdfDoc: PDFDocument;
   protected declare outputPdf: PDFDocument;
   protected pdf!: pdfjsLib.PDFDocumentProxy;
+  private barcodeService: BarcodeService;
+  private generatedBarcodes: BarcodeGenerationResult[] = [];
 
   constructor(
     filePath: Uint8Array,
@@ -25,6 +31,11 @@ export class AmazonPDFTransformer extends BaseTransformer {
   ) {
     super(filePath, products, categories, sortConfig, batchInfo);
     this.filePath = filePath;
+    this.barcodeService = new BarcodeService();
+  }
+
+  get barcodeResults(): BarcodeGenerationResult[] {
+    return this.generatedBarcodes;
   }
 
   async initialize(): Promise<void> {
@@ -128,7 +139,7 @@ export class AmazonPDFTransformer extends BaseTransformer {
     const { rgb, StandardFonts } = await import("pdf-lib");
     const pageWidth = copiedPage.getWidth();
     const fontSize = 12;
-    let text = `${product.quantity} X [${product?.name}]`;
+    let text = `${product.quantity} X [${product?.name?.substring(0, 80)}]`;
 
     const skuProduct = this.products.find((p) => p.sku === product.SKU);
 
@@ -151,7 +162,7 @@ export class AmazonPDFTransformer extends BaseTransformer {
     if (category) {
       text = `${product.quantity} X [${
         category.name
-      }] ${skuProduct?.name.substring(0, 80)}`;
+      }] ${skuProduct?.name?.substring(0, 80)}`;
     }
 
     this.summaryText.push(productSummary);
@@ -160,7 +171,7 @@ export class AmazonPDFTransformer extends BaseTransformer {
     const font = await this.outputPdf.embedFont(StandardFonts.Helvetica);
     copiedPage.drawText(text, {
       y: copiedPage.getHeight() - 20,
-      x: 10,
+      x: 40,
       size: fontSize,
       color: rgb(0, 0, 0),
       lineHeight: fontSize + 2,
@@ -301,12 +312,67 @@ export class AmazonPDFTransformer extends BaseTransformer {
           array.findIndex(item => item.page === data.page) === index)
       : validProductsData;
 
+    // Generate barcodes for all valid products
+    const dateString = format(new Date(), "yyyy-MM-dd");
+    console.log(`Amazon Transformer: Processing ${uniqueValidData.length} items for date ${dateString}`);
+    
+    const barcodeRequests = uniqueValidData.map((data, index) => ({
+      dateDocId: dateString,
+      orderIndex: index,
+      metadata: {
+        productName: data.product.name,
+        sku: data.product.SKU,
+        quantity: parseInt(data.product.quantity, 10) || 1,
+        platform: data.product.type
+      },
+      orderId: data.product.orderId
+    }));
+
+    // Batch generate all barcodes
+    const generatedBarcodes = await this.barcodeService.batchGenerateBarcodes(
+      barcodeRequests,
+      { date: dateString }
+    );
+    
+    // Store barcodes for later access
+    this.generatedBarcodes = generatedBarcodes;
 
     // Now process the pages in the determined order
-    for (const data of uniqueValidData) {
+    for (let i = 0; i < uniqueValidData.length; i++) {
+      const data = uniqueValidData[i];
       try {
         const [copiedPage] = await this.outputPdf.copyPages(this.pdfDoc, [data.page]);
+        
+        // Increase page height to accommodate barcode
+        // const currentSize = copiedPage.getSize();
+        // const barcodeAreaHeight = 80;
+        // const newHeight = currentSize.height + barcodeAreaHeight;
+        // copiedPage.setSize(currentSize.width, newHeight);
+        
         await this.addFooterText(copiedPage, data.product);
+        
+        // Add barcode to the page if available
+        const barcode = generatedBarcodes[i];
+        
+        if (barcode) {
+            // Generate barcode image
+            const barcodeImageBytes = PDFBarcodeEmbedder.generateBarcodeImage(barcode.barcodeId, 64);
+            const barcodeImage = await this.outputPdf.embedPng(barcodeImageBytes);
+            
+            // Position barcode at bottom-left of the page
+            const barcodeSize = 15;
+            const barcodeX = 40; // 10px from left edge of content area
+            const barcodeY = copiedPage.getHeight() - 40; // Near the top of content area
+
+            // Draw barcode on the copied page
+            copiedPage.drawImage(barcodeImage, {
+              x: barcodeX,
+              y: barcodeY,
+              height: barcodeSize,
+              opacity: 1.0
+            });
+        }
+        
         this.outputPdf.addPage(copiedPage);
       } catch {
         // Continue processing other pages even if one fails

@@ -12,15 +12,20 @@ import { createBatchInfo } from "../../../utils/batchUtils";
 import { getAuth } from "firebase/auth";
 import { BatchInfo } from "../../../types/transaction.type";
 import { InventoryDeductionResult } from "../../../types/inventory";
+import { BarcodeService } from "../../../services/barcode.service";
+import { BarcodeGenerationResult } from "../../../types/barcode";
 
 export class PDFMergerService {
   private outpdf: PDFDocument | undefined;
   private summaryText: ProductSummary[] = [];
   private inventoryResults: InventoryDeductionResult[] = [];
+  private barcodeService: BarcodeService;
+  private barcodeResults: BarcodeGenerationResult[] = [];
 
   constructor(private products: Product[], private categories: Category[]) {
     this.products = products;
     this.categories = categories;
+    this.barcodeService = new BarcodeService();
   }
 
   async initialize(): Promise<PDFDocument> {
@@ -70,12 +75,12 @@ export class PDFMergerService {
 
     // Process all Amazon files with batch info
     for (const amazonFile of amzon) {
-      await this.processAmazonFile(amazonFile, sortConfig, batchInfo);
+      await this.processAmazonFile(amazonFile, sortConfig, batchInfo, dateString);
     }
 
     // Process all Flipkart files with batch info
     for (const flipkartFile of flp) {
-      await this.processFlipkartFile(flipkartFile, sortConfig, batchInfo);
+      await this.processFlipkartFile(flipkartFile, sortConfig, batchInfo, dateString);
     }
 
     // Update batch order count if batch was created
@@ -107,7 +112,8 @@ export class PDFMergerService {
   private async processAmazonFile(
     amazonFile: Uint8Array,
     sortConfig?: CategorySortConfig,
-    batchInfo?: BatchInfo
+    batchInfo?: BatchInfo,
+    _dateString?: string
   ) {
     if (!amazonFile || !this.outpdf) {
       return;
@@ -125,19 +131,27 @@ export class PDFMergerService {
     const inventoryProcessingResult = await amz.processOrdersWithInventory();
     this.inventoryResults.push(inventoryProcessingResult.inventoryResult);
 
-    // Generate PDF pages for printing
+    // Generate PDF pages for printing (barcodes are now handled within the transformer)
     const pages = await amz.transform();
-    for (let i = 0; i < pages.getPageIndices().length; i++) {
+    
+    // Add pages to output PDF
+    const pageCount = pages.getPageIndices().length;
+    for (let i = 0; i < pageCount; i++) {
       const [page] = await this.outpdf.copyPages(pages, [i]);
       this.outpdf.addPage(page);
     }
+    
+    // Collect barcode results from transformer
+    this.barcodeResults.push(...amz.barcodeResults);
+    
     this.summaryText.push(...amz.summary);
   }
 
   private async processFlipkartFile(
     flipkartFile: Uint8Array,
     sortConfig?: CategorySortConfig,
-    batchInfo?: BatchInfo
+    batchInfo?: BatchInfo,
+    _dateString?: string
   ) {
     if (!flipkartFile || !this.outpdf) {
       return;
@@ -156,10 +170,19 @@ export class PDFMergerService {
 
     // Generate PDF pages for printing
     const pages = await flipkartService.transformPages();
-    for (let i = 0; i < pages.getPageIndices().length; i++) {
+    
+    // Flipkart processing completed successfully
+    
+    // Add pages to output PDF (barcodes are now handled within the transformer)
+    const pageCount = pages.getPageIndices().length;
+    for (let i = 0; i < pageCount; i++) {
       const [page] = await this.outpdf.copyPages(pages, [i]);
       this.outpdf.addPage(page);
     }
+    
+    // Collect barcode results from transformer
+    this.barcodeResults.push(...flipkartService.barcodeResults);
+    
     this.summaryText.push(...flipkartService.summary);
   }
 
@@ -170,6 +193,11 @@ export class PDFMergerService {
   get inventoryDeductionResults(): InventoryDeductionResult[] {
     return this.inventoryResults;
   }
+
+  get barcodeGenerationResults(): BarcodeGenerationResult[] {
+    return this.barcodeResults;
+  }
+
 
   /**
    * Create a BatchInfo object
@@ -204,22 +232,6 @@ export class PDFMergerService {
     }
   }
 
-  /**
-   * Remove undefined values from any object
-   * @param obj Object to clean
-   * @returns Clean object without undefined values
-   */
-  private removeUndefinedValues<T extends Record<string, unknown>>(
-    obj: T
-  ): Partial<T> {
-    const cleaned: Partial<T> = {};
-    for (const [key, value] of Object.entries(obj)) {
-      if (value !== undefined && value !== null) {
-        cleaned[key as keyof T] = value as T[keyof T];
-      }
-    }
-    return cleaned;
-  }
 
   /**
    * Create a batch from BatchInfo object

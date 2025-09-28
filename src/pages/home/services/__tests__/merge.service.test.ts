@@ -184,8 +184,8 @@ describe('PDFMergerService', () => {
         selectedDate: new Date('2024-01-15'),
       });
 
-      expect(processAmazonSpy).toHaveBeenCalledWith(mockAmazonFiles[0], undefined, expect.any(Object));
-      expect(processFlipkartSpy).toHaveBeenCalledWith(mockFlipkartFiles[0], undefined, expect.any(Object));
+      expect(processAmazonSpy).toHaveBeenCalledWith(mockAmazonFiles[0], undefined, expect.any(Object), "2024-01-15");
+      expect(processFlipkartSpy).toHaveBeenCalledWith(mockFlipkartFiles[0], undefined, expect.any(Object), "2024-01-15");
       expect(mockTodaysOrder.updateOrdersForDate).toHaveBeenCalled();
     });
 
@@ -207,7 +207,7 @@ describe('PDFMergerService', () => {
         selectedDate: new Date('2024-01-15'),
       });
 
-      expect(processAmazonSpy).toHaveBeenCalledWith(mockAmazonFiles[0], sortConfig, expect.any(Object));
+      expect(processAmazonSpy).toHaveBeenCalledWith(mockAmazonFiles[0], sortConfig, expect.any(Object), "2024-01-15");
     });
 
     it('should return undefined when PDF document is not initialized', async () => {

@@ -74,6 +74,36 @@ service cloud.firestore {
         (!data.keys().hasAny(['resolvedAt']) || data.resolvedAt is timestamp);
     }
 
+    function isValidOrderBarcode(data) {
+      return data.keys().hasAll(['barcodeId', 'dateDocId', 'orderIndex', 'isCompleted', 'metadata']) &&
+        data.barcodeId is string &&
+        data.barcodeId.size() > 0 &&
+        data.barcodeId.matches('^[0-9]{6,10}$') &&
+        data.dateDocId is string &&
+        data.dateDocId.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+        data.orderIndex is number &&
+        data.orderIndex >= 0 &&
+        data.isCompleted is bool &&
+        data.metadata is map &&
+        data.metadata.keys().hasAll(['productName', 'quantity', 'platform', 'generatedAt']) &&
+        data.metadata.productName is string &&
+        data.metadata.productName.size() > 0 &&
+        data.metadata.quantity is number &&
+        data.metadata.quantity > 0 &&
+        data.metadata.platform in ['amazon', 'flipkart'] &&
+        data.metadata.generatedAt is string &&
+        // Validate optional fields if present
+        (!data.keys().hasAny(['orderId']) || data.orderId is string) &&
+        (!data.keys().hasAny(['completedAt']) || data.completedAt is string) &&
+        (!data.keys().hasAny(['completedBy']) || data.completedBy is string) &&
+        (!data.keys().hasAny(['createdAt']) || data.createdAt is timestamp) &&
+        (!data.keys().hasAny(['updatedAt']) || data.updatedAt is timestamp) &&
+        (!data.metadata.keys().hasAny(['sku']) || data.metadata.sku is string) &&
+        // Validate completion consistency
+        (data.isCompleted == false || (data.keys().hasAll(['completedAt', 'completedBy']) && 
+          data.completedAt is string && data.completedBy is string));
+    }
+
     function isValidCategoryGroupInventory(data) {
       return data.keys().hasAll(['name', 'description', 'color', 'currentInventory', 'inventoryUnit', 'inventoryType', 'minimumThreshold']) &&
         data.name is string &&
@@ -171,6 +201,32 @@ service cloud.firestore {
       allow read: if isAuthenticated() || isEmulatorSeeding();
       allow create, update: if isAuthenticated() || isEmulatorSeeding();
       allow delete: if isAuthenticated() || isEmulatorSeeding();
+    }
+
+    match /order-barcodes/{barcodeId} {
+      // Read access: authenticated users can read barcode data for lookup and scanning
+      allow read: if isAuthenticated() || isEmulatorSeeding();
+      
+      // Create access: authenticated verified users can create barcodes during PDF processing
+      allow create: if (isAuthenticated() && 
+        request.auth.token.email_verified == true &&
+        isValidOrderBarcode(request.resource.data) &&
+        request.resource.data.barcodeId == barcodeId) || isEmulatorSeeding();
+      
+      // Update access: only allow completion status updates by verified users
+      allow update: if (isAuthenticated() && 
+        request.auth.token.email_verified == true &&
+        isValidOrderBarcode(request.resource.data) &&
+        // Only allow updates that change completion status or add completion metadata
+        (resource.data.isCompleted == false && request.resource.data.isCompleted == true) &&
+        // Ensure no other fields are modified except completion-related ones
+        resource.data.diff(request.resource.data).affectedKeys().hasOnly(['isCompleted', 'completedAt', 'completedBy', 'updatedAt']) &&
+        // Validate completion data
+        request.resource.data.completedBy == request.auth.uid &&
+        request.resource.data.completedAt is string) || isEmulatorSeeding();
+      
+      // Delete access: only admins can delete barcode records for data cleanup
+      allow delete: if isAdmin() || isEmulatorSeeding();
     }
   }
 }
