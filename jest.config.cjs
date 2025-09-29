@@ -33,12 +33,13 @@ module.exports = {
   moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
   testMatch: ['**/__tests__/**/*.(test|spec).[jt]s?(x)', '**/?(*.)+(spec|test).[tj]s?(x)'],
   testPathIgnorePatterns: [
+    '<rootDir>/node_modules/',
     '<rootDir>/src/__tests__/performance-benchmarks.disabled/'
   ],
   // Performance optimizations
   cache: true,
   cacheDirectory: '<rootDir>/node_modules/.cache/jest',
-  maxWorkers: '75%', // Use 75% of available workers for optimal performance
+  maxWorkers: '85%', // Use 75% of available workers for optimal performance
   
   // Optimize test execution
   testSequencer: '<rootDir>/node_modules/@jest/test-sequencer/build/index.js',
