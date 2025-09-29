@@ -39,12 +39,14 @@ export class PDFMergerService {
     sortConfig,
     selectedDate,
     fileNames,
+    enableBarcodes = true,
   }: {
     amzon: Uint8Array[];
     flp: Uint8Array[];
     sortConfig?: CategorySortConfig;
     selectedDate?: Date;
     fileNames?: string[];
+    enableBarcodes?: boolean;
   }): Promise<PDFDocument | undefined> {
     await this.initialize();
 
@@ -75,12 +77,12 @@ export class PDFMergerService {
 
     // Process all Amazon files with batch info
     for (const amazonFile of amzon) {
-      await this.processAmazonFile(amazonFile, sortConfig, batchInfo, dateString);
+      await this.processAmazonFile(amazonFile, sortConfig, batchInfo, dateString, enableBarcodes);
     }
 
     // Process all Flipkart files with batch info
     for (const flipkartFile of flp) {
-      await this.processFlipkartFile(flipkartFile, sortConfig, batchInfo, dateString);
+      await this.processFlipkartFile(flipkartFile, sortConfig, batchInfo, dateString, enableBarcodes);
     }
 
     // Update batch order count if batch was created
@@ -113,7 +115,8 @@ export class PDFMergerService {
     amazonFile: Uint8Array,
     sortConfig?: CategorySortConfig,
     batchInfo?: BatchInfo,
-    _dateString?: string
+    _dateString?: string,
+    enableBarcodes?: boolean
   ) {
     if (!amazonFile || !this.outpdf) {
       return;
@@ -124,7 +127,8 @@ export class PDFMergerService {
       this.products,
       this.categories,
       sortConfig,
-      batchInfo
+      batchInfo,
+      enableBarcodes
     );
 
     // Process orders with inventory deduction
@@ -151,7 +155,8 @@ export class PDFMergerService {
     flipkartFile: Uint8Array,
     sortConfig?: CategorySortConfig,
     batchInfo?: BatchInfo,
-    _dateString?: string
+    _dateString?: string,
+    enableBarcodes?: boolean
   ) {
     if (!flipkartFile || !this.outpdf) {
       return;
@@ -161,7 +166,8 @@ export class PDFMergerService {
       this.products,
       this.categories,
       sortConfig,
-      batchInfo
+      batchInfo,
+      enableBarcodes
     );
 
     // Process orders with inventory deduction

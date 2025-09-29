@@ -215,17 +215,17 @@ const ordersSlice = createSlice({
       completedAt: string; 
       completedBy?: string 
     }>) => {
-      const { productName, sku, dateDocId, completedAt, completedBy } = action.payload;
-      // Find order by matching product name, SKU, date, and order index
-      const order = state.items.find(item => 
-        item.name === productName && 
-        (sku ? item.SKU === sku : true) &&
-        item.createdAt === dateDocId
-      );
-      if (order) {
-        order.isCompleted = true;
-        order.completedAt = completedAt;
-        order.completedBy = completedBy;
+      const { productName, sku, orderIndex, completedAt, completedBy } = action.payload;
+      // Find order by matching product name, SKU, and order index
+      // Note: We use orderIndex to find the exact order since multiple orders can have the same product name
+      if (orderIndex >= 0 && orderIndex < state.items.length) {
+        const order = state.items[orderIndex];
+        // Verify this is the correct order by checking product name and SKU
+        if (order.name === productName && (sku ? order.SKU === sku : true)) {
+          order.isCompleted = true;
+          order.completedAt = completedAt;
+          order.completedBy = completedBy;
+        }
       }
     },
     markOrderPending: (state, action: PayloadAction<{ 

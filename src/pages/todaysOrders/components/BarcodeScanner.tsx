@@ -23,7 +23,7 @@ import {
   CheckCircle as SuccessIcon,
   Error as ErrorIcon
 } from '@mui/icons-material';
-import QrScanner from 'qr-scanner';
+import Quagga from 'quagga';
 import { BarcodeService } from '../../../services/barcode.service';
 import { ScanningResult, BarcodeScanningOptions } from '../../../types/barcode';
 
@@ -54,9 +54,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
 
   // Refs
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const qrScannerRef = useRef<QrScanner | null>(null);
+  const scannerRef = useRef<HTMLDivElement>(null);
   const barcodeService = useRef(new BarcodeService());
+  const isQuaggaInitialized = useRef(false);
 
   const {
     cameraTimeout = 30000,
@@ -65,69 +65,110 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   } = options;
 
   /**
-   * Initialize camera and QR scanner
+   * Initialize camera and barcode scanner with QuaggaJS
    */
   const initializeCamera = useCallback(async () => {
-    if (!videoRef.current || !open) return;
+    if (!scannerRef.current || !open) return;
 
     // Prevent multiple initialization attempts
-    if (qrScannerRef.current) {
-      await qrScannerRef.current.stop();
-      qrScannerRef.current.destroy();
-      qrScannerRef.current = null;
+    if (isQuaggaInitialized.current) {
+      try {
+        Quagga.stop();
+      } catch (error) {
+        console.warn('Error stopping Quagga:', error);
+      }
+      isQuaggaInitialized.current = false;
     }
 
     try {
       setScanStatus('scanning');
       setErrorMessage('');
 
-      // Check if camera is available
-      const hasCamera = await QrScanner.hasCamera();
-      if (!hasCamera) {
-        throw new Error('No camera available on this device');
-      }
-
-      // Create QR scanner instance
-      qrScannerRef.current = new QrScanner(
-        videoRef.current,
-        async (result) => {
-          try {
-            const barcodeId = typeof result === 'string' ? result : result.data;
-            
-            // Validate barcode format if custom validator provided
-            if (validateBarcode && !validateBarcode(barcodeId)) {
-              setErrorMessage('Invalid barcode format');
-              return;
+      // Initialize QuaggaJS
+      await new Promise<void>((resolve, reject) => {
+        Quagga.init({
+          inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: scannerRef.current,
+            constraints: {
+              width: 640,
+              height: 480,
+              facingMode: "environment" // Use back camera on mobile
             }
-
-            // Lookup barcode in database
-            const scanResult = await barcodeService.current.lookupBarcode(barcodeId);
-            
-            setScanResult(scanResult);
-            if (scanResult.success) {
-              setScanStatus('success');
-              onScanSuccess?.(scanResult);
-            } else {
-              setScanStatus('error');
-              setErrorMessage(scanResult.error || 'Failed to scan barcode');
-              onScanError?.(scanResult.error || 'Scan failed');
-            }
-          } catch (error) {
-            const errorMsg = error instanceof Error ? error.message : 'Failed to process scan';
-            setErrorMessage(errorMsg);
-            setScanStatus('error');
-            onScanError?.(errorMsg);
+          },
+          locator: {
+            patchSize: "medium",
+            halfSample: true
+          },
+          numOfWorkers: 2,
+          decoder: {
+            readers: [
+              "code_128_reader",
+              "ean_reader",
+              "ean_8_reader",
+              "code_39_reader",
+              "code_39_vin_reader",
+              "codabar_reader",
+              "upc_reader",
+              "upc_e_reader",
+              "i2of5_reader"
+            ]
+          },
+          locate: true
+        }, (err: Error | null) => {
+          if (err) {
+            console.error('Quagga initialization failed:', err);
+            reject(err);
+          } else {
+            console.log('Quagga initialized successfully');
+            resolve();
           }
-        },
-        {
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          preferredCamera: 'environment', // Use back camera on mobile
-        }
-      );
+        });
+      });
 
-      // Start scanning with proper error handling
-      await qrScannerRef.current.start();
+      // Set up barcode detection handler
+      Quagga.onDetected(async (result) => {
+        try {
+          const barcodeId = result.codeResult.code;
+          console.log('Scanned barcode ID:', barcodeId);
+          
+          // Validate barcode format if custom validator provided
+          if (validateBarcode && !validateBarcode(barcodeId)) {
+            console.warn('Custom validation failed for:', barcodeId);
+            setErrorMessage('Invalid barcode format');
+            return;
+          }
+
+          // Lookup barcode in database
+          console.log('Looking up barcode:', barcodeId);
+          const scanResult = await barcodeService.current.lookupBarcode(barcodeId);
+          console.log('Lookup result:', scanResult);
+          
+          setScanResult(scanResult);
+          if (scanResult.success) {
+            setScanStatus('success');
+            onScanSuccess?.(scanResult);
+            // Stop scanning after successful detection
+            Quagga.stop();
+            isQuaggaInitialized.current = false;
+          } else {
+            setScanStatus('error');
+            setErrorMessage(scanResult.error || 'Failed to scan barcode');
+            onScanError?.(scanResult.error || 'Scan failed');
+          }
+        } catch (error) {
+          console.error('Error processing scan:', error);
+          const errorMsg = error instanceof Error ? error.message : 'Failed to process scan';
+          setErrorMessage(errorMsg);
+          setScanStatus('error');
+          onScanError?.(errorMsg);
+        }
+      });
+
+      // Start scanning
+      Quagga.start();
+      isQuaggaInitialized.current = true;
       setCameraPermission('granted');
       setScanStatus('scanning');
 
@@ -169,15 +210,21 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       setScanStatus('scanning');
       setErrorMessage('');
 
+      const trimmedInput = manualInput.trim();
+      console.log('Manual entry barcode ID:', trimmedInput);
+
       // Validate barcode format if custom validator provided
-      if (validateBarcode && !validateBarcode(manualInput)) {
+      if (validateBarcode && !validateBarcode(trimmedInput)) {
+        console.warn('Custom validation failed for manual entry:', trimmedInput);
         setErrorMessage('Invalid barcode format');
         setScanStatus('error');
         return;
       }
 
       // Lookup barcode in database
-      const scanResult = await barcodeService.current.lookupBarcode(manualInput.trim());
+      console.log('Looking up manual barcode:', trimmedInput);
+      const scanResult = await barcodeService.current.lookupBarcode(trimmedInput);
+      console.log('Manual lookup result:', scanResult);
       
       setScanResult(scanResult);
       if (scanResult.success) {
@@ -189,6 +236,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         onScanError?.(scanResult.error || 'Manual entry failed');
       }
     } catch (error) {
+      console.error('Error processing manual entry:', error);
       const errorMsg = error instanceof Error ? error.message : 'Failed to process manual entry';
       setErrorMessage(errorMsg);
       setScanStatus('error');
@@ -200,14 +248,13 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
    * Cleanup camera resources
    */
   const cleanupCamera = useCallback(async () => {
-    if (qrScannerRef.current) {
+    if (isQuaggaInitialized.current) {
       try {
-        await qrScannerRef.current.stop();
-        qrScannerRef.current.destroy();
+        Quagga.stop();
+        Quagga.offDetected();
+        isQuaggaInitialized.current = false;
       } catch (error) {
         console.warn('Error during camera cleanup:', error);
-      } finally {
-        qrScannerRef.current = null;
       }
     }
   }, []);
@@ -357,13 +404,14 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         {/* Camera Mode */}
         {scanMode === 'camera' && (
           <Box sx={{ mb: 2 }}>
-            <video
-              ref={videoRef}
+            <div
+              ref={scannerRef}
               style={{
                 width: '100%',
                 maxHeight: '300px',
                 borderRadius: '8px',
-                backgroundColor: '#000'
+                backgroundColor: '#000',
+                position: 'relative'
               }}
             />
             {scanStatus === 'scanning' && (
@@ -380,16 +428,16 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             <TextField
               fullWidth
               label="Enter Barcode ID"
-              placeholder="BC_YYYY-MM-DD_XXX"
+              placeholder="YYDDDN (e.g., 250051)"
               value={manualInput}
               onChange={(e) => setManualInput(e.target.value)}
-              onKeyPress={(e) => {
+              onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   handleManualEntry();
                 }
               }}
               disabled={scanStatus === 'scanning'}
-              helperText="Format: BC_YYYY-MM-DD_XXX (e.g., BC_2024-01-15_001)"
+              helperText="Format: YYDDDN (YY=year, DDD=day of year, N=sequence)"
             />
             <Button
               fullWidth

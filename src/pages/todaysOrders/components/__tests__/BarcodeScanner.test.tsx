@@ -4,34 +4,42 @@ import userEvent from '@testing-library/user-event';
 import { BarcodeScanner } from '../BarcodeScanner';
 import { ScanningResult, BarcodeScanningOptions } from '../../../../types/barcode';
 
-// Mock qr-scanner
-jest.mock('qr-scanner', () => {
-  const mockQrScannerInstance = {
-    start: jest.fn().mockResolvedValue(undefined),
-    stop: jest.fn().mockResolvedValue(undefined),
-    destroy: jest.fn().mockResolvedValue(undefined),
-    setCamera: jest.fn().mockResolvedValue(undefined)
-  };
+// Mock Quagga with a factory function
+jest.mock('quagga', () => ({
+  init: jest.fn((config, callback) => {
+    // Default to failure to ensure manual entry mode is available
+    const shouldFail = process.env.JEST_WORKER_ID !== undefined; // Fail in multi-worker context
+    if (callback) {
+      setTimeout(() => {
+        if (shouldFail) {
+          callback(new Error('Camera not available'));
+        } else {
+          callback(null);
+        }
+      }, 10); // Small delay to simulate async behavior
+    }
+  }),
+  start: jest.fn(),
+  stop: jest.fn(),
+  onDetected: jest.fn(),
+  offDetected: jest.fn()
+}));
 
-  const MockQrScanner: any = jest.fn().mockImplementation(() => mockQrScannerInstance);
-  MockQrScanner.hasCamera = jest.fn().mockResolvedValue(true);
-
-  return {
-    __esModule: true,
-    default: MockQrScanner
-  };
-});
-
-// Mock BarcodeService
+// Create a mock BarcodeService instance
 const mockBarcodeService = {
   lookupBarcode: jest.fn(),
   markOrderCompleted: jest.fn(),
   validateBarcodeFormat: jest.fn()
 };
 
+// Mock the BarcodeService module only for this test file
 jest.mock('../../../../services/barcode.service', () => ({
   BarcodeService: jest.fn().mockImplementation(() => mockBarcodeService)
 }));
+
+// Get reference to the mocked Quagga
+import Quagga from 'quagga';
+const mockQuagga = Quagga as jest.Mocked<typeof Quagga>;
 
 describe('BarcodeScanner', () => {
   const defaultProps = {
@@ -51,6 +59,26 @@ describe('BarcodeScanner', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset all mock implementations to ensure clean state
+    mockBarcodeService.lookupBarcode.mockReset();
+    mockBarcodeService.markOrderCompleted.mockReset();
+    mockBarcodeService.validateBarcodeFormat.mockReset();
+    
+    // Reset Quagga mocks
+    mockQuagga.init.mockReset();
+    mockQuagga.start.mockReset();
+    mockQuagga.stop.mockReset();
+    mockQuagga.onDetected.mockReset();
+    mockQuagga.offDetected.mockReset();
+    
+    // Restore default mock implementations - fail by default to enable manual entry
+    mockQuagga.init.mockImplementation((config, callback) => {
+      if (callback) {
+        setTimeout(() => {
+          callback(new Error('Camera not available'));
+        }, 10);
+      }
+    });
   });
 
   describe('component rendering', () => {
@@ -83,13 +111,28 @@ describe('BarcodeScanner', () => {
   describe('manual entry functionality', () => {
     it('should allow manual barcode entry', async () => {
       const user = userEvent.setup();
+      
+      // Mock Quagga to fail initialization so camera doesn't start scanning
+      mockQuagga.init.mockImplementation((config, callback) => {
+        if (callback) callback(new Error('Camera not available'));
+      });
+      
       render(<BarcodeScanner {...defaultProps} />);
       
-      // Switch to manual entry mode
+      // Wait for component to render and handle the failed camera initialization
+      await waitFor(() => {
+        expect(screen.getByText('Manual Entry')).toBeInTheDocument();
+      });
+      
+      // Now the manual entry button should be clickable since camera failed
       const manualButton = screen.getByText('Manual Entry');
       await user.click(manualButton);
       
-      expect(screen.getByLabelText('Enter Barcode ID')).toBeInTheDocument();
+      // Wait for manual mode UI to appear
+      await waitFor(() => {
+        expect(screen.getByLabelText('Enter Barcode ID')).toBeInTheDocument();
+      });
+      
       expect(screen.getByText('Scan Barcode')).toBeInTheDocument();
     });
 
@@ -131,7 +174,7 @@ describe('BarcodeScanner', () => {
       
       mockBarcodeService.lookupBarcode.mockResolvedValue({
         success: true,
-        barcodeId: 'BC_2024-01-15_001',
+        barcodeId: '240151',
         orderData: {
           productName: 'Test Product',
           sku: 'TEST-001',
@@ -146,20 +189,26 @@ describe('BarcodeScanner', () => {
       
       render(<BarcodeScanner {...defaultProps} />);
       
+      // Wait for camera initialization to fail and manual entry to become available
+      await waitFor(() => {
+        expect(screen.getByText('Manual Entry')).toBeInTheDocument();
+      });
+      
       // Switch to manual entry
       const manualButton = screen.getByText('Manual Entry');
       await user.click(manualButton);
       
-      const input = screen.getByLabelText('Enter Barcode ID');
+      // Wait for manual entry form to appear
+      const input = await screen.findByLabelText('Enter Barcode ID');
       const submitButton = screen.getByText('Scan Barcode');
       
-      await user.type(input, 'BC_2024-01-15_001');
+      await user.type(input, '240151');
       await user.click(submitButton);
       
       await waitFor(() => {
         expect(defaultProps.onScanSuccess).toHaveBeenCalledWith({
           success: true,
-          barcodeId: 'BC_2024-01-15_001',
+          barcodeId: '240151',
           orderData: {
             productName: 'Test Product',
             sku: 'TEST-001',
@@ -191,14 +240,19 @@ describe('BarcodeScanner', () => {
       
       render(<BarcodeScanner {...defaultProps} />);
       
+      // Wait for camera initialization to fail and manual entry to become available
+      await waitFor(() => {
+        expect(screen.getByText('Manual Entry')).toBeInTheDocument();
+      });
+      
       // Switch to manual entry
       const manualButton = screen.getByText('Manual Entry');
       await user.click(manualButton);
       
-      const input = screen.getByLabelText('Enter Barcode ID');
+      const input = await screen.findByLabelText('Enter Barcode ID');
       const submitButton = screen.getByText('Scan Barcode');
       
-      await user.type(input, 'BC_2024-01-15_999');
+      await user.type(input, '240159');
       await user.click(submitButton);
       
       await waitFor(() => {
@@ -230,7 +284,7 @@ describe('BarcodeScanner', () => {
       const input = screen.getByLabelText('Enter Barcode ID');
       const submitButton = screen.getByText('Scan Barcode');
       
-      await user.type(input, 'BC_2024-01-15_001');
+      await user.type(input, '240151');
       await user.click(submitButton);
       
       await waitFor(() => {
@@ -258,7 +312,7 @@ describe('BarcodeScanner', () => {
       const input = screen.getByLabelText('Enter Barcode ID');
       const submitButton = screen.getByText('Scan Barcode');
       
-      await user.type(input, 'BC_2024-01-15_001');
+      await user.type(input, '240151');
       await user.click(submitButton);
       
       await waitFor(() => {
@@ -307,14 +361,19 @@ describe('BarcodeScanner', () => {
       
       render(<BarcodeScanner {...defaultProps} />);
       
+      // Wait for camera initialization to fail and manual entry to become available
+      await waitFor(() => {
+        expect(screen.getByText('Manual Entry')).toBeInTheDocument();
+      });
+      
       // Switch to manual entry
       const manualButton = screen.getByText('Manual Entry');
       await user.click(manualButton);
       
-      const input = screen.getByLabelText('Enter Barcode ID');
+      const input = await screen.findByLabelText('Enter Barcode ID');
       const submitButton = screen.getByText('Scan Barcode');
       
-      await user.type(input, 'BC_2024-01-15_001');
+      await user.type(input, '240151');
       await user.click(submitButton);
       
       // Should show loading state
@@ -324,7 +383,7 @@ describe('BarcodeScanner', () => {
       // Resolve the promise
       resolvePromise!({
         success: true,
-        barcodeId: 'BC_2024-01-15_001',
+        barcodeId: '240151',
         orderData: {
           productName: 'Test Product',
           sku: 'TEST-001',
@@ -361,7 +420,7 @@ describe('BarcodeScanner', () => {
       
       mockBarcodeService.lookupBarcode.mockResolvedValue({
         success: true,
-        barcodeId: 'BC_2024-01-15_001',
+        barcodeId: '240151',
         orderData: {
           productName: 'Test Product',
           sku: 'TEST-001',
@@ -374,18 +433,23 @@ describe('BarcodeScanner', () => {
       
       render(<BarcodeScanner {...defaultProps} />);
       
+      // Wait for camera initialization to fail and manual entry to become available
+      await waitFor(() => {
+        expect(screen.getByText('Manual Entry')).toBeInTheDocument();
+      });
+      
       // Switch to manual entry
       const manualButton = screen.getByText('Manual Entry');
       await user.click(manualButton);
       
-      const input = screen.getByLabelText('Enter Barcode ID');
+      const input = await screen.findByLabelText('Enter Barcode ID');
       
       // Focus the input field directly 
       await user.click(input);
       expect(input).toHaveFocus();
       
       // Test that Enter key triggers submission
-      await user.type(input, 'BC_2024-01-15_001');
+      await user.type(input, '240151');
       await user.keyboard('{Enter}');
       
       // Just verify the input still has focus after interaction
@@ -396,16 +460,29 @@ describe('BarcodeScanner', () => {
   describe('camera functionality', () => {
     it('should switch between camera and manual entry modes', async () => {
       const user = userEvent.setup();
+      
+      // Override default to succeed for this test
+      mockQuagga.init.mockImplementation((config, callback) => {
+        if (callback) {
+          setTimeout(() => {
+            callback(null);
+          }, 10);
+        }
+      });
+      
       render(<BarcodeScanner {...defaultProps} />);
       
-      // Initially in camera mode - check for camera button being selected
-      expect(screen.getByText('Camera')).toBeInTheDocument();
+      // Wait for camera initialization to succeed
+      await waitFor(() => {
+        expect(screen.getByText('Camera')).toBeInTheDocument();
+      });
       
       // Switch to manual entry
       const manualButton = screen.getByText('Manual Entry');
       await user.click(manualButton);
       
-      expect(screen.getByLabelText('Enter Barcode ID')).toBeInTheDocument();
+      const input = await screen.findByLabelText('Enter Barcode ID');
+      expect(input).toBeInTheDocument();
       
       // Switch back to camera
       const cameraButton = screen.getByText('Camera');

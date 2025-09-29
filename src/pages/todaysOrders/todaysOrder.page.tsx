@@ -27,7 +27,8 @@ import {
   setBatchFilter,
   setPlatformFilter,
   setCompletionFilter,
-  clearAllFilters
+  clearAllFilters,
+  completeOrderByBarcode
 } from "../../store/slices/ordersSlice";
 import { SummaryTable } from "../home/components/SummaryTable";
 import { CategoryGroupedTable } from "./components/CategoryGroupedTable";
@@ -107,22 +108,26 @@ export const TodaysOrderPage: React.FC = () => {
     dispatch(setCompletionFilter(status));
   };
 
-  const handleScanSuccess = (result: ScanningResult) => {
-    if (result.success && result.orderData) {
-      setScanFeedback({
-        type: 'success',
-        message: `Order completed: ${result.orderData.productName}`
-      });
-      setScannerModalOpen(false);
-      
-      // Refresh orders to show updated completion status
-      const dateString = format(selectedDate, 'yyyy-MM-dd');
-      const today = format(new Date(), 'yyyy-MM-dd');
-      
-      if (dateString === today) {
-        dispatch(fetchOrders());
-      } else {
-        dispatch(fetchOrdersForDate(dateString));
+  const handleScanSuccess = async (result: ScanningResult) => {
+    if (result.success && result.barcodeId) {
+      try {
+        // Complete the order using the barcode thunk
+        const completionResult = await dispatch(completeOrderByBarcode({ 
+          barcodeId: result.barcodeId 
+        })).unwrap();
+        
+        setScanFeedback({
+          type: 'success',
+          message: `Order completed: ${completionResult.orderData.productName}`
+        });
+        setScannerModalOpen(false);
+        
+        // Orders will be automatically updated by the thunk
+      } catch (error) {
+        setScanFeedback({
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Failed to complete order'
+        });
       }
     }
   };

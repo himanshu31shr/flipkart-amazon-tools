@@ -33,18 +33,21 @@ export class BaseTransformer {
   protected summaryText: ProductSummary[] = [];
   protected sortConfig?: CategorySortConfig;
   protected batchInfo?: BatchInfo;
+  protected enableBarcodes: boolean;
 
   constructor(
     filePath: Uint8Array, 
     protected products: Product[], 
     protected categories: Category[],
     sortConfig?: CategorySortConfig,
-    batchInfo?: BatchInfo
+    batchInfo?: BatchInfo,
+    enableBarcodes: boolean = true
   ) {
     this.filePath = filePath;
     this.products = products;
     this.categories = categories;
     this.batchInfo = batchInfo;
+    this.enableBarcodes = enableBarcodes;
     
     // Always use category sorting with SKU as secondary sort
     this.sortConfig = {

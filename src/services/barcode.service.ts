@@ -132,29 +132,29 @@ export class BarcodeService extends FirebaseService {
   }
 
   /**
-   * Generate QR code as base64 data URL
-   * Creates a compact QR code optimized for PDF embedding
+   * Generate barcode as base64 data URL
+   * Creates a proper barcode that can be scanned by camera
    */
-  private generateQRCode(barcodeId: string, size: number = this.DEFAULT_QR_SIZE): string {
-    // Create a canvas element for QR code generation
-    const canvas = document.createElement('canvas');
-    
+  private generateBarcode(barcodeId: string, width: number = 2, height: number = 100): string {
     try {
-      // Generate QR code using JsBarcode with QR format
+      // Create a canvas element for barcode generation
+      const canvas = document.createElement('canvas');
+      
+      // Generate barcode using JsBarcode
       JsBarcode(canvas, barcodeId, {
-        format: 'CODE128', // Using CODE128 as it's more reliable than QR for scanning
-        width: 1,
-        height: size,
-        displayValue: false, // Don't show text below barcode
-        margin: 2, // Minimal margin for compact size
-        background: '#ffffff',
-        lineColor: '#000000'
+        format: 'CODE128', // Use CODE128 format for alphanumeric support
+        width: width,
+        height: height,
+        displayValue: true,
+        fontSize: 16,
+        textAlign: 'center',
+        textPosition: 'bottom'
       });
       
-      // Convert canvas to base64 data URL
+      // Convert canvas to data URL
       return canvas.toDataURL('image/png');
     } catch (error) {
-      throw new Error(`Failed to generate QR code for ${barcodeId}: ${error}`);
+      throw new Error(`Failed to generate barcode for ${barcodeId}: ${error}`);
     }
   }
 
@@ -215,9 +215,8 @@ export class BarcodeService extends FirebaseService {
         options.maxRetries || this.MAX_RETRY_ATTEMPTS
       );
       
-      // Generate QR code
-      const qrSize = options.qrSize || this.DEFAULT_QR_SIZE;
-      const qrCodeDataUrl = this.generateQRCode(barcodeId, qrSize);
+      // Generate barcode
+      const barcodeDataUrl = this.generateBarcode(barcodeId);
       const generatedAt = new Date().toISOString();
       
       // Create barcode record
@@ -240,8 +239,8 @@ export class BarcodeService extends FirebaseService {
       
       return {
         barcodeId,
-        qrCodeDataUrl,
-        qrCodeContent: barcodeId, // The QR code contains the barcode ID
+        qrCodeDataUrl: barcodeDataUrl, // Keep the same property name for compatibility
+        qrCodeContent: barcodeId, // The barcode contains the barcode ID
         generatedAt
       };
     } catch (error) {
@@ -255,8 +254,8 @@ export class BarcodeService extends FirebaseService {
    */
   async lookupBarcode(barcodeId: string): Promise<ScanningResult> {
     try {
-      // Validate barcode format first
-      const validation = this.validateBarcodeId(barcodeId);
+      // Validate barcode format first using the new compact format
+      const validation = this.validateBarcodeFormat(barcodeId);
       if (!validation.isValid) {
         return {
           success: false,

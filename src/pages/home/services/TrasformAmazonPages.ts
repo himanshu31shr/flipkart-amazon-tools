@@ -27,9 +27,10 @@ export class AmazonPDFTransformer extends BaseTransformer {
     products: Product[],
     categories: Category[],
     sortConfig?: CategorySortConfig,
-    batchInfo?: BatchInfo
+    batchInfo?: BatchInfo,
+    enableBarcodes: boolean = true
   ) {
-    super(filePath, products, categories, sortConfig, batchInfo);
+    super(filePath, products, categories, sortConfig, batchInfo, enableBarcodes);
     this.filePath = filePath;
     this.barcodeService = new BarcodeService();
   }
@@ -351,26 +352,28 @@ export class AmazonPDFTransformer extends BaseTransformer {
         
         await this.addFooterText(copiedPage, data.product);
         
-        // Add barcode to the page if available
-        const barcode = generatedBarcodes[i];
-        
-        if (barcode) {
-            // Generate barcode image
-            const barcodeImageBytes = PDFBarcodeEmbedder.generateBarcodeImage(barcode.barcodeId, 64);
-            const barcodeImage = await this.outputPdf.embedPng(barcodeImageBytes);
-            
-            // Position barcode at bottom-left of the page
-            const barcodeSize = 15;
-            const barcodeX = 40; // 10px from left edge of content area
-            const barcodeY = copiedPage.getHeight() - 40; // Near the top of content area
+        // Add barcode to the page if enabled and available
+        if (this.enableBarcodes) {
+          const barcode = generatedBarcodes[i];
+          
+          if (barcode) {
+              // Generate barcode image
+              const barcodeImageBytes = PDFBarcodeEmbedder.generateBarcodeImage(barcode.barcodeId, 20);
+              const barcodeImage = await this.outputPdf.embedPng(barcodeImageBytes);
+              
+              // Position barcode at bottom-left of the page
+              const barcodeSize = 20;
+              const barcodeX = 40; // 10px from left edge of content area
+              const barcodeY = copiedPage.getHeight() - 45; // Near the top of content area
 
-            // Draw barcode on the copied page
-            copiedPage.drawImage(barcodeImage, {
-              x: barcodeX,
-              y: barcodeY,
-              height: barcodeSize,
-              opacity: 1.0
-            });
+              // Draw barcode on the copied page
+              copiedPage.drawImage(barcodeImage, {
+                x: barcodeX,
+                y: barcodeY,
+                height: barcodeSize,
+                opacity: 1.0
+              });
+          }
         }
         
         this.outputPdf.addPage(copiedPage);

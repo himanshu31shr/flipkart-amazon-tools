@@ -29,10 +29,18 @@ export class FlipkartPageTransformer extends BaseTransformer {
     products: Product[],
     categories: Category[],
     sortConfig?: CategorySortConfig,
-    batchInfo?: BatchInfo
+    batchInfo?: BatchInfo,
+    enableBarcodes: boolean = true
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    super(filePath, products, categories as any, sortConfig, batchInfo);
+     
+    super(
+      filePath,
+      products,
+      categories as any,
+      sortConfig,
+      batchInfo,
+      enableBarcodes
+    );
     this.barcodeService = new BarcodeService();
   }
 
@@ -207,9 +215,6 @@ export class FlipkartPageTransformer extends BaseTransformer {
 
     // Generate barcodes for all processed items
     const dateString = format(new Date(), "yyyy-MM-dd");
-    console.log(
-      `Flipkart Transformer: Processing ${processedData.length} items for date ${dateString}`
-    );
 
     const barcodeRequests = processedData.map((item, index) => ({
       dateDocId: dateString,
@@ -223,17 +228,10 @@ export class FlipkartPageTransformer extends BaseTransformer {
       orderId: item.summary.orderId,
     }));
 
-    console.log("Flipkart Transformer: Barcode requests:", barcodeRequests);
-
     // Batch generate all barcodes
     const generatedBarcodes = await this.barcodeService.batchGenerateBarcodes(
       barcodeRequests,
       { date: dateString }
-    );
-
-    console.log(
-      `Flipkart Transformer: Generated ${generatedBarcodes.length} barcodes:`,
-      generatedBarcodes.map((b) => b.barcodeId)
     );
 
     // Store barcodes for later access
@@ -258,7 +256,7 @@ export class FlipkartPageTransformer extends BaseTransformer {
 
       const { rgb, StandardFonts } = await import("pdf-lib");
       const pageWidth = page.getWidth();
-      const fontSize = 5;
+      const fontSize = 6;
 
       // Find product info for adding text
       const skuProduct = this.products.find((p) => p.sku === item.summary.SKU);
@@ -271,30 +269,17 @@ export class FlipkartPageTransformer extends BaseTransformer {
         text = `${item.summary.quantity} X [${category.name}]`;
       }
 
-      // Using standard Helvetica font which supports basic ASCII characters
-      const font = await this.outputPdf.embedFont(StandardFonts.Helvetica);
-      copiedPage.drawText(text, {
-        y: copiedPage.getHeight() - 10,
-        x: 180 + 10,
-        size: fontSize,
-        color: rgb(0, 0, 0),
-        lineHeight: fontSize + 2,
-        font,
-        maxWidth: pageWidth - 180,
-      });
-
       // Add barcode to the page if available
       const barcode = generatedBarcodes[i];
-      console.log(
-        `Flipkart Transformer: Processing page ${i + 1}, barcode available:`,
-        !!barcode,
-        barcode?.barcodeId
-      );
+      const barcodeSize = 15; // Increased size for better visibility
 
-      if (barcode) {
+      if (this.enableBarcodes && barcode) {
         try {
-          // Position barcode vertically on the right side, centered in height, rotated 90 degrees
-          const barcodeSize = 15; // Increased size for better visibility
+          // Increase page height to accommodate barcode
+          const currentSize = copiedPage.getSize();
+          const barcodeAreaHeight = 10;
+          const newHeight = currentSize.height + barcodeAreaHeight;
+          copiedPage.setSize(currentSize.width, newHeight);
 
           // Generate small barcode image
           const barcodeImageBytes = PDFBarcodeEmbedder.generateBarcodeImage(
@@ -304,7 +289,7 @@ export class FlipkartPageTransformer extends BaseTransformer {
 
           const barcodeImage = await this.outputPdf.embedPng(barcodeImageBytes);
           // Position barcode in a highly visible area first (top-left corner for testing)
-          const barcodeX = pageWidth - barcodeImage.width; // 10px from left edge of content area
+          const barcodeX = 180 + 10; // 10px from left edge of content area
           const barcodeY = copiedPage.getHeight() - barcodeSize; // Near the top of content area
 
           // Draw barcode on the copied page (testing without rotation first)
@@ -314,10 +299,6 @@ export class FlipkartPageTransformer extends BaseTransformer {
             height: barcodeSize,
             opacity: 1.0,
           });
-
-          console.log(
-            `Successfully placed barcode ${barcode.barcodeId} at position (${barcodeX}, ${barcodeY})`
-          );
         } catch (error) {
           console.error(
             `Failed to embed barcode ${barcode.barcodeId} on Flipkart page ${
@@ -327,6 +308,21 @@ export class FlipkartPageTransformer extends BaseTransformer {
           );
         }
       }
+
+      // Using standard Helvetica font which supports basic ASCII characters
+      const font = await this.outputPdf.embedFont(StandardFonts.Helvetica);
+      copiedPage.drawText(text, {
+        y:
+          copiedPage.getHeight() -
+          (this.enableBarcodes && barcode ? barcodeSize : 0) -
+          5,
+        x: 180 + 10,
+        size: fontSize,
+        color: rgb(0, 0, 0),
+        lineHeight: fontSize + 2,
+        font,
+        maxWidth: pageWidth - 180,
+      });
     }
 
     return this.outputPdf;

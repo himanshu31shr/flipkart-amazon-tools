@@ -32,8 +32,9 @@ module.exports = {
   },
   moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
   testMatch: ['**/__tests__/**/*.(test|spec).[jt]s?(x)', '**/?(*.)+(spec|test).[tj]s?(x)'],
-  testPathIgnorePatterns: ['<rootDir>/src/__tests__/performance-benchmarks.disabled/'],
-  
+  testPathIgnorePatterns: [
+    '<rootDir>/src/__tests__/performance-benchmarks.disabled/'
+  ],
   // Performance optimizations
   cache: true,
   cacheDirectory: '<rootDir>/node_modules/.cache/jest',

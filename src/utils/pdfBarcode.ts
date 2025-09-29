@@ -37,7 +37,7 @@ export class PDFBarcodeEmbedder {
       // Generate barcode using JsBarcode with CODE128 format
       JsBarcode(canvas, barcodeId, {
         format: 'CODE128',
-        width: 1,
+        width: 2,
         height: Math.floor(size * 0.8), // 80% of canvas height for barcode
         displayValue: false, // Don't show text below barcode
         margin: 2, // Minimal margin
