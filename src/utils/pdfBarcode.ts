@@ -8,9 +8,25 @@ import { BarcodeEmbedding } from '../types/barcode';
  */
 export class PDFBarcodeEmbedder {
   private static readonly DEFAULT_BARCODE_SIZE = 64; // Minimum viable size for reliable scanning
+  private static readonly _PDF_EMBED_SIZE = 24; // Optimal size for PDF page embedding (consistent across platforms)
   private static readonly MARGIN = 10; // Margin from page edges
   private static readonly MIN_SIZE = 32; // Absolute minimum barcode size
   private static readonly MAX_SIZE = 128; // Maximum barcode size
+
+  /**
+   * Get the standard size for PDF embedding across all platforms
+   */
+  static get PDF_EMBED_SIZE(): number {
+    return PDFBarcodeEmbedder._PDF_EMBED_SIZE;
+  }
+
+  /**
+   * Generate barcode image for PDF page embedding (uses standard size)
+   * Creates a compact barcode optimized for PDF page embedding across all platforms
+   */
+  static generatePDFEmbedBarcode(barcodeId: string): Uint8Array {
+    return PDFBarcodeEmbedder.generateBarcodeImage(barcodeId, PDFBarcodeEmbedder._PDF_EMBED_SIZE);
+  }
 
   /**
    * Generate barcode image as PNG bytes

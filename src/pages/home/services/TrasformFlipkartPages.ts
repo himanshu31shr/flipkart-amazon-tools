@@ -271,7 +271,7 @@ export class FlipkartPageTransformer extends BaseTransformer {
 
       // Add barcode to the page if available
       const barcode = generatedBarcodes[i];
-      const barcodeSize = 15; // Increased size for better visibility
+      const barcodeSize = 15; // Use standardized size across platforms
 
       if (this.enableBarcodes && barcode) {
         try {
@@ -281,10 +281,9 @@ export class FlipkartPageTransformer extends BaseTransformer {
           const newHeight = currentSize.height + barcodeAreaHeight;
           copiedPage.setSize(currentSize.width, newHeight);
 
-          // Generate small barcode image
-          const barcodeImageBytes = PDFBarcodeEmbedder.generateBarcodeImage(
-            barcode.barcodeId,
-            barcodeSize
+          // Generate barcode image using standard PDF embedding size
+          const barcodeImageBytes = PDFBarcodeEmbedder.generatePDFEmbedBarcode(
+            barcode.barcodeId
           );
 
           const barcodeImage = await this.outputPdf.embedPng(barcodeImageBytes);

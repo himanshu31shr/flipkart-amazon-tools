@@ -357,12 +357,12 @@ export class AmazonPDFTransformer extends BaseTransformer {
           const barcode = generatedBarcodes[i];
           
           if (barcode) {
-              // Generate barcode image
-              const barcodeImageBytes = PDFBarcodeEmbedder.generateBarcodeImage(barcode.barcodeId, 20);
+              // Generate barcode image using standard PDF embedding size
+              const barcodeImageBytes = PDFBarcodeEmbedder.generatePDFEmbedBarcode(barcode.barcodeId);
               const barcodeImage = await this.outputPdf.embedPng(barcodeImageBytes);
               
-              // Position barcode at bottom-left of the page
-              const barcodeSize = 20;
+              // Position barcode at bottom-left of the page using standard size
+              const barcodeSize = PDFBarcodeEmbedder.PDF_EMBED_SIZE;
               const barcodeX = 40; // 10px from left edge of content area
               const barcodeY = copiedPage.getHeight() - 45; // Near the top of content area
 
