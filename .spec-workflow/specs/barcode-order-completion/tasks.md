@@ -63,7 +63,7 @@
   - _Requirements: 3_
   - _Prompt: Implement the task for spec barcode-order-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Developer with expertise in React, Material-UI, and camera APIs | Task: Create BarcodeScanner component with camera-based QR scanning using qr-scanner library and manual entry fallback. Implement modal interface following patterns from FilesModal.tsx with proper error handling and user feedback. Include camera permissions handling and responsive design | Restrictions: Must provide manual entry fallback, handle camera permissions gracefully, follow existing Material-UI component patterns | _Leverage: FilesModal patterns for modal interface, Material-UI components from existing Today's Orders components, error handling patterns | _Requirements: Requirement 3 (camera-based order scanning) | Success: Camera scanning works reliably, manual fallback functions, responsive mobile interface, proper error handling | Instructions: Mark this task as in-progress [-] in tasks.md when starting, then mark as complete [x] when finished_
 
-- [ ] 6. Integrate scanner into Today's Orders page in src/pages/todaysOrders/todaysOrder.page.tsx
+- [x] 6. Integrate scanner into Today's Orders page in src/pages/todaysOrders/todaysOrder.page.tsx
   - File: src/pages/todaysOrders/todaysOrder.page.tsx
   - Add barcode scanner button to toolbar and integrate scanning modal
   - Connect scanner to order completion workflow
@@ -72,7 +72,7 @@
   - _Requirements: 3, 4_
   - _Prompt: Implement the task for spec barcode-order-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Developer with expertise in React integration and existing Sacred Sutra Tools UI patterns | Task: Integrate BarcodeScanner component into Today's Orders page by adding scanner button to toolbar (around line 160-173) and connecting to order completion workflow. Follow existing button patterns from ModernFilters and integrate with current state management | Restrictions: Must maintain existing page layout and functionality, follow current toolbar design patterns, ensure proper state updates | _Leverage: ModernFilters button patterns, existing modal state management, current toolbar structure | _Requirements: Requirement 3 (camera-based scanning), Requirement 4 (order completion status management) | Success: Scanner button integrates seamlessly, modal opens correctly, order completion workflow functions properly | Instructions: Mark this task as in-progress [-] in tasks.md when starting, then mark as complete [x] when finished_
 
-- [ ] 7. Enhance Redux ordersSlice with completion status in src/store/slices/ordersSlice.ts
+- [x] 7. Enhance Redux ordersSlice with completion status in src/store/slices/ordersSlice.ts
   - File: src/store/slices/ordersSlice.ts
   - Add completion status selectors and actions for barcode functionality
   - Implement optimistic updates for order completion
@@ -81,7 +81,7 @@
   - _Requirements: 4, 5_
   - _Prompt: Implement the task for spec barcode-order-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend State Management Developer with expertise in Redux Toolkit and existing order management patterns | Task: Enhance ordersSlice by adding completion status selectors (selectCompletedOrders, selectPendingOrders, selectCompletionStats), markOrderCompleted async thunk, and optimistic update logic. Follow existing async thunk patterns from lines 84-100 and selector patterns | Restrictions: Must maintain existing ordersSlice functionality, follow current async thunk patterns, ensure proper optimistic updates | _Leverage: Existing updateOrders thunk patterns, current selector creation patterns, BarcodeService for completion operations | _Requirements: Requirement 4 (order completion status management), Requirement 5 (integration with existing order management) | Success: Completion status managed properly, selectors work correctly, optimistic updates provide smooth UX | Instructions: Mark this task as in-progress [-] in tasks.md when starting, then mark as complete [x] when finished_
 
-- [ ] 8. Add completion status indicators to CategoryGroupedTable in src/pages/todaysOrders/components/CategoryGroupedTable.tsx
+- [x] 8. Add completion status indicators to CategoryGroupedTable in src/pages/todaysOrders/components/CategoryGroupedTable.tsx
   - File: src/pages/todaysOrders/components/CategoryGroupedTable.tsx
   - Add completion badges and status indicators to order display
   - Implement completion status filtering options
@@ -90,7 +90,7 @@
   - _Requirements: 4_
   - _Prompt: Implement the task for spec barcode-order-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Developer with expertise in Material-UI data display and existing table component patterns | Task: Enhance CategoryGroupedTable to display completion status badges using Material-UI Chip components, add completion indicators to order rows, and implement filtering for completed/pending orders. Follow existing chip patterns and table structure around lines 52-80 | Restrictions: Must maintain existing table functionality and layout, follow current chip and status indicator patterns, ensure responsive design | _Leverage: Existing Chip components from Material-UI, current table row patterns, platform filter implementation | _Requirements: Requirement 4 (order completion status management) | Success: Completion status displays clearly, filtering works correctly, table performance remains good | Instructions: Mark this task as in-progress [-] in tasks.md when starting, then mark as complete [x] when finished_
 
-- [ ] 9. Enhance ModernFilters with completion status filtering in src/pages/todaysOrders/components/ModernFilters.tsx
+- [x] 9. Enhance ModernFilters with completion status filtering in src/pages/todaysOrders/components/ModernFilters.tsx
   - File: src/pages/todaysOrders/components/ModernFilters.tsx
   - Add completion status filter options (completed/pending/all)
   - Integrate with existing filter state management
@@ -99,7 +99,7 @@
   - _Requirements: 4_
   - _Prompt: Implement the task for spec barcode-order-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Frontend Developer with expertise in filter UI components and existing filter patterns | Task: Enhance ModernFilters component by adding completion status filter options (All/Completed/Pending) following existing platform filter patterns. Integrate with current filter state management and maintain existing filter UI consistency | Restrictions: Must maintain existing filter functionality and design patterns, follow current filter component structure, ensure proper state integration | _Leverage: Existing platform filter implementation, current filter UI patterns, state management integration | _Requirements: Requirement 4 (order completion status management) | Success: Completion filters integrate seamlessly, maintain existing UI consistency, filter state management works correctly | Instructions: Mark this task as in-progress [-] in tasks.md when starting, then mark as complete [x] when finished_
 
-- [ ] 10. Create BarcodeService unit tests in src/services/__tests__/barcode.service.test.ts
+- [x] 10. Create BarcodeService unit tests in src/services/__tests__/barcode.service.test.ts
   - File: src/services/__tests__/barcode.service.test.ts
   - Write comprehensive tests for barcode generation, lookup, and completion operations
   - Mock Firebase dependencies following existing test patterns
@@ -108,7 +108,7 @@
   - _Requirements: 1, 3_
   - _Prompt: Implement the task for spec barcode-order-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: QA Engineer with expertise in service testing and Firebase mocking | Task: Create comprehensive unit tests for BarcodeService covering barcode generation, collision detection, lookup operations, and completion status updates. Follow existing test patterns from todaysOrder.service.test.ts for Firebase mocking and service testing | Restrictions: Must mock all Firebase dependencies, test both success and failure scenarios, maintain test isolation | _Leverage: Existing service test patterns, Firebase mocking utilities, test setup from todaysOrder.service.test.ts | _Requirements: Requirement 1 (automated barcode generation), Requirement 3 (camera-based scanning) | Success: All service methods tested comprehensively, edge cases covered, tests run independently and consistently | Instructions: Mark this task as in-progress [-] in tasks.md when starting, then mark as complete [x] when finished_
 
-- [ ] 11. Create BarcodeScanner component tests in src/pages/todaysOrders/components/__tests__/BarcodeScanner.test.tsx
+- [x] 11. Create BarcodeScanner component tests in src/pages/todaysOrders/components/__tests__/BarcodeScanner.test.tsx
   - File: src/pages/todaysOrders/components/__tests__/BarcodeScanner.test.tsx
   - Write tests for camera functionality, manual entry, and error handling
   - Mock camera API and qr-scanner library
@@ -126,7 +126,7 @@
   - _Requirements: 1, 2, 5_
   - _Prompt: Implement the task for spec barcode-order-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Integration Test Engineer with expertise in PDF processing testing and Firebase integration | Task: Create integration tests for enhanced PDFMergerService covering complete workflow from PDF upload through barcode generation to QR embedding. Test with sample Amazon and Flipkart PDFs to ensure proper barcode integration | Restrictions: Must test real PDF processing, ensure test PDFs are included, validate QR code generation and embedding | _Leverage: Sample PDF files, existing PDF processing test utilities, Firebase test configuration | _Requirements: Requirement 1 (automated barcode generation), Requirement 2 (QR code embedding), Requirement 5 (integration with existing workflow) | Success: End-to-end PDF processing with barcodes works correctly, QR codes embedded properly, existing functionality preserved | Instructions: Mark this task as in-progress [-] in tasks.md when starting, then mark as complete [x] when finished_
 
-- [ ] 13. Update package.json with new dependencies
+- [x] 13. Update package.json with new dependencies
   - File: package.json
   - Add jsbarcode and qr-scanner dependencies
   - Add type definitions for new libraries
@@ -144,7 +144,7 @@
   - _Requirements: All_
   - _Prompt: Implement the task for spec barcode-order-completion, first run spec-workflow-guide to get the workflow guide then implement the task: Role: Firebase Security Engineer with expertise in Firestore security rules | Task: Create security rules for order-barcodes collection ensuring proper user access control, data isolation, and preventing unauthorized access. Follow existing security rule patterns for other collections | Restrictions: Must prevent unauthorized access, ensure user can only access their own barcodes, maintain consistency with existing rules | _Leverage: Existing Firestore security rule patterns, user authentication patterns, collection access control | _Requirements: All requirements (proper security for all barcode operations) | Success: Barcode collection properly secured, user access controlled, unauthorized access prevented | Instructions: Mark this task as in-progress [-] in tasks.md when starting, then mark as complete [x] when finished_
 
-- [ ] 15. Create database indexes for efficient barcode lookup
+- [x] 15. Create database indexes for efficient barcode lookup
   - File: firestore.indexes.json (if exists) or documentation for manual setup
   - Add composite indexes for barcode queries
   - Optimize for fast lookup during scanning operations

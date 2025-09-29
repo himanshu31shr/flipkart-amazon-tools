@@ -5,9 +5,10 @@ declare module 'quagga' {
       type: string;
       target: HTMLElement | null;
       constraints?: {
-        width: number;
-        height: number;
+        width: number | { min: number; ideal: number; max: number };
+        height: number | { min: number; ideal: number; max: number };
         facingMode: string;
+        aspectRatio?: { min: number; max: number };
       };
     };
     locator?: {
@@ -21,21 +22,25 @@ declare module 'quagga' {
     locate?: boolean;
   }
 
-  interface DetectionResult {
+  interface QuaggaJSResultObject {
     codeResult: {
       code: string;
       format: string;
     };
   }
 
+  // Alias for compatibility
+  type DetectionResult = QuaggaJSResultObject;
+
   interface Quagga {
     init(config: QuaggaConfig, callback: (err: any) => void): void;
     start(): void;
     stop(): void;
-    onDetected(callback: (result: DetectionResult) => void): void;
-    offDetected(): void;
+    onDetected(callback: (result: QuaggaJSResultObject) => void): void;
+    offDetected(callback?: (result: QuaggaJSResultObject) => void): void;
   }
 
   const quagga: Quagga;
   export default quagga;
+  export { QuaggaJSResultObject, DetectionResult };
 }

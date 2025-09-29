@@ -145,3 +145,130 @@ export interface BarcodeValidation {
   /** Validation error message if invalid */
   error?: string;
 }
+
+/**
+ * Entry in scanning session history
+ */
+export interface ScanHistoryEntry {
+  /** Unique barcode identifier */
+  barcodeId: string;
+  /** When barcode was scanned in session */
+  scannedAt: string;
+  /** Scanning result data */
+  result: ScanningResult;
+  /** Visual feedback state when scanned */
+  feedbackShown: boolean;
+}
+
+/**
+ * Session statistics for productivity tracking
+ */
+export interface SessionStatistics {
+  /** Total barcodes scanned in session */
+  totalScanned: number;
+  /** Successfully processed barcodes */
+  successfulScans: number;
+  /** Failed scan attempts */
+  failedScans: number;
+  /** Duplicate scan attempts (throttled) */
+  duplicateAttempts: number;
+  /** Session start time */
+  sessionStarted: string;
+  /** Session duration in milliseconds */
+  sessionDuration: number;
+  /** Average time between scans */
+  averageScanInterval: number;
+}
+
+/**
+ * Comprehensive scanning session state
+ */
+export interface ScanSession {
+  /** Unique session identifier */
+  sessionId: string;
+  /** Whether session is currently active */
+  isActive: boolean;
+  /** Session start timestamp */
+  startedAt: string;
+  /** Last activity timestamp */
+  lastActivity: string;
+  /** History of all scan attempts in session */
+  scanHistory: ScanHistoryEntry[];
+  /** Session productivity statistics */
+  statistics: SessionStatistics;
+  /** Map of throttled barcodes (barcodeId -> timestamp) */
+  throttledBarcodes: Map<string, number>;
+}
+
+/**
+ * Configuration for responsive drawer behavior
+ */
+export interface ResponsiveConfig {
+  /** Breakpoint for mobile behavior (px) */
+  mobileBreakpoint: number;
+  /** Whether to use drawer on mobile */
+  useDrawerOnMobile: boolean;
+  /** Whether to use dialog on desktop */
+  useDialogOnDesktop: boolean;
+  /** Full screen on mobile */
+  fullScreenMobile: boolean;
+  /** Auto-height adjustment */
+  autoHeight: boolean;
+}
+
+/**
+ * Throttle cache entry for duplicate detection
+ */
+export interface ThrottleEntry {
+  /** When barcode was first scanned */
+  firstScanAt: number;
+  /** When barcode was last attempted */
+  lastAttemptAt: number;
+  /** Number of throttled attempts */
+  attemptCount: number;
+  /** Whether cooldown is active */
+  isThrottled: boolean;
+}
+
+/**
+ * Enhanced barcode scanning options with session support
+ */
+export interface EnhancedBarcodeScanningOptions extends BarcodeScanningOptions {
+  /** Throttle duration in milliseconds (default: 3000) */
+  throttleDuration?: number;
+  /** Maximum throttle cache size (default: 100) */
+  maxThrottleCache?: number;
+  /** Visual feedback duration in milliseconds (default: 2000) */
+  feedbackDuration?: number;
+  /** Session persistence across modal reopens */
+  persistSession?: boolean;
+  /** Responsive configuration */
+  responsiveConfig?: ResponsiveConfig;
+}
+
+/**
+ * Visual feedback states for scan results
+ */
+export type ScanFeedbackState = 
+  | 'idle'
+  | 'scanning' 
+  | 'success'
+  | 'error'
+  | 'throttled'
+  | 'duplicate';
+
+/**
+ * Visual feedback configuration
+ */
+export interface ScanFeedbackConfig {
+  /** Current feedback state */
+  state: ScanFeedbackState;
+  /** Feedback message to display */
+  message: string;
+  /** Duration to show feedback (ms) */
+  duration: number;
+  /** Whether to auto-hide feedback */
+  autoHide: boolean;
+  /** Color scheme for feedback */
+  severity: 'success' | 'error' | 'warning' | 'info';
+}

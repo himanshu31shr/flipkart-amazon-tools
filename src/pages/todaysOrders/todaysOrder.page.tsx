@@ -35,9 +35,9 @@ import { CategoryGroupedTable } from "./components/CategoryGroupedTable";
 import { groupOrdersByCategory } from "./utils/groupingUtils";
 import { Platform } from "./components/PlatformFilter";
 import { FilesModal } from "./components/FilesModal";
-import { BarcodeScanner } from "./components/BarcodeScanner";
 import { ModernFilters, ViewMode, CompletionFilter } from "./components/ModernFilters";
 import { ScanningResult } from "../../types/barcode";
+import { EnhancedBarcodeScanner } from "./components/EnhancedBarcodeScanner";
 
 
 export const TodaysOrderPage: React.FC = () => {
@@ -248,7 +248,7 @@ export const TodaysOrderPage: React.FC = () => {
         />
 
         {/* Barcode Scanner Modal */}
-        <BarcodeScanner
+        <EnhancedBarcodeScanner
           open={scannerModalOpen}
           onClose={() => setScannerModalOpen(false)}
           onScanSuccess={handleScanSuccess}
