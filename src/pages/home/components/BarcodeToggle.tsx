@@ -30,23 +30,23 @@ export const BarcodeToggle: React.FC<BarcodeToggleProps> = ({
         borderRadius: 2,
         border: '1px solid',
         borderColor: disabled 
-          ? 'grey.400' 
+          ? 'grey.200' 
           : enabled 
             ? 'primary.light' 
-            : 'grey.300',
+            : 'grey.200',
         backgroundColor: disabled 
-          ? 'grey.100' 
+          ? 'warning.dark' 
           : enabled 
             ? 'primary.lightest' 
-            : 'grey.50',
+            : 'warning.dark',
         opacity: disabled ? 0.7 : 1,
         transition: 'all 0.3s ease',
         '&:hover': {
           borderColor: disabled 
-            ? 'grey.400' 
+            ? 'grey.200' 
             : enabled 
               ? 'primary.main' 
-              : 'grey.400',
+              : 'grey.200',
         },
       }}
     >
