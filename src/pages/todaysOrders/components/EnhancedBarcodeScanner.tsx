@@ -274,23 +274,48 @@ export const EnhancedBarcodeScanner: React.FC<EnhancedBarcodeScannerProps> = ({
   /**
    * Initialize camera when component mounts and mode is camera
    * Only start camera when it's not already active to prevent flickering
+   * Camera should activate when modal is open, on scanner tab, and in camera mode
    */
   useEffect(() => {
+    const openStateChanged = lastOpenStateRef.current !== open;
     const scanModeChanged = lastScanModeRef.current !== scanMode;
     
     lastOpenStateRef.current = open;
     lastScanModeRef.current = scanMode;
 
-    if (open && scanMode === 'camera') {
+    // Reset camera initialization flag when modal reopens
+    if (openStateChanged && open) {
+      cameraInitializedRef.current = false;
+    }
+
+    // Auto-activate camera when modal is open, on scanner tab, and in camera mode
+    if (open && activeTab === 'scanner' && scanMode === 'camera') {
       if (!camera.isActive && !cameraInitializedRef.current) {
         cameraInitializedRef.current = true;
-        camera.startCamera();
+        
+        // Start camera with platform-specific timing
+        // Dialog mode needs a small delay for DOM element to be ready
+        const startCameraAsync = async () => {
+          try {
+            // Add delay for dialog mode to ensure DOM element is rendered
+            if (responsive.useDialog) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            await camera.startCamera();
+          } catch (error) {
+            console.error('Auto-activation failed:', error);
+            cameraInitializedRef.current = false;
+          }
+        };
+        
+        startCameraAsync();
       }
-    } else if (camera.isActive && (scanModeChanged || !open)) {
+    } else if (camera.isActive && (scanModeChanged || !open || activeTab !== 'scanner')) {
       cameraInitializedRef.current = false;
       camera.stopCamera();
     }
-  }, [open, scanMode]);
+  }, [open, scanMode, activeTab, camera.isActive, camera.startCamera, camera.stopCamera, stableCallback, responsive.useDialog]);
 
   /**
    * Set up barcode detection callback when camera is active
