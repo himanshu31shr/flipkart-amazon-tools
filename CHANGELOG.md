@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.11.0
+
+### Minor Changes
+
+- [#66](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/66) [`3b90cf1`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/3b90cf18a854642029c8ee3a82f6fee8e538f4ac) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - Enhanced orders page with inventory view tab showing real-time stock levels, minimum thresholds, and visual status indicators for improved inventory management. Includes performance improvements and category management fixes.
+
 ## 9.10.0
 
 ### Minor Changes
