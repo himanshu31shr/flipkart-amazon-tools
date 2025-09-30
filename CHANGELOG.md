@@ -1,5 +1,13 @@
 # Changelog
 
+## 9.11.1
+
+### Patch Changes
+
+- [#69](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/69) [`1686a5a`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/1686a5a088cc650daccd0bd4781e36452ed36161) Thanks [@webdev3103](https://github.com/webdev3103)! - Fix PDF merge categorization by ensuring products and categories are loaded before processing
+
+  This change ensures that both products and categories are fetched from the store before PDF merge operations begin, preventing race conditions that could cause products to not be categorized properly during the merge process.
+
 ## 9.11.0
 
 ### Minor Changes
