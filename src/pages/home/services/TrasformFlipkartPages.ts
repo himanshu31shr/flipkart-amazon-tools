@@ -1,28 +1,51 @@
 import type { PDFDocument } from "pdf-lib";
+// import { degrees } from "pdf-lib"; // Temporarily commented out for testing
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
 import { BaseTransformer, ProductSummary, TextItem } from "./base.transformer";
 import { Product } from "../../../services/product.service";
 import { Category } from "../../../services/category.service";
 import { CategorySortConfig } from "../../../utils/pdfSorting";
 import { BatchInfo } from "../../../types/transaction.type";
-import { InventoryOrderProcessor, InventoryDeductionPreview } from "../../../services/inventoryOrderProcessor.service";
+import {
+  InventoryOrderProcessor,
+  InventoryDeductionPreview,
+} from "../../../services/inventoryOrderProcessor.service";
 import { InventoryDeductionResult } from "../../../types/inventory";
+import { BarcodeService } from "../../../services/barcode.service";
+import { PDFBarcodeEmbedder } from "../../../utils/pdfBarcode";
+import { BarcodeGenerationResult } from "../../../types/barcode";
+import { format } from "date-fns";
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export class FlipkartPageTransformer extends BaseTransformer {
   protected declare pdfDoc: PDFDocument;
   protected declare outputPdf: PDFDocument;
   protected pdf!: pdfjsLib.PDFDocumentProxy;
+  private barcodeService: BarcodeService;
+  private generatedBarcodes: BarcodeGenerationResult[] = [];
 
   constructor(
     filePath: Uint8Array,
     products: Product[],
     categories: Category[],
     sortConfig?: CategorySortConfig,
-    batchInfo?: BatchInfo
+    batchInfo?: BatchInfo,
+    enableBarcodes: boolean = true
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    super(filePath, products, categories as any, sortConfig, batchInfo);
+     
+    super(
+      filePath,
+      products,
+      categories as any,
+      sortConfig,
+      batchInfo,
+      enableBarcodes
+    );
+    this.barcodeService = new BarcodeService();
+  }
+
+  get barcodeResults(): BarcodeGenerationResult[] {
+    return this.generatedBarcodes;
   }
 
   async initialize(): Promise<void> {
@@ -190,12 +213,38 @@ export class FlipkartPageTransformer extends BaseTransformer {
       });
     }
 
+    // Generate barcodes for all processed items
+    const dateString = format(new Date(), "yyyy-MM-dd");
+
+    const barcodeRequests = processedData.map((item, index) => ({
+      dateDocId: dateString,
+      orderIndex: index,
+      metadata: {
+        productName: item.summary.name,
+        sku: item.summary.SKU,
+        quantity: parseInt(item.summary.quantity, 10) || 1,
+        platform: item.summary.type,
+      },
+      orderId: item.summary.orderId,
+    }));
+
+    // Batch generate all barcodes
+    const generatedBarcodes = await this.barcodeService.batchGenerateBarcodes(
+      barcodeRequests,
+      { date: dateString }
+    );
+
+    // Store barcodes for later access
+    this.generatedBarcodes = generatedBarcodes;
+
     // Second pass: Apply the processed data to create pages in the desired order
-    for (const item of processedData) {
+    for (let i = 0; i < processedData.length; i++) {
+      const item = processedData[i];
       const page = pages[item.page];
       const { width, lowerLeftX, lowerLeftY, upperRightX, upperRightY } =
         item.pageData;
 
+      // Keep original page dimensions and crop box
       page.setWidth(width - 180);
       page.setHeight(upperRightY);
       page.setCropBox(lowerLeftX, lowerLeftY, upperRightX, upperRightY);
@@ -207,7 +256,7 @@ export class FlipkartPageTransformer extends BaseTransformer {
 
       const { rgb, StandardFonts } = await import("pdf-lib");
       const pageWidth = page.getWidth();
-      const fontSize = 5;
+      const fontSize = 6;
 
       // Find product info for adding text
       const skuProduct = this.products.find((p) => p.sku === item.summary.SKU);
@@ -217,15 +266,55 @@ export class FlipkartPageTransformer extends BaseTransformer {
 
       let text = `${item.summary.quantity} X [${item.summary?.name}]`;
       if (category) {
-        text = `${item.summary.quantity} X [${
-          category.name
-        }] ${skuProduct?.name.substring(0, 80)}`;
+        text = `${item.summary.quantity} X [${category.name}]`;
+      }
+
+      // Add barcode to the page if available
+      const barcode = generatedBarcodes[i];
+      const barcodeSize = 15; // Use standardized size across platforms
+
+      if (this.enableBarcodes && barcode) {
+        try {
+          // Increase page height to accommodate barcode
+          const currentSize = copiedPage.getSize();
+          const barcodeAreaHeight = 10;
+          const newHeight = currentSize.height + barcodeAreaHeight;
+          copiedPage.setSize(currentSize.width, newHeight);
+
+          // Generate barcode image using standard PDF embedding size
+          const barcodeImageBytes = PDFBarcodeEmbedder.generatePDFEmbedBarcode(
+            barcode.barcodeId
+          );
+
+          const barcodeImage = await this.outputPdf.embedPng(barcodeImageBytes);
+          // Position barcode in a highly visible area first (top-left corner for testing)
+          const barcodeX = 180 + 10; // 10px from left edge of content area
+          const barcodeY = copiedPage.getHeight() - barcodeSize; // Near the top of content area
+
+          // Draw barcode on the copied page (testing without rotation first)
+          copiedPage.drawImage(barcodeImage, {
+            x: barcodeX,
+            y: barcodeY,
+            height: barcodeSize,
+            opacity: 1.0,
+          });
+        } catch (error) {
+          console.error(
+            `Failed to embed barcode ${barcode.barcodeId} on Flipkart page ${
+              i + 1
+            }:`,
+            error
+          );
+        }
       }
 
       // Using standard Helvetica font which supports basic ASCII characters
       const font = await this.outputPdf.embedFont(StandardFonts.Helvetica);
       copiedPage.drawText(text, {
-        y: copiedPage.getHeight() - 10,
+        y:
+          copiedPage.getHeight() -
+          (this.enableBarcodes && barcode ? barcodeSize : 0) -
+          5,
         x: 180 + 10,
         size: fontSize,
         color: rgb(0, 0, 0),
@@ -240,21 +329,21 @@ export class FlipkartPageTransformer extends BaseTransformer {
 
   /**
    * Process Flipkart PDF pages for inventory deduction with category-based quantities
-   * 
+   *
    * This method extracts order information from Flipkart PDF pages and performs
-   * automatic inventory deductions based on category configuration through the 
-   * InventoryOrderProcessor. It leverages the existing PDF processing logic to 
+   * automatic inventory deductions based on category configuration through the
+   * InventoryOrderProcessor. It leverages the existing PDF processing logic to
    * extract product data and applies category-based deduction rules.
-   * 
+   *
    * Process:
    * 1. Process PDF pages using existing transform logic
-   * 2. Extract order items from product summaries  
+   * 2. Extract order items from product summaries
    * 3. Use InventoryOrderProcessor for category-based deduction calculation
    * 4. Apply automatic deductions based on category configuration
    * 5. Return enhanced results with inventory status and deduction details
-   * 
+   *
    * @returns Promise<{ orderItems: ProductSummary[], inventoryResult: InventoryDeductionResult }>
-   * 
+   *
    * Requirements Coverage:
    * - R2: Automatic Deduction - applies category-based deduction quantities
    * - R4: Order Processing Integration - integrates Flipkart PDF processing with inventory
@@ -349,38 +438,44 @@ export class FlipkartPageTransformer extends BaseTransformer {
       currentSummary.product = skuProduct;
 
       // Only add items with valid SKU and quantity
-      if (currentSummary.SKU && currentSummary.quantity && parseInt(currentSummary.quantity) > 0) {
+      if (
+        currentSummary.SKU &&
+        currentSummary.quantity &&
+        parseInt(currentSummary.quantity) > 0
+      ) {
         orderItems.push({ ...currentSummary });
       }
     }
 
     // Use InventoryOrderProcessor for category-based automatic deduction
     const inventoryOrderProcessor = new InventoryOrderProcessor();
-    
+
     // Create order reference from first order item or batch info
-    const orderReference = orderItems.length > 0 ? orderItems[0].orderId : this.batchInfo?.batchId;
-    
+    const orderReference =
+      orderItems.length > 0 ? orderItems[0].orderId : this.batchInfo?.batchId;
+
     // Process orders with automatic category-based deduction
-    const result = await inventoryOrderProcessor.processOrderWithCategoryDeduction(
-      orderItems, 
-      orderReference
-    );
+    const result =
+      await inventoryOrderProcessor.processOrderWithCategoryDeduction(
+        orderItems,
+        orderReference
+      );
 
     return {
       orderItems: result.orderItems,
-      inventoryResult: result.inventoryResult
+      inventoryResult: result.inventoryResult,
     };
   }
 
   /**
    * Preview inventory deductions for Flipkart PDF without actually performing them
-   * 
+   *
    * This method extracts order information from Flipkart PDF pages and calculates
    * what inventory deductions would occur based on category configuration, but
    * does not actually perform the deductions. Useful for validation and review.
-   * 
+   *
    * @returns Promise<InventoryDeductionPreview> Preview of deductions that would occur
-   * 
+   *
    * Requirements Coverage:
    * - R6: Management Tools - provides preview capabilities for validation
    */
@@ -470,7 +565,11 @@ export class FlipkartPageTransformer extends BaseTransformer {
       currentSummary.product = skuProduct;
 
       // Only add items with valid SKU and quantity
-      if (currentSummary.SKU && currentSummary.quantity && parseInt(currentSummary.quantity) > 0) {
+      if (
+        currentSummary.SKU &&
+        currentSummary.quantity &&
+        parseInt(currentSummary.quantity) > 0
+      ) {
         orderItems.push({ ...currentSummary });
       }
     }

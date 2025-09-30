@@ -9,6 +9,7 @@ import {
   clearFlipkartFiles,
   setSelectedDate,
   clearFiles,
+  setEnableBarcodes,
   PdfMergerState 
 } from '../pdfMergerSlice';
 
@@ -29,6 +30,7 @@ describe('pdfMergerSlice', () => {
     isConsolidating: false,
     categoryDeductionPreview: null,
     hasAutomaticDeductionEnabled: false,
+    enableBarcodes: true,
   };
 
   describe('reducers', () => {
@@ -189,6 +191,23 @@ describe('pdfMergerSlice', () => {
         const state = pdfMergerReducer(stateWithFiles, action);
         
         expect(state.flipkartFiles).toEqual([]);
+      });
+    });
+
+    describe('setEnableBarcodes', () => {
+      it('should set enableBarcodes to true', () => {
+        const stateWithBarcodesDisabled = { ...initialState, enableBarcodes: false };
+        const action = setEnableBarcodes(true);
+        const state = pdfMergerReducer(stateWithBarcodesDisabled, action);
+        
+        expect(state.enableBarcodes).toBe(true);
+      });
+
+      it('should set enableBarcodes to false', () => {
+        const action = setEnableBarcodes(false);
+        const state = pdfMergerReducer(initialState, action);
+        
+        expect(state.enableBarcodes).toBe(false);
       });
     });
   });

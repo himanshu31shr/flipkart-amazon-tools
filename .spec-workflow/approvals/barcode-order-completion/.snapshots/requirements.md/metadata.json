@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/barcode-order-completion/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-27T10:48:51.124Z",
+      "trigger": "initial",
+      "approvalId": "approval_1758970131118_s13zx4o3j",
+      "approvalTitle": "Requirements for Barcode Order Completion Feature"
+    }
+  ]
+}

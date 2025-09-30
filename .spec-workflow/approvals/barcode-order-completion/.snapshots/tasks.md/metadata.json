@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/barcode-order-completion/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-27T11:00:10.231Z",
+      "trigger": "initial",
+      "approvalId": "approval_1758970810228_ortqewimc",
+      "approvalTitle": "Implementation Tasks for Barcode Order Completion Feature"
+    }
+  ]
+}

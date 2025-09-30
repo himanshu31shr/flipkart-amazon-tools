@@ -81,6 +81,7 @@ describe('ordersSlice unified filtering', () => {
           pendingUpdates: {},
           batchFilter: null,
           platformFilter: 'all' as const,
+          completionFilter: 'all' as const,
           batches: [],
           batchesLoading: false,
           selectedDate: null,

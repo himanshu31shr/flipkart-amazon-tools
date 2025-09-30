@@ -4,6 +4,7 @@ import { ActiveOrder, TodaysOrder } from '../../services/todaysOrder.service';
 import { CACHE_DURATIONS, shouldFetchData } from '../config';
 import { batchService } from '../../services/batch.service';
 import { BatchInfo } from '../../types/transaction.type';
+import { BarcodeService } from '../../services/barcode.service';
 
 export interface OrdersState {
   items: ActiveOrder[];
@@ -14,6 +15,7 @@ export interface OrdersState {
   // Filtering state
   batchFilter: string | null; // null means show all, string means filter by batch ID
   platformFilter: 'all' | 'amazon' | 'flipkart'; // platform filter
+  completionFilter: 'all' | 'completed' | 'pending'; // completion status filter
   batches: BatchInfo[];
   batchesLoading: boolean;
   selectedDate: string | null; // For fetching batches for a specific date
@@ -27,12 +29,14 @@ const initialState: OrdersState = {
   pendingUpdates: {},
   batchFilter: null,
   platformFilter: 'all',
+  completionFilter: 'all',
   batches: [],
   batchesLoading: false,
   selectedDate: null,
 };
 
 const orderService = new TodaysOrder();
+const barcodeService = new BarcodeService();
 
 export const fetchOrders = createAsyncThunk(
   'orders/fetchOrders',
@@ -127,6 +131,45 @@ export const fetchBatchesForToday = createAsyncThunk(
   }
 );
 
+// Complete order using barcode scan
+export const completeOrderByBarcode = createAsyncThunk(
+  'orders/completeOrderByBarcode',
+  async ({ barcodeId, completedBy }: { barcodeId: string; completedBy?: string }, { dispatch }) => {
+    // First lookup the barcode to get order information
+    const lookupResult = await barcodeService.lookupBarcode(barcodeId);
+    
+    if (!lookupResult.success || !lookupResult.orderData) {
+      throw new Error(lookupResult.error || 'Order not found');
+    }
+    
+    // Mark order as completed in barcode system
+    const completionSuccess = await barcodeService.markOrderCompleted(barcodeId, completedBy || 'Scanner');
+    
+    if (completionSuccess) {
+      const completedAt = new Date().toISOString();
+      
+      // Update Redux state optimistically
+      dispatch(markOrderCompleted({
+        productName: lookupResult.orderData.productName,
+        sku: lookupResult.orderData.sku,
+        dateDocId: lookupResult.orderData.dateDocId,
+        orderIndex: lookupResult.orderData.orderIndex,
+        completedAt,
+        completedBy: completedBy || 'Scanner'
+      }));
+      
+      return {
+        success: true,
+        orderData: lookupResult.orderData,
+        completedAt,
+        completedBy: completedBy || 'Scanner'
+      };
+    }
+    
+    throw new Error('Failed to mark order as completed');
+  }
+);
+
 const ordersSlice = createSlice({
   name: 'orders',
   initialState,
@@ -152,9 +195,56 @@ const ordersSlice = createSlice({
     clearPlatformFilter: (state) => {
       state.platformFilter = 'all';
     },
+    setCompletionFilter: (state, action: PayloadAction<'all' | 'completed' | 'pending'>) => {
+      state.completionFilter = action.payload;
+    },
+    clearCompletionFilter: (state) => {
+      state.completionFilter = 'all';
+    },
     clearAllFilters: (state) => {
       state.batchFilter = null;
       state.platformFilter = 'all';
+      state.completionFilter = 'all';
+    },
+    // Order completion status actions
+    markOrderCompleted: (state, action: PayloadAction<{ 
+      productName: string; 
+      sku?: string; 
+      dateDocId: string; 
+      orderIndex: number;
+      completedAt: string; 
+      completedBy?: string 
+    }>) => {
+      const { productName, sku, orderIndex, completedAt, completedBy } = action.payload;
+      // Find order by matching product name, SKU, and order index
+      // Note: We use orderIndex to find the exact order since multiple orders can have the same product name
+      if (orderIndex >= 0 && orderIndex < state.items.length) {
+        const order = state.items[orderIndex];
+        // Verify this is the correct order by checking product name and SKU
+        if (order.name === productName && (sku ? order.SKU === sku : true)) {
+          order.isCompleted = true;
+          order.completedAt = completedAt;
+          order.completedBy = completedBy;
+        }
+      }
+    },
+    markOrderPending: (state, action: PayloadAction<{ 
+      productName: string; 
+      sku?: string; 
+      dateDocId: string; 
+      orderIndex: number;
+    }>) => {
+      const { productName, sku, dateDocId } = action.payload;
+      const order = state.items.find(item => 
+        item.name === productName && 
+        (sku ? item.SKU === sku : true) &&
+        item.createdAt === dateDocId
+      );
+      if (order) {
+        order.isCompleted = false;
+        order.completedAt = undefined;
+        order.completedBy = undefined;
+      }
     },
     setSelectedDate: (state, action: PayloadAction<string>) => {
       state.selectedDate = action.payload;
@@ -219,6 +309,17 @@ const ordersSlice = createSlice({
       .addCase(fetchBatchesForToday.rejected, (state, action) => {
         state.batchesLoading = false;
         state.error = action.error.message || 'Failed to fetch batches for today';
+      })
+      // Order completion reducers
+      .addCase(completeOrderByBarcode.pending, (state) => {
+        state.error = null;
+      })
+      .addCase(completeOrderByBarcode.fulfilled, (state) => {
+        // Order completion is handled optimistically in the thunk
+        state.error = null;
+      })
+      .addCase(completeOrderByBarcode.rejected, (state, action) => {
+        state.error = action.error.message || 'Failed to complete order';
       });
   },
 });
@@ -230,19 +331,24 @@ export const {
   clearBatchFilter,
   setPlatformFilter,
   clearPlatformFilter,
+  setCompletionFilter,
+  clearCompletionFilter,
   clearAllFilters,
+  markOrderCompleted,
+  markOrderPending,
   setSelectedDate 
 } = ordersSlice.actions;
 export const ordersReducer = ordersSlice.reducer;
 
-// Comprehensive selector that handles both platform and batch filtering
+// Comprehensive selector that handles platform, batch, and completion filtering
 export const selectFilteredOrders = createSelector(
   [
     (state: { orders: OrdersState }) => state.orders.items, 
     (state: { orders: OrdersState }) => state.orders.batchFilter,
-    (state: { orders: OrdersState }) => state.orders.platformFilter
+    (state: { orders: OrdersState }) => state.orders.platformFilter,
+    (state: { orders: OrdersState }) => state.orders.completionFilter
   ],
-  (items, batchFilter, platformFilter) => {
+  (items, batchFilter, platformFilter, completionFilter) => {
     let filteredItems = items;
     
     // Apply platform filter first
@@ -255,6 +361,15 @@ export const selectFilteredOrders = createSelector(
       filteredItems = filteredItems.filter(order => 
         order.batchInfo?.batchId === batchFilter
       );
+    }
+    
+    // Apply completion status filter
+    if (completionFilter && completionFilter !== 'all') {
+      if (completionFilter === 'completed') {
+        filteredItems = filteredItems.filter(order => order.isCompleted === true);
+      } else if (completionFilter === 'pending') {
+        filteredItems = filteredItems.filter(order => order.isCompleted !== true);
+      }
     }
     
     return filteredItems;
@@ -278,4 +393,32 @@ export const selectOrdersByBatch = createSelector(
     
     return grouped;
   }
+);
+
+// Selectors for completion status insights
+export const selectCompletionStats = createSelector(
+  [selectFilteredOrders],
+  (filteredOrders) => {
+    const total = filteredOrders.length;
+    const completed = filteredOrders.filter(order => order.isCompleted === true).length;
+    const pending = total - completed;
+    const completionRate = total > 0 ? (completed / total) * 100 : 0;
+    
+    return {
+      total,
+      completed,
+      pending,
+      completionRate: Math.round(completionRate * 100) / 100 // Round to 2 decimal places
+    };
+  }
+);
+
+export const selectCompletedOrders = createSelector(
+  [(state: { orders: OrdersState }) => state.orders.items],
+  (items) => items.filter(order => order.isCompleted === true)
+);
+
+export const selectPendingOrders = createSelector(
+  [(state: { orders: OrdersState }) => state.orders.items],
+  (items) => items.filter(order => order.isCompleted !== true)
 ); 

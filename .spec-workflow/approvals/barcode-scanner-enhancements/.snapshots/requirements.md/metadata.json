@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/barcode-scanner-enhancements/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-29T04:12:05.513Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759119125504_3yq4cl2fm",
+      "approvalTitle": "Barcode Scanner Enhancements - Requirements Document"
+    }
+  ]
+}

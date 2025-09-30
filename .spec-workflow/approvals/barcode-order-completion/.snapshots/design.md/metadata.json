@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/barcode-order-completion/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-09-27T10:56:31.402Z",
+      "trigger": "initial",
+      "approvalId": "approval_1758970591400_nl55vuye4",
+      "approvalTitle": "Technical Design for Barcode Order Completion Feature"
+    }
+  ]
+}

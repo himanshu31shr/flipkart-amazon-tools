@@ -20,6 +20,7 @@ export interface PdfMergerState {
   isConsolidating: boolean;
   categoryDeductionPreview: InventoryDeductionPreview | null;
   hasAutomaticDeductionEnabled: boolean;
+  enableBarcodes: boolean;
 }
 
 const initialState: PdfMergerState = {
@@ -35,6 +36,7 @@ const initialState: PdfMergerState = {
   isConsolidating: false,
   categoryDeductionPreview: null,
   hasAutomaticDeductionEnabled: false,
+  enableBarcodes: true, // Default to enabled for backward compatibility
 };
 
 interface MergePDFsParams {
@@ -42,6 +44,7 @@ interface MergePDFsParams {
   flipkartFiles: File[];
   sortConfig?: CategorySortConfig;
   selectedDate?: Date;
+  enableBarcodes?: boolean;
 }
 
 // Helper function to read file contents
@@ -133,7 +136,7 @@ export const previewCategoryDeductions = createAsyncThunk(
 export const mergePDFs = createAsyncThunk(
   'pdfMerger/mergePDFs',
   async (params: MergePDFsParams, { dispatch }) => {
-    const { amazonFiles, flipkartFiles, sortConfig, selectedDate } = params;
+    const { amazonFiles, flipkartFiles, sortConfig, selectedDate, enableBarcodes = true } = params;
 
     if (amazonFiles.length === 0 && flipkartFiles.length === 0) {
       throw new Error('No files provided');
@@ -200,7 +203,8 @@ export const mergePDFs = createAsyncThunk(
         flp: consolidatedFlipkartPDF ? [consolidatedFlipkartPDF] : [],
         sortConfig: sortConfig,
         selectedDate: selectedDate,
-        fileNames: fileNames
+        fileNames: fileNames,
+        enableBarcodes: enableBarcodes
       });
 
       if (!pdf) {
@@ -273,6 +277,7 @@ const pdfMergerSlice = createSlice({
       state.isConsolidating = false;
       state.categoryDeductionPreview = null;
       state.hasAutomaticDeductionEnabled = false;
+      // Don't reset enableBarcodes as it's a user preference
     },
     updateConsolidationProgress: (state, action: PayloadAction<ConsolidationProgress>) => {
       state.consolidationProgress = action.payload;
@@ -290,6 +295,9 @@ const pdfMergerSlice = createSlice({
     },
     setAutomaticDeductionEnabled: (state, action: PayloadAction<boolean>) => {
       state.hasAutomaticDeductionEnabled = action.payload;
+    },
+    setEnableBarcodes: (state, action: PayloadAction<boolean>) => {
+      state.enableBarcodes = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -344,6 +352,7 @@ export const {
   clearConsolidationProgress,
   setCategoryDeductionPreview,
   clearCategoryDeductionPreview,
-  setAutomaticDeductionEnabled
+  setAutomaticDeductionEnabled,
+  setEnableBarcodes
 } = pdfMergerSlice.actions;
 export const pdfMergerReducer = pdfMergerSlice.reducer; 

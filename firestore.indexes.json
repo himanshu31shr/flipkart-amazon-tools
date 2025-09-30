@@ -51,6 +51,98 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "order-barcodes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "barcodeId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "order-barcodes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "dateDocId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "orderIndex",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "order-barcodes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "dateDocId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isCompleted",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "order-barcodes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "metadata.platform",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dateDocId",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "order-barcodes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "isCompleted",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "completedAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "order-barcodes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "dateDocId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "metadata.platform",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isCompleted",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

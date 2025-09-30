@@ -37,6 +37,7 @@ import {
   clearAmazonFiles,
   clearFlipkartFiles,
   setSelectedDate,
+  setEnableBarcodes,
 } from "../../store/slices/pdfMergerSlice";
 import { DownloadButtons } from "./components/DownloadButtons";
 
@@ -57,6 +58,7 @@ import {
 } from "../../services/pdfStorageService";
 import { selectIsAuthenticated } from "../../store/slices/authSlice";
 import { FileUploadSection } from "./components/FileUploadSection";
+import { BarcodeToggle } from "./components/BarcodeToggle";
 
 export const HomePage: React.FC = () => {
   const theme = useTheme();
@@ -71,6 +73,7 @@ export const HomePage: React.FC = () => {
     loading,
     error,
     selectedDate,
+    enableBarcodes,
   } = useAppSelector((state) => state.pdfMerger);
   const { categories, items: products } = useAppSelector(
     (state) => state.products
@@ -215,6 +218,7 @@ export const HomePage: React.FC = () => {
           flipkartFiles,
           sortConfig: defaultSortConfig,
           selectedDate,
+          enableBarcodes,
         })
       ).unwrap();
 
@@ -334,6 +338,10 @@ export const HomePage: React.FC = () => {
 
   const handleCloseError = () => {
     setErrorMessage(undefined);
+  };
+
+  const handleBarcodeToggle = (enabled: boolean) => {
+    dispatch(setEnableBarcodes(enabled));
   };
 
   return (
@@ -458,6 +466,15 @@ export const HomePage: React.FC = () => {
               onAmazonClear={handleClearAmazonFiles}
               onFlipkartClear={handleClearFlipkartFiles}
             />
+
+            {/* Barcode Toggle Section */}
+            <Box sx={{ mt: 3 }}>
+              <BarcodeToggle
+                enabled={enableBarcodes}
+                onChange={handleBarcodeToggle}
+                disabled={loading}
+              />
+            </Box>
 
             <Box sx={{ mt: 3, textAlign: "center" }}>
               <Button

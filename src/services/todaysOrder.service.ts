@@ -3,6 +3,7 @@ import { ProductSummary } from "../pages/home/services/base.transformer";
 import { FirebaseService } from "./firebase.service";
 import { Product, ProductService } from "./product.service";
 import { Category, CategoryService } from "./category.service";
+import { BarcodeService } from "./barcode.service";
 
 export type ActiveOrder = ProductSummary;
 
@@ -62,6 +63,11 @@ export class TodaysOrder extends FirebaseService {
     if (order.category !== undefined) cleanOrder.category = order.category;
     if (order.categoryId !== undefined) cleanOrder.categoryId = order.categoryId;
     
+    // Add barcode completion fields
+    if (order.isCompleted !== undefined) cleanOrder.isCompleted = order.isCompleted;
+    if (order.completedAt !== undefined) cleanOrder.completedAt = order.completedAt;
+    if (order.completedBy !== undefined) cleanOrder.completedBy = order.completedBy;
+    
     // Never include the product property when saving to database to avoid circular references
     // The product property is populated during read operations in mapProductToOrder method
     
@@ -100,6 +106,80 @@ export class TodaysOrder extends FirebaseService {
     }
   }
 
+  /**
+   * Sync completion status from barcode service for orders
+   * @param orders Array of orders to sync completion status for
+   * @param dateDocId The date document ID for barcode lookup
+   */
+  private async syncCompletionStatus(orders: ProductSummary[], dateDocId: string): Promise<void> {
+    try {
+      const barcodeService = new BarcodeService();
+      
+      // Get all barcodes for this date
+      const barcodes = await barcodeService.getBarcodesForDate(dateDocId);
+      
+      // Create a map using multiple keys for more reliable matching
+      // This avoids issues with array index mismatches due to sorting
+      const completionMap = new Map<string, { isCompleted: boolean; completedAt?: string; completedBy?: string }>();
+      
+      barcodes.forEach(barcode => {
+        const completionData = {
+          isCompleted: barcode.isCompleted,
+          completedAt: barcode.completedAt,
+          completedBy: barcode.completedBy
+        };
+        
+        // Create multiple keys for robust matching
+        // Priority 1: Use orderId if available (most unique)
+        if (barcode.orderId) {
+          const orderIdKey = `orderId:${barcode.orderId}`;
+          completionMap.set(orderIdKey, completionData);
+        }
+        
+        // Priority 2: Use product name + SKU + quantity combination
+        const productKey = `product:${barcode.metadata.productName}|${barcode.metadata.sku || ''}|${barcode.metadata.quantity}`;
+        completionMap.set(productKey, completionData);
+        
+        // Priority 3: Fallback to just product name + SKU
+        const basicKey = `basic:${barcode.metadata.productName}|${barcode.metadata.sku || ''}`;
+        completionMap.set(basicKey, completionData);
+      });
+      
+      // Apply completion status to orders using hierarchical key matching
+      orders.forEach((order) => {
+        let completionStatus = null;
+        
+        // Try matching with orderId first (most reliable)
+        if (order.orderId) {
+          const orderIdKey = `orderId:${order.orderId}`;
+          completionStatus = completionMap.get(orderIdKey);
+        }
+        
+        // Try matching with product details + quantity
+        if (!completionStatus) {
+          const productKey = `product:${order.name}|${order.SKU || ''}|${parseInt(order.quantity, 10) || 1}`;
+          completionStatus = completionMap.get(productKey);
+        }
+        
+        // Fallback to basic matching
+        if (!completionStatus) {
+          const basicKey = `basic:${order.name}|${order.SKU || ''}`;
+          completionStatus = completionMap.get(basicKey);
+        }
+        
+        if (completionStatus) {
+          order.isCompleted = completionStatus.isCompleted;
+          order.completedAt = completionStatus.completedAt;
+          order.completedBy = completionStatus.completedBy;
+        }
+      });
+      
+    } catch (error) {
+      // Silently continue if barcode sync fails
+      console.warn(`Failed to sync completion status for date ${dateDocId}:`, error);
+    }
+  }
+
   async getTodaysOrders(): Promise<ActiveOrderSchema | undefined> {
     await this.mapProductsToActiveOrder();
     const activeOrder = await this.getDocument<ActiveOrderSchema>(
@@ -110,6 +190,8 @@ export class TodaysOrder extends FirebaseService {
       activeOrder.orders.forEach((order) => {
         this.mapProductToOrder(order);
       });
+      // Sync completion status from barcode service
+      await this.syncCompletionStatus(activeOrder.orders, activeOrder.id);
     }
 
     return activeOrder;
@@ -130,6 +212,8 @@ export class TodaysOrder extends FirebaseService {
       activeOrder.orders.forEach((order) => {
         this.mapProductToOrder(order);
       });
+      // Sync completion status from barcode service
+      await this.syncCompletionStatus(activeOrder.orders, activeOrder.id);
     }
 
     return activeOrder;
@@ -154,6 +238,8 @@ export class TodaysOrder extends FirebaseService {
           dayOrder.orders.forEach((order) => {
             this.mapProductToOrder(order);
           });
+          // Sync completion status from barcode service
+          await this.syncCompletionStatus(dayOrder.orders, dayOrder.id);
           orders.push(dayOrder);
         } else {
           orders.push({
