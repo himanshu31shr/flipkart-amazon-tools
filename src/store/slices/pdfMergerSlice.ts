@@ -6,6 +6,7 @@ import { CategorySortConfig } from "../../utils/pdfSorting";
 import { PDFConsolidationService, ConsolidationProgress, ConsolidationError } from '../../services/pdfConsolidation.service';
 import { InventoryDeductionResult } from '../../types/inventory';
 import { InventoryDeductionPreview } from '../../services/inventoryOrderProcessor.service';
+import { fetchCategories, fetchProducts } from './productsSlice';
 
 export interface PdfMergerState {
   amazonFiles: File[];
@@ -65,15 +66,39 @@ const readFileFromInput = (file: File): Promise<Uint8Array> => {
 
 export const previewCategoryDeductions = createAsyncThunk(
   'pdfMerger/previewCategoryDeductions',
-  async (params: MergePDFsParams) => {
+  async (params: MergePDFsParams, { dispatch }) => {
     const { amazonFiles, flipkartFiles, sortConfig } = params;
 
     if (amazonFiles.length === 0 && flipkartFiles.length === 0) {
       throw new Error('No files provided');
     }
 
-    const products = store.getState().products.items;
-    const categories = store.getState().products.categories;
+    // Ensure categories are loaded before proceeding with deduction preview
+    // This prevents categorization failures when previewing deductions
+    let products = store.getState().products.items;
+    let categories = store.getState().products.categories;
+
+    // Fetch categories first if they're not loaded
+    if (categories.length === 0) {
+      try {
+        await dispatch(fetchCategories()).unwrap();
+        categories = store.getState().products.categories;
+      } catch (error) {
+        console.warn('Failed to fetch categories before deduction preview:', error);
+        // Continue with empty categories rather than failing completely
+      }
+    }
+
+    // Fetch products if they're not loaded
+    if (products.length === 0) {
+      try {
+        await dispatch(fetchProducts({})).unwrap();
+        products = store.getState().products.items;
+      } catch (error) {
+        console.warn('Failed to fetch products before deduction preview:', error);
+        // Continue with empty products rather than failing completely
+      }
+    }
 
     // Create consolidation service for preview
     const consolidationService = new PDFConsolidationService({
@@ -154,8 +179,32 @@ export const mergePDFs = createAsyncThunk(
       }
     }
 
-    const products = store.getState().products.items;
-    const categories = store.getState().products.categories;
+    // Ensure categories are loaded before proceeding with PDF processing
+    // This prevents categorization failures when merging PDFs
+    let products = store.getState().products.items;
+    let categories = store.getState().products.categories;
+
+    // Fetch categories first if they're not loaded
+    if (categories.length === 0) {
+      try {
+        await dispatch(fetchCategories()).unwrap();
+        categories = store.getState().products.categories;
+      } catch (error) {
+        console.warn('Failed to fetch categories before PDF processing:', error);
+        // Continue with empty categories rather than failing completely
+      }
+    }
+
+    // Fetch products if they're not loaded
+    if (products.length === 0) {
+      try {
+        await dispatch(fetchProducts({})).unwrap();
+        products = store.getState().products.items;
+      } catch (error) {
+        console.warn('Failed to fetch products before PDF processing:', error);
+        // Continue with empty products rather than failing completely
+      }
+    }
 
     // Create consolidation service with progress tracking
     const consolidationService = new PDFConsolidationService({
