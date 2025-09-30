@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.10.0
+
+### Minor Changes
+
+- [#64](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/64) [`ce03fa2`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/ce03fa2d755fae5d1bdbc3eaa53258aa9f8b7550) Thanks [@byajbook-dev](https://github.com/byajbook-dev)! - Enhanced barcode scanner with automatic camera activation on modal open. Camera now starts immediately when scanner tab is activated, eliminating the need for manual camera button clicks. Includes platform-specific optimizations for both mobile and desktop views with improved timing for dialog rendering.
+
 ## 9.9.0
 
 ### Minor Changes
