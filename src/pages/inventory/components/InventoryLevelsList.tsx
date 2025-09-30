@@ -13,6 +13,7 @@ import { Column, DataTable } from "../../../components/DataTable/DataTable";
 import { InventoryLevel, InventoryFilters, InventoryStatus } from "../../../types/inventory";
 import { InventoryLevelsToolbar } from "./InventoryLevelsToolbar";
 import EditableThresholdCell from "./EditableThresholdCell";
+import EditableInventoryLevelCell from "./EditableInventoryLevelCell";
 import { useAppDispatch, useAppSelector } from '../../../store/hooks';
 import { 
   fetchInventoryLevels, 
@@ -140,18 +141,22 @@ export const InventoryLevelsList: React.FC<Props> = ({
       label: "Current Inventory",
       align: "right",
       format: (value, row) => {
-        const inventory = value as number;
-        const unit = row?.inventoryUnit || '';
+        if (!row) return <Typography variant="body2">-</Typography>;
         return (
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              fontWeight: 'medium',
-              color: inventory <= 0 ? 'error.main' : 'text.primary'
+          <EditableInventoryLevelCell
+            inventoryLevel={row}
+            onUpdateSuccess={(categoryGroupId, newLevel) => {
+              setSnackbarMessage(`Successfully updated inventory to ${formatInventoryValue(newLevel, row.inventoryUnit)}`);
+              setSnackbarSeverity('success');
+              setSnackbarOpen(true);
+              handleRefresh(); // Refresh the data after successful update
             }}
-          >
-            {formatInventoryValue(inventory, unit)}
-          </Typography>
+            onUpdateError={(categoryGroupId, error) => {
+              setSnackbarMessage(`Failed to update inventory: ${error}`);
+              setSnackbarSeverity('error');
+              setSnackbarOpen(true);
+            }}
+          />
         );
       },
     },
