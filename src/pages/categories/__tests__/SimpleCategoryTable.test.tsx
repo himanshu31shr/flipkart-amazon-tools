@@ -200,9 +200,9 @@ describe('SimpleCategoryTable', () => {
         expect(screen.getByText('Categories (3)')).toBeInTheDocument();
       }) as any;
 
-      expect(screen.getAllByText('Electronics')).toHaveLength(2); // Name and linked category
-      expect(screen.getAllByText('Books')).toHaveLength(2); // Name and linked category  
-      expect(screen.getAllByText('Clothing')).toHaveLength(2); // Name and linked category
+      expect(screen.getAllByText('Electronics')).toHaveLength(1); // Just the category name
+      expect(screen.getAllByText('Books')).toHaveLength(1); // Just the category name  
+      expect(screen.getAllByText('Clothing')).toHaveLength(1); // Just the category name
     }) as any;
 
     it('displays category details correctly', async () => {
@@ -218,12 +218,12 @@ describe('SimpleCategoryTable', () => {
       renderWithTheme(<SimpleCategoryTable />, store);
       
       await waitFor(() => {
-        expect(screen.getAllByText('Electronics')).toHaveLength(2); // Name and linked category
+        expect(screen.getAllByText('Electronics')).toHaveLength(1); // Just the category name
       }) as any;
 
-      // Check linked categories (replaced tags column)
-      expect(screen.getAllByText('Books')).toHaveLength(2); // Name and linked category
-      expect(screen.getByText('None')).toBeInTheDocument(); // Clothing has no links
+      // Check inventory unit and deduction (replaced linked categories column)
+      expect(screen.getAllByText('Books')).toHaveLength(1); // Just the category name
+      expect(screen.getAllByText('No auto-deduction')).toHaveLength(3); // All categories default to no deduction
 
       // Check category groups
       expect(screen.getByText('Tech Group')).toBeInTheDocument();
@@ -372,14 +372,15 @@ describe('SimpleCategoryTable', () => {
   describe('Data Validation', () => {
 
 
-    it('shows "None" for empty linkedCategories', async () => {
+    it('shows "No auto-deduction" for categories without inventory deduction', async () => {
       mockGetCategoriesWithGroups.mockResolvedValue([
         {
           id: '1',
           name: 'Test Category',
           description: '',
           tag: '',
-          linkedCategories: [],
+          inventoryUnit: 'pcs',
+          inventoryDeductionQuantity: 0, // No deduction
         }
       ]);
 
@@ -398,10 +399,10 @@ describe('SimpleCategoryTable', () => {
         expect(screen.getByText('Test Category')).toBeInTheDocument();
       }) as any;
 
-      // Check that "None" appears for empty linkedCategories
+      // Check that "No auto-deduction" appears for categories without deduction
       const rows = screen.getAllByRole('row');
       const testRow = rows.find(row => row.textContent?.includes('Test Category'));
-      expect(testRow?.textContent).toMatch(/None/); // Should contain "None" for empty linkedCategories
+      expect(testRow?.textContent).toMatch(/No auto-deduction/); // Should contain "No auto-deduction" for categories without deduction
     }) as any;
   }) as any;
 }) as any;

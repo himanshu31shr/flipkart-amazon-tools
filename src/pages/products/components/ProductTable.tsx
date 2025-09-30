@@ -94,17 +94,6 @@ export const ProductTable: React.FC<Props> = ({
     return category ? category.name : "-";
   };
 
-  const getContrastColor = (hexColor: string): string => {
-    try {
-      const r = parseInt(hexColor.slice(1, 3), 16);
-      const g = parseInt(hexColor.slice(3, 5), 16);
-      const b = parseInt(hexColor.slice(5, 7), 16);
-      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      return luminance > 0.5 ? '#000000' : '#ffffff';
-    } catch {
-      return '#000000';
-    }
-  };
 
   const isProductWithCategoryGroup = (product: Product | ProductWithCategoryGroup): product is ProductWithCategoryGroup => {
     return 'category' in product;
@@ -140,35 +129,6 @@ export const ProductTable: React.FC<Props> = ({
           return product.category.name;
         }
         return getCategoryName((row as Product).categoryId);
-      }
-    },
-    {
-      id: "categoryGroup",
-      label: "Group",
-      filter: true,
-      format: (_, row) => {
-        const product = row as Product | ProductWithCategoryGroup;
-        if (isProductWithCategoryGroup(product) && product.category?.categoryGroup) {
-          const group = product.category.categoryGroup;
-          return (
-            <Chip
-              label={group.name}
-              size="small"
-              sx={{
-                backgroundColor: group.color,
-                color: getContrastColor(group.color),
-                fontWeight: 'medium',
-              }}
-            />
-          );
-        }
-        return <Chip label="-" size="small" variant="outlined" />;
-      },
-      filterValue: (row) => {
-        const product = row as Product | ProductWithCategoryGroup;
-        return isProductWithCategoryGroup(product) && product.category?.categoryGroup 
-          ? product.category.categoryGroup.name 
-          : '-';
       }
     },
     {

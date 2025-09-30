@@ -94,6 +94,11 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
     await onSubmit(data);
   };
 
+  const onFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    handleSubmit(handleFormSubmit)(event);
+  };
+
   // Reset form when defaultValues or open state changes
   React.useEffect(() => {
     reset(defaultValues);
@@ -104,7 +109,7 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({
       <DialogTitle>
         {defaultValues?.id ? 'Edit Category' : 'Add New Category'}
       </DialogTitle>
-      <form onSubmit={handleSubmit(handleFormSubmit)}>
+      <form onSubmit={onFormSubmit}>
         <DialogContent sx={{ minHeight: '400px' }}>
           <Box sx={{ mt: 1 }}>
             {/* Basic Information Section */}

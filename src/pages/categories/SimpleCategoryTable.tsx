@@ -22,6 +22,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import LinkIcon from '@mui/icons-material/Link';
 import { CategoryService, Category } from '../../services/category.service';
+import { CategoryGroupService } from '../../services/categoryGroup.service';
 import CategoryGroupSelector from '../categoryGroups/components/CategoryGroupSelector';
 import { CategoryForm } from './CategoryForm';
 import { DataTable, Column } from '../../components/DataTable/DataTable';
@@ -66,6 +67,7 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
   const [existingTags, setExistingTags] = useState<string[]>([]);
 
   const categoryService = new CategoryService();
+  const categoryGroupService = new CategoryGroupService();
 
   // Define DataTable columns
   const columns: Column<CategoryTableData>[] = [
@@ -122,52 +124,39 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
       }
     },
     {
-      id: 'linkedCategories',
-      label: 'Linked Categories',
+      id: 'inventoryInfo',
+      label: 'Unit & Deduction',
       filter: true,
       filterValue: (row) => {
-        if (!row?.linkedCategories || row.linkedCategories.length === 0) return 'None';
-        return row.linkedCategories.length > 1 ? 'Multiple' : '1 Link';
+        if (!row?.inventoryUnit && !row?.inventoryDeductionQuantity) return 'Not Set';
+        if (row.inventoryUnit && row.inventoryDeductionQuantity) return 'Configured';
+        return 'Partial';
       },
       format: (value, row) => {
-        if (!row?.linkedCategories || row.linkedCategories.length === 0) {
+        const unit = row?.inventoryUnit || 'pcs';
+        const deduction = row?.inventoryDeductionQuantity;
+        
+        if (!deduction || deduction === 0) {
           return (
-            <Typography variant="body2" color="text.secondary">None</Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                Unit: {unit}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                No auto-deduction
+              </Typography>
+            </Box>
           );
         }
         
-        const activeLinks = row.linkedCategories.filter(link => link.isActive !== false);
-        const inactiveLinks = row.linkedCategories.filter(link => link.isActive === false);
-        
         return (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-            {activeLinks.slice(0, 2).map((link, index) => (
-              <Chip
-                key={`${link.categoryId}-${index}`}
-                label={categories.find(c => c.id === link.categoryId)?.name || 'Unknown'}
-                size="small"
-                color="primary"
-                variant="outlined"
-              />
-            ))}
-            {inactiveLinks.slice(0, 1).map((link, index) => (
-              <Chip
-                key={`inactive-${link.categoryId}-${index}`}
-                label={categories.find(c => c.id === link.categoryId)?.name || 'Unknown'}
-                size="small"
-                color="default"
-                variant="outlined"
-                sx={{ opacity: 0.6 }}
-              />
-            ))}
-            {row.linkedCategories.length > 3 && (
-              <Chip
-                label={`+${row.linkedCategories.length - 3} more`}
-                size="small"
-                variant="outlined"
-                color="default"
-              />
-            )}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Typography variant="body2" fontWeight="medium">
+              Unit: {unit}
+            </Typography>
+            <Typography variant="body2" color="primary.main">
+              Deducts: {deduction} {unit}/order
+            </Typography>
           </Box>
         );
       }
@@ -262,13 +251,46 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
     setIsSubmitting(true);
     try {
       if (editingCategory?.id) {
+        // Update existing category
         const updateData = {
           ...formData,
           categoryGroupId: formData.categoryGroupId === null ? undefined : formData.categoryGroupId,
         };
         await categoryService.updateCategory(editingCategory.id!, updateData);
+        
+        // Get current category data including categoryGroup
+        const currentCategory = categories.find(cat => cat.id === editingCategory.id);
+        
+        // If categoryGroupId changed, get the new group details first
+        let groupDetails = currentCategory?.categoryGroup;
+        if (updateData.categoryGroupId !== editingCategory.categoryGroupId) {
+          if (updateData.categoryGroupId) {
+            const group = await categoryGroupService.getCategoryGroup(updateData.categoryGroupId);
+            groupDetails = group ? {
+              id: group.id!,
+              name: group.name,
+              color: group.color
+            } : undefined;
+          } else {
+            groupDetails = undefined;
+          }
+        }
+        
+        // Optimistically update the local state instead of full refresh
+        setCategories(prevCategories => 
+          prevCategories.map(cat => 
+            cat.id === editingCategory.id 
+              ? { 
+                  ...cat, 
+                  ...updateData,
+                  categoryGroup: groupDetails,
+                  updatedAt: new Date()
+                }
+              : cat
+          )
+        );
       } else {
-        // Ensure we have the required fields for createCategory
+        // Create new category - need to fetch to get server-generated ID
         const categoryData = {
           name: formData.name,
           description: formData.description || '',
@@ -278,11 +300,14 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
           inventoryDeductionQuantity: formData.inventoryDeductionQuantity,
         };
         await categoryService.createCategory(categoryData);
+        
+        // Only refresh data for new category creation to get the server-generated ID
+        await fetchCategories();
+        onDataChange?.(); // Only call onDataChange when we actually fetch new data
       }
 
       handleCloseDialog();
-      await fetchCategories();
-      onDataChange?.();
+      // Don't call onDataChange for optimistic updates - it triggers unnecessary refresh
     } catch (error) {
       console.error('Error saving category:', error);
       throw error; // Let CategoryForm handle the error display
@@ -295,10 +320,20 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
     if (window.confirm('Are you sure you want to delete this category?')) {
       try {
         await categoryService.deleteCategory(categoryId);
-        await fetchCategories();
-        onDataChange?.();
+        
+        // Optimistically remove the category from local state
+        setCategories(prevCategories => 
+          prevCategories.filter(cat => cat.id !== categoryId)
+        );
+        
+        // Also remove from selected categories if it was selected
+        setSelectedCategories(prev => prev.filter(id => id !== categoryId));
+        
+        // Don't call onDataChange for optimistic updates - it triggers unnecessary refresh
       } catch (error) {
         console.error('Error deleting category:', error);
+        // On error, refresh data to ensure consistency
+        await fetchCategories();
       }
     }
   };
@@ -325,13 +360,38 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
         selectedCategories.map(id => String(id)), 
         groupId
       );
-      await fetchCategories();
-      onDataChange?.();
+      
+      // Get the group details for optimistic update
+      let groupDetails = null;
+      if (groupId) {
+        groupDetails = await categoryGroupService.getCategoryGroup(groupId);
+      }
+      
+      // Optimistically update local state
+      setCategories(prevCategories => 
+        prevCategories.map(cat => 
+          selectedCategories.includes(cat.id!)
+            ? {
+                ...cat,
+                categoryGroupId: groupId || undefined, // Convert null to undefined
+                categoryGroup: groupDetails ? {
+                  id: groupDetails.id!,
+                  name: groupDetails.name,
+                  color: groupDetails.color
+                } : undefined
+              }
+            : cat
+        )
+      );
+      
+      // Don't call onDataChange for optimistic updates - it triggers unnecessary refresh
       setSelectedCategories([]);
       setBulkGroupAssignmentOpen(false);
       setBulkMenuAnchor(null);
     } catch (error) {
       console.error('Error assigning groups:', error);
+      // On error, refresh data to ensure consistency
+      await fetchCategories();
     }
   };
 
@@ -433,11 +493,36 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
               if (groupAssignmentOpen) {
                 try {
                   await categoryService.assignCategoryToGroup(groupAssignmentOpen, groupId);
-                  await fetchCategories();
-                  onDataChange?.();
+                  
+                  // Get the group details for optimistic update
+                  let groupDetails = null;
+                  if (groupId) {
+                    groupDetails = await categoryGroupService.getCategoryGroup(groupId);
+                  }
+                  
+                  // Optimistically update local state
+                  setCategories(prevCategories => 
+                    prevCategories.map(cat => 
+                      cat.id === groupAssignmentOpen
+                        ? {
+                            ...cat,
+                            categoryGroupId: groupId || undefined, // Convert null to undefined
+                            categoryGroup: groupDetails ? {
+                              id: groupDetails.id!,
+                              name: groupDetails.name,
+                              color: groupDetails.color
+                            } : undefined
+                          }
+                        : cat
+                    )
+                  );
+                  
+                  // Don't call onDataChange for optimistic updates - it triggers unnecessary refresh
                   setGroupAssignmentOpen(null);
                 } catch (error) {
                   console.error('Error assigning group:', error);
+                  // On error, refresh data to ensure consistency
+                  await fetchCategories();
                 }
               }
             }}
@@ -513,6 +598,10 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
               categoryId={linkDialogOpen}
               categoryName={categories.find(c => c.id === linkDialogOpen)?.name}
               onLinksChanged={() => {
+                // For link changes, we could implement optimistic updates here too,
+                // but given the complexity of link data and the fact that CategoryLinkManager
+                // handles its own state, we'll just refresh the categories data.
+                // This is less disruptive than a full page refresh.
                 fetchCategories();
                 onDataChange?.();
               }}
@@ -572,6 +661,7 @@ const SimpleCategoryTable: React.FC<SimpleCategoryTableProps> = ({
                         categoryId={String(id)}
                         categoryName={category.name}
                         onLinksChanged={() => {
+                          // For link changes, refresh categories data but preserve table state
                           fetchCategories();
                           onDataChange?.();
                         }}
