@@ -1,0 +1,23 @@
+# Code Owners for Sacred Sutra Tools
+
+# Global ownership
+* @himanshu31shr
+
+# CI/CD and Infrastructure
+/.github/ @himanshu31shr
+/.changeset/ @himanshu31shr
+/scripts/ @himanshu31shr
+
+# Core Configuration
+package.json @himanshu31shr
+package-lock.json @himanshu31shr
+tsconfig.json @himanshu31shr
+vite.config.ts @himanshu31shr
+firebase.json @himanshu31shr
+
+# Documentation
+/docs/ @himanshu31shr
+*.md @himanshu31shr
+
+# Source Code
+/src/ @himanshu31shr 

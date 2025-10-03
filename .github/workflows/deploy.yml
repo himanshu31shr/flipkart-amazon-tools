@@ -1,0 +1,221 @@
+name: Deploy
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      skip_smoke_tests:
+        description: 'Skip pre-deployment smoke tests'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    environment: 
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ steps.deployment.outputs.page_url || 'https://himanshu31shr.github.io/flipkart-amazon-tools/' }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+
+      - name: Pre-deployment Smoke Tests
+        if: github.event.inputs.skip_smoke_tests != 'true'
+        run: |
+          echo "🧪 Running pre-deployment smoke tests..."
+          npm run test:smoke
+          echo "✅ Pre-deployment validation passed"
+
+      - name: Try to download existing build artifacts
+        id: download-artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: build-artifacts-${{ github.sha }}
+          path: dist/
+
+      - name: Download from Release Assets (fallback)
+        if: steps.download-artifacts.outcome == 'failure' && github.event_name == 'release'
+        run: |
+          echo "📦 Downloading build artifacts from release assets..."
+          VERSION=$(echo "${{ github.event.release.tag_name }}" | sed 's/v//')
+          ASSET_NAME="sacred-sutra-tools-v$VERSION.zip"
+          
+          # Download and extract release asset
+          gh release download "${{ github.event.release.tag_name }}" --pattern "$ASSET_NAME" || echo "No release asset found"
+          
+          if [ -f "$ASSET_NAME" ]; then
+            mkdir -p dist
+            unzip "$ASSET_NAME" -d dist/
+            echo "✅ Release artifacts extracted"
+          else
+            echo "⚠️ No release assets found, will build from source"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Check if build artifacts exist
+        id: check-artifacts
+        run: |
+          if [ -d "dist" ] && [ "$(ls -A dist 2>/dev/null)" ]; then
+            echo "artifacts_available=true" >> $GITHUB_OUTPUT
+            echo "✅ Build artifacts found in dist/"
+          else
+            echo "artifacts_available=false" >> $GITHUB_OUTPUT
+            echo "⚠️ No build artifacts found"
+          fi
+
+      - name: Build if no artifacts found
+        if: steps.check-artifacts.outputs.artifacts_available == 'false'
+        run: |
+          echo "🔨 No build artifacts found, building from source..."
+          npm run build
+          echo "✅ Application built successfully"
+
+      - name: Verify build output
+        run: |
+          if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
+            echo "❌ Build output directory is empty or missing"
+            exit 1
+          fi
+          echo "✅ Build output verified"
+          ls -la dist/
+
+      - name: Copy index.html to 404.html
+        run: cp dist/index.html dist/404.html
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          branch: gh-pages
+          clean: true
+          single-commit: true
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Post-Deployment Validation
+        id: post-validation
+        run: |
+          echo "🔍 Validating deployment..."
+          
+          # Wait for deployment to propagate
+          echo "⏳ Waiting for deployment to propagate..."
+          sleep 30
+          
+          # Validate site accessibility
+          SITE_URL="${{ steps.deployment.outputs.page_url || 'https://himanshu31shr.github.io/flipkart-amazon-tools/' }}"
+          echo "🌐 Testing site accessibility: $SITE_URL"
+          
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SITE_URL" || echo "000")
+          
+          if [ "$HTTP_STATUS" = "200" ]; then
+            echo "✅ Site is accessible (HTTP $HTTP_STATUS)"
+            echo "validation_success=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Site accessibility check failed (HTTP $HTTP_STATUS)"
+            echo "validation_success=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Run basic functionality tests
+          echo "🧪 Running post-deployment smoke tests..."
+          if npm run test:smoke; then
+            echo "✅ Post-deployment smoke tests passed"
+          else
+            echo "❌ Post-deployment smoke tests failed"
+            echo "validation_success=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deployment Success Notification
+        if: steps.post-validation.outputs.validation_success == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const environment = '${{ github.event.inputs.environment || 'production' }}';
+            const url = '${{ steps.deployment.outputs.page_url || "https://himanshu31shr.github.io/flipkart-amazon-tools/" }}';
+            const version = '${{ github.event.release.tag_name || "latest" }}';
+            
+            console.log(`✅ Deployment successful to ${environment}`);
+            console.log(`🌐 URL: ${url}`);
+            console.log(`📦 Version: ${version}`);
+            
+            // Add deployment success summary
+            const fs = require('fs');
+            const summary = `## 🚀 Deployment Successful
+            
+            **Environment:** ${environment}
+            **Version:** ${version}
+            **URL:** ${url}
+            **Status:** ✅ All validations passed
+            
+            ### Validation Results
+            - ✅ Site accessibility confirmed
+            - ✅ Post-deployment smoke tests passed
+            - ✅ Build artifacts verified
+            
+            🎉 **Deployment completed successfully!**`;
+            
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+
+      - name: Rollback on Failure
+        if: failure() || steps.post-validation.outputs.validation_success == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const environment = '${{ github.event.inputs.environment || 'production' }}';
+            
+            console.log('🚨 Deployment validation failed, initiating rollback...');
+            
+            // Trigger rollback workflow
+            const { owner, repo } = context.repo;
+            
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner,
+                repo,
+                workflow_id: 'rollback.yml',
+                ref: 'master',
+                inputs: {
+                  rollback_reason: `Deployment validation failed for ${environment} environment`,
+                  notify_team: 'true'
+                }
+              });
+              
+              console.log('✅ Rollback workflow triggered successfully');
+            } catch (error) {
+              console.log('❌ Failed to trigger automatic rollback:', error.message);
+              console.log('⚠️ Manual rollback may be required');
+            }
+
+      - name: Deployment Failure Notification
+        if: failure()
+        run: |
+          echo "❌ Deployment failed to ${{ github.event.inputs.environment || 'production' }}"
+          echo "🚨 Automatic rollback has been initiated"
+          echo "::error::Deployment failed - check logs above for details"
+          echo "::notice::If deployment failed due to permissions, configure a Personal Access Token (PAT) in repository secrets."
+          exit 1 
