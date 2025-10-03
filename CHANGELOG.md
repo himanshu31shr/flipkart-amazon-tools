@@ -1,5 +1,13 @@
 # Changelog
 
+## 9.11.2
+
+### Patch Changes
+
+- [#71](https://github.com/himanshu31shr/flipkart-amazon-tools/pull/71) [`f579cc4`](https://github.com/himanshu31shr/flipkart-amazon-tools/commit/f579cc4ab61ce75cbeef4bbf78428c561a9473ca) Thanks [@webdev3103](https://github.com/webdev3103)! - Fix debug messages and test issues in product scanner feature
+
+  This patch addresses debug message improvements and resolves test failures in the product scanner functionality.
+
 ## 9.11.1
 
 ### Patch Changes
