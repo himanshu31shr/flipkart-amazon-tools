@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Box, Button, Typography, Paper, CircularProgress, Alert } from '@mui/material';
-import { InventoryOrderProcessor } from '../services/inventoryOrderProcessor.service';
+import { InventoryOrderProcessor, ProductSummary } from '../services/inventoryOrderProcessor.service';
+import { InventoryDeductionResult } from '../types/inventory';
 
 interface TestResult {
   success: boolean;
-  orderItems: any[];
-  inventoryResult: any;
+  orderItems: ProductSummary[];
+  inventoryResult: InventoryDeductionResult;
   error?: string;
 }
 
@@ -129,7 +130,7 @@ export const TestInventoryDeductionPage: React.FC = () => {
             <Typography variant="body2" color="success.main">
               ✅ Successful Deductions: {result.inventoryResult.deductions.length}
             </Typography>
-            {result.inventoryResult.deductions.map((deduction: any, index: number) => (
+            {result.inventoryResult.deductions.map((deduction, index: number) => (
               <Box key={index} sx={{ ml: 2 }}>
                 <Typography variant="body2">
                   - Deducted {deduction.deductedQuantity} from group {deduction.categoryGroupId}
@@ -141,7 +142,7 @@ export const TestInventoryDeductionPage: React.FC = () => {
             <Typography variant="body2" color="warning.main" sx={{ mt: 1 }}>
               ⚠️ Warnings: {result.inventoryResult.warnings.length}
             </Typography>
-            {result.inventoryResult.warnings.map((warning: any, index: number) => (
+            {result.inventoryResult.warnings.map((warning, index: number) => (
               <Box key={index} sx={{ ml: 2 }}>
                 <Typography variant="body2">
                   - {warning.warning}
@@ -152,7 +153,7 @@ export const TestInventoryDeductionPage: React.FC = () => {
             <Typography variant="body2" color="error.main" sx={{ mt: 1 }}>
               ❌ Errors: {result.inventoryResult.errors.length}
             </Typography>
-            {result.inventoryResult.errors.map((error: any, index: number) => (
+            {result.inventoryResult.errors.map((error, index: number) => (
               <Box key={index} sx={{ ml: 2 }}>
                 <Typography variant="body2">
                   - {error.error} ({error.reason})

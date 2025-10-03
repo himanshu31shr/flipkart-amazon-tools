@@ -33,7 +33,7 @@ declare module 'quagga' {
   type DetectionResult = QuaggaJSResultObject;
 
   interface Quagga {
-    init(config: QuaggaConfig, callback: (err: any) => void): void;
+    init(config: QuaggaConfig, callback: (err: Error | null) => void): void;
     start(): void;
     stop(): void;
     onDetected(callback: (result: QuaggaJSResultObject) => void): void;

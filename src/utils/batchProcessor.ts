@@ -9,7 +9,7 @@ export interface BatchOperation {
   type: 'update' | 'create' | 'delete';
   collection: string;
   docId: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 export interface BatchProcessorOptions {
@@ -168,7 +168,7 @@ class BatchProcessor {
         type: 'create',
         collection: 'inventoryMovements',
         docId: `${movement.categoryGroupId}_${movement.createdAt?.toMillis() || Date.now()}`,
-        data: movement
+        data: movement as unknown as Record<string, unknown>
       });
     }
 

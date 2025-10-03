@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/navigation-barcode-scanner/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-01T03:12:07.189Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759288327185_xgmie11b3",
+      "approvalTitle": "Navigation Barcode Scanner Design Document"
+    }
+  ]
+}

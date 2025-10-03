@@ -84,7 +84,7 @@ const CategoryGroupFilterSelector: React.FC<CategoryGroupFilterSelectorProps> = 
 
   const getOptionLabel = (option: FilterOption) => option.name;
 
-  const renderOption = (props: any, option: FilterOption) => (
+  const renderOption = (props: React.HTMLAttributes<HTMLLIElement>, option: FilterOption) => (
     <Box component="li" {...props} key={option.id}>
       <Box display="flex" alignItems="center" gap={1} width="100%">
         {'isSpecial' in option ? (
@@ -117,9 +117,9 @@ const CategoryGroupFilterSelector: React.FC<CategoryGroupFilterSelectorProps> = 
     </Box>
   );
 
-  const renderInput = (params: any) => (
+  const renderInput = (params: unknown) => (
     <TextField
-      {...params}
+      {...(params as Record<string, unknown>)}
       label={label}
       error={error}
       helperText={helperText}

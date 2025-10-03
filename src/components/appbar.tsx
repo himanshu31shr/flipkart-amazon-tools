@@ -10,10 +10,14 @@ import {
   styled,
   Button,
   Box,
+  useMediaQuery,
+  useTheme,
+  Hidden,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthService } from "../services/auth.service";
+import { BarcodeScannerButton } from "./BarcodeScannerButton";
 
 const DRAWER_WIDTH = 250;
 
@@ -73,6 +77,9 @@ export const AppBar = ({
   const title = getRouteTitle(location.pathname);
   const [authenticated, setAuthenticated] = useState(false);
   const authService = new AuthService();
+  
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
     const unsubscribe = authService.onAuthStateChanged((user) => {
@@ -119,22 +126,57 @@ export const AppBar = ({
           {title}
         </Typography>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: isMobile ? 1 : 2,
+          flexWrap: 'nowrap',
+          overflow: 'hidden'
+        }}>
+          {/* Theme toggle - always visible but smaller on mobile */}
           <Switch
             checked={mode === "dark"}
             onChange={toggleTheme}
             inputProps={{ "aria-label": "dark mode toggle" }}
             data-testid="theme-toggle"
+            size={isMobile ? "small" : "medium"}
           />
 
+          {/* Barcode scanner - always visible when authenticated */}
           {authenticated && (
-            <Button
-              color="inherit"
-              onClick={handleLogout}
-              startIcon={<LogoutIcon />}
-            >
-              Logout
-            </Button>
+            <BarcodeScannerButton />
+          )}
+
+          {/* Logout button - responsive layout */}
+          {authenticated && (
+            <Hidden smDown implementation="css">
+              <Button
+                color="inherit"
+                onClick={handleLogout}
+                startIcon={<LogoutIcon />}
+                size={isMobile ? "small" : "medium"}
+              >
+                Logout
+              </Button>
+            </Hidden>
+          )}
+          
+          {/* Icon-only logout on small screens */}
+          {authenticated && (
+            <Hidden smUp implementation="css">
+              <IconButton
+                color="inherit"
+                onClick={handleLogout}
+                aria-label="logout"
+                size="small"
+                sx={{
+                  minWidth: 44,
+                  minHeight: 44,
+                }}
+              >
+                <LogoutIcon />
+              </IconButton>
+            </Hidden>
           )}
         </Box>
       </Toolbar>
