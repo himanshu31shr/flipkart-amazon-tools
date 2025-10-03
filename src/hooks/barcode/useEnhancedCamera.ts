@@ -101,8 +101,6 @@ export const useEnhancedCamera = (
    * Handle camera initialization error
    */
   const handleCameraError = useCallback((error: Error) => {
-    console.error('Camera initialization error:', error);
-    
     let cameraError: CameraError;
     
     if (error.name === 'NotAllowedError') {
@@ -156,18 +154,29 @@ export const useEnhancedCamera = (
         // Stop the camera stream
         Quagga.stop();
         
-        // Clear the target element to prevent DOM issues
+        // Additional cleanup: Stop any active media streams
         if (targetRef.current) {
+          const videoElement = targetRef.current.querySelector('video');
+          if (videoElement && videoElement.srcObject) {
+            const stream = videoElement.srcObject as MediaStream;
+            if (stream) {
+              stream.getTracks().forEach(track => {
+                track.stop();
+              });
+              videoElement.srcObject = null;
+            }
+          }
+          // Clear the target element to prevent DOM issues
           targetRef.current.innerHTML = '';
         }
       } catch (error) {
-        console.warn('Error stopping camera:', error);
+        console.warn('useEnhancedCamera: Error stopping camera:', error);
       }
       isInitializedRef.current = false;
     }
     
     setCameraState('idle');
-  }, [clearInitTimeout]);
+  }, [clearInitTimeout, targetRef]);
 
   /**
    * Initialize and start camera
@@ -253,10 +262,8 @@ export const useEnhancedCamera = (
           clearInitTimeout();
           
           if (err) {
-            console.error('Quagga initialization failed:', err);
             reject(err);
           } else {
-            console.log('Quagga initialized successfully');
             resolve();
           }
         });
@@ -264,7 +271,11 @@ export const useEnhancedCamera = (
 
       // Set up detection callback if available
       if (onDetectedCallbackRef.current) {
-        Quagga.onDetected(onDetectedCallbackRef.current);
+        try {
+          Quagga.onDetected(onDetectedCallbackRef.current);
+        } catch (callbackError) {
+          console.warn('Failed to register Quagga onDetected callback:', callbackError);
+        }
       }
 
       // Start scanning
@@ -274,8 +285,6 @@ export const useEnhancedCamera = (
       setCameraState('active');
       retryCountRef.current = 0; // Reset retry count on success
 
-      console.log('Camera started successfully');
-
     } catch (error) {
       clearInitTimeout();
       handleCameraError(error as Error);
@@ -283,7 +292,6 @@ export const useEnhancedCamera = (
       // Auto-retry logic
       if (autoRetry && retryCountRef.current < maxRetries) {
         retryCountRef.current++;
-        console.log(`Retrying camera initialization (${retryCountRef.current}/${maxRetries})`);
         
         setTimeout(() => {
           startCamera();
@@ -324,7 +332,11 @@ export const useEnhancedCamera = (
     
     // If camera is already active, set the callback immediately
     if (isInitializedRef.current && cameraState === 'active') {
-      Quagga.onDetected(callback);
+      try {
+        Quagga.onDetected(callback);
+      } catch (error) {
+        console.warn('Failed to set Quagga onDetected callback:', error);
+      }
     }
   }, [cameraState]);
 

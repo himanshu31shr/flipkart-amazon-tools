@@ -2,7 +2,10 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
 import { AppBar } from '../appbar';
+import productsSlice from '../../store/slices/productsSlice';
 
 // Mock the auth service
 const mockSignOut = jest.fn();
@@ -22,7 +25,73 @@ jest.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
+// Mock BarcodeScannerButton dependencies
+jest.mock('../../services/product.service');
+jest.mock('../../services/barcode.service'); 
+jest.mock('../../services/productNavigation.service');
+
+// Mock the ProductIdentificationScanner component
+jest.mock('../ProductIdentificationScanner', () => ({
+  ProductIdentificationScanner: ({ open, onClose }: any) => {
+    if (!open) return null;
+    return (
+      <div data-testid="product-identification-scanner">
+        <button onClick={onClose} data-testid="mock-close">
+          Close Scanner
+        </button>
+      </div>
+    );
+  },
+}));
+
 const theme = createTheme();
+
+// Mock product for testing
+const mockProduct = {
+  id: 'test-product-1',
+  sku: 'TEST-SKU-001',
+  name: 'Test Product',
+  description: 'Test product description',
+  platform: 'amazon' as const,
+  visibility: 'visible' as const,
+  sellingPrice: 100,
+  metadata: {
+    amazonSerialNumber: 'B0123456789',
+    flipkartSerialNumber: 'FLIP123456789',
+  },
+};
+
+// Helper function to create test store
+const createTestStore = () => {
+  return configureStore({
+    reducer: {
+      products: productsSlice,
+    },
+    preloadedState: {
+      products: {
+        items: [mockProduct], // Pre-populate with products to avoid fetchProducts call
+        filteredItems: [mockProduct],
+        loading: false,
+        error: null,
+        filters: {},
+        lastFetched: Date.now(),
+        detailsCache: {},
+        categories: [],
+        categoriesLoading: false,
+        categoriesError: null,
+        categoryProducts: [],
+        categoryProductsLoading: false,
+        categoryProductsError: null,
+        inventoryLevels: {},
+        inventoryLoading: false,
+        inventoryError: null,
+        productInventoryStatus: {},
+        lowStockProducts: [],
+        zeroStockProducts: [],
+      },
+    },
+  });
+};
 
 const renderAppBar = (props = {}, router?: React.ReactNode) => {
   const defaultProps = {
@@ -31,15 +100,20 @@ const renderAppBar = (props = {}, router?: React.ReactNode) => {
     mode: 'light' as const,
     open: false,
   };
+  
+  const store = createTestStore();
+  
   return render(
     router ? (
       router
     ) : (
-      <BrowserRouter>
-        <ThemeProvider theme={theme}>
-          <AppBar {...defaultProps} {...props} />
-        </ThemeProvider>
-      </BrowserRouter>
+      <Provider store={store}>
+        <BrowserRouter>
+          <ThemeProvider theme={theme}>
+            <AppBar {...defaultProps} {...props} />
+          </ThemeProvider>
+        </BrowserRouter>
+      </Provider>
     )
   );
 };
@@ -56,18 +130,21 @@ describe('AppBar', () => {
 
   describe('rendering', () => {
     it('should render with default title', () => {
+      const store = createTestStore();
       renderAppBar(
         {},
-        <MemoryRouter initialEntries={['/flipkart-amazon-tools/']}>
-          <ThemeProvider theme={theme}>
-            <AppBar
-              toggleDrawer={jest.fn(() => jest.fn())}
-              toggleTheme={jest.fn()}
-              mode="light"
-              open={false}
-            />
-          </ThemeProvider>
-        </MemoryRouter>
+        <Provider store={store}>
+          <MemoryRouter initialEntries={['/flipkart-amazon-tools/']}>
+            <ThemeProvider theme={theme}>
+              <AppBar
+                toggleDrawer={jest.fn(() => jest.fn())}
+                toggleTheme={jest.fn()}
+                mode="light"
+                open={false}
+              />
+            </ThemeProvider>
+          </MemoryRouter>
+        </Provider>
       );
       expect(screen.getByText('Dashboard')).toBeInTheDocument();
     }) as any;
@@ -348,6 +425,180 @@ describe('AppBar', () => {
       }).toThrow('Auth service error');
       expect(consoleErrorSpy).toHaveBeenCalled();
       consoleErrorSpy.mockRestore();
+    }) as any;
+  }) as any;
+
+  describe('BarcodeScannerButton Integration', () => {
+    it('should not show scanner button when not authenticated', () => {
+      mockOnAuthStateChanged.mockImplementation((callback) => {
+        callback(null); // No user
+        return jest.fn();
+      }) as any;
+      
+      renderAppBar();
+      
+      expect(screen.queryByRole('button', { name: /scan product barcode/i })).not.toBeInTheDocument();
+    }) as any;
+
+    it('should show scanner button when authenticated', async () => {
+      mockOnAuthStateChanged.mockImplementation((callback) => {
+        callback({ uid: 'test-user' }) as any; // User exists
+        return jest.fn();
+      }) as any;
+      
+      renderAppBar();
+      
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /scan product barcode/i })).toBeInTheDocument();
+      }) as any;
+    }) as any;
+
+    it('should position scanner button between theme toggle and logout', async () => {
+      mockOnAuthStateChanged.mockImplementation((callback) => {
+        callback({ uid: 'test-user' }) as any;
+        return jest.fn();
+      }) as any;
+      
+      renderAppBar();
+      
+      await waitFor(() => {
+        const themeToggle = screen.getByTestId('theme-toggle');
+        const scannerButton = screen.getByRole('button', { name: /scan product barcode/i });
+        const logoutButton = screen.getByText('Logout');
+        
+        // Verify all elements are present
+        expect(themeToggle).toBeInTheDocument();
+        expect(scannerButton).toBeInTheDocument();
+        expect(logoutButton).toBeInTheDocument();
+        
+        // Verify they're in a flex container with proper spacing
+        const container = themeToggle.closest('[sx*="display: flex"]') || 
+                         themeToggle.closest('.MuiBox-root');
+        expect(container).toContainElement(scannerButton);
+        expect(container).toContainElement(logoutButton);
+      }) as any;
+    }) as any;
+
+    it('should open scanner modal when scanner button is clicked', async () => {
+      mockOnAuthStateChanged.mockImplementation((callback) => {
+        callback({ uid: 'test-user' }) as any;
+        return jest.fn();
+      }) as any;
+      
+      renderAppBar();
+      
+      await waitFor(() => {
+        const scannerButton = screen.getByRole('button', { name: /scan product barcode/i });
+        expect(scannerButton).toBeInTheDocument();
+      }) as any;
+      
+      const scannerButton = screen.getByRole('button', { name: /scan product barcode/i });
+      fireEvent.click(scannerButton);
+      
+      // Wait for the lazy-loaded component to render
+      await waitFor(() => {
+        expect(screen.getByTestId('product-identification-scanner')).toBeInTheDocument();
+      });
+    }) as any;
+
+    it('should close scanner modal when close button is clicked', async () => {
+      mockOnAuthStateChanged.mockImplementation((callback) => {
+        callback({ uid: 'test-user' }) as any;
+        return jest.fn();
+      }) as any;
+      
+      renderAppBar();
+      
+      await waitFor(() => {
+        const scannerButton = screen.getByRole('button', { name: /scan product barcode/i });
+        expect(scannerButton).toBeInTheDocument();
+      }) as any;
+      
+      // Open scanner
+      const scannerButton = screen.getByRole('button', { name: /scan product barcode/i });
+      fireEvent.click(scannerButton);
+      
+      // Wait for the lazy-loaded component to render
+      await waitFor(() => {
+        expect(screen.getByTestId('product-identification-scanner')).toBeInTheDocument();
+      });
+      
+      // Close scanner
+      const closeButton = screen.getByTestId('mock-close');
+      fireEvent.click(closeButton);
+      
+      expect(screen.queryByTestId('product-identification-scanner')).not.toBeInTheDocument();
+    }) as any;
+
+    it('should maintain responsive layout with scanner button', async () => {
+      mockOnAuthStateChanged.mockImplementation((callback) => {
+        callback({ uid: 'test-user' }) as any;
+        return jest.fn();
+      }) as any;
+      
+      renderAppBar();
+      
+      await waitFor(() => {
+        const scannerButton = screen.getByRole('button', { name: /scan product barcode/i });
+        expect(scannerButton).toBeInTheDocument();
+        
+        // Verify the button has proper Material-UI styling for responsive design
+        expect(scannerButton).toHaveClass('MuiIconButton-root');
+        expect(scannerButton).toHaveClass('MuiIconButton-sizeLarge');
+      }) as any;
+    }) as any;
+
+    it('should maintain proper toolbar layout with all elements', async () => {
+      mockOnAuthStateChanged.mockImplementation((callback) => {
+        callback({ uid: 'test-user' }) as any;
+        return jest.fn();
+      }) as any;
+      
+      renderAppBar({ open: false }) as any;
+      
+      await waitFor(() => {
+        // Verify all toolbar elements are present
+        expect(screen.getByTestId('menu-button')).toBeInTheDocument();
+        expect(screen.getByText('Label Merger')).toBeInTheDocument(); // Default title
+        expect(screen.getByTestId('theme-toggle')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /scan product barcode/i })).toBeInTheDocument();
+        expect(screen.getByText('Logout')).toBeInTheDocument();
+      }) as any;
+    }) as any;
+
+    it('should work with drawer state changes', async () => {
+      mockOnAuthStateChanged.mockImplementation((callback) => {
+        callback({ uid: 'test-user' }) as any;
+        return jest.fn();
+      }) as any;
+      
+      const { rerender } = renderAppBar({ open: false }) as any;
+      
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /scan product barcode/i })).toBeInTheDocument();
+      }) as any;
+      
+      // Rerender with open drawer
+      const store = createTestStore();
+      rerender(
+        <Provider store={store}>
+          <BrowserRouter>
+            <ThemeProvider theme={theme}>
+              <AppBar
+                toggleDrawer={jest.fn(() => jest.fn())}
+                toggleTheme={jest.fn()}
+                mode="light"
+                open={true}
+              />
+            </ThemeProvider>
+          </BrowserRouter>
+        </Provider>
+      );
+      
+      await waitFor(() => {
+        // Scanner button should still be present
+        expect(screen.getByRole('button', { name: /scan product barcode/i })).toBeInTheDocument();
+      }) as any;
     }) as any;
   }) as any;
 }) as any; 

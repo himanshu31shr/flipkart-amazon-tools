@@ -107,10 +107,8 @@ export class BarcodeService extends FirebaseService {
       }
       
       throw new Error(`Failed to generate unique barcode ID after ${maxRetries} attempts for date ${date} (starting from sequence ${startSequence})`);
-    } catch (error) {
+    } catch {
       // Fallback to original logic if query fails
-      console.warn('Failed to query existing barcodes, falling back to simple sequence:', error);
-      
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         const sequence = String(attempt); // No padding for minimal width
         const compactDate = this.getCompactDateFormat(date);
@@ -411,9 +409,8 @@ export class BarcodeService extends FirebaseService {
           options
         );
         results.push(result);
-      } catch (error) {
-        // Log error but continue with other orders
-        console.error(`Failed to generate barcode for order ${order.orderIndex}:`, error);
+      } catch {
+        // Continue with other orders on failure
         // Could implement partial failure handling here if needed
       }
     }
@@ -464,8 +461,57 @@ export class BarcodeService extends FirebaseService {
         topCompletors
       };
     } catch (error) {
-      console.error('Error getting completion statistics:', error);
       throw new Error(error instanceof Error ? error.message : 'Unknown error occurred');
+    }
+  }
+
+  /**
+   * Lookup barcode for product identification purposes
+   * Unlike lookupBarcode(), this method returns SKU data even for completed orders
+   * Used specifically for product navigation features
+   */
+  async lookupBarcodeForProductIdentification(barcodeId: string): Promise<{
+    success: boolean;
+    sku?: string;
+    productName?: string;
+    platform?: 'amazon' | 'flipkart';
+    error?: string;
+  }> {
+    try {
+      // Validate barcode format first
+      const validation = this.validateBarcodeFormat(barcodeId);
+      if (!validation.isValid) {
+        return {
+          success: false,
+          error: validation.error
+        };
+      }
+      
+      // Lookup barcode in database
+      const barcodeRecord = await this.getDocument<OrderBarcode>(
+        this.COLLECTION_NAME,
+        barcodeId
+      );
+      
+      if (!barcodeRecord) {
+        return {
+          success: false,
+          error: 'Barcode not found'
+        };
+      }
+      
+      // For product identification, we return the data regardless of completion status
+      return {
+        success: true,
+        sku: barcodeRecord.metadata.sku,
+        productName: barcodeRecord.metadata.productName,
+        platform: barcodeRecord.metadata.platform
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to lookup barcode for product identification: ${error}`
+      };
     }
   }
 

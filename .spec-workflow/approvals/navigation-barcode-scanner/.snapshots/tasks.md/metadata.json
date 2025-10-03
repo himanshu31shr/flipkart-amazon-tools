@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/navigation-barcode-scanner/tasks.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-01T03:33:12.189Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759289592187_mwt2h2kta",
+      "approvalTitle": "Navigation Barcode Scanner Tasks Document"
+    }
+  ]
+}
