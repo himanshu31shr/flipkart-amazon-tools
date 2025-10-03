@@ -1,7 +1,7 @@
 {
   "name": "sacred-sutra-tools",
   "private": true,
-  "version": "9.11.1",
+  "version": "9.11.2",
   "type": "module",
   "homepage": "https://himanshu31shr.github.io/flipkart-amazon-tools/",
   "scripts": {
