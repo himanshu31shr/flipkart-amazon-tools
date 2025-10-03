@@ -21,10 +21,12 @@ export interface DeductionError {
     operation?: string;
     userId?: string;
     sessionId?: string;
+    userAgent?: string;
+    url?: string;
   };
   recoverable: boolean;
   suggestedActions: string[];
-  originalRequest?: any;
+  originalRequest?: unknown;
   stackTrace?: string;
 }
 
@@ -41,8 +43,8 @@ export interface RecoveryResult {
 export interface RollbackOperation {
   type: 'inventory_revert' | 'movement_remove' | 'category_revert';
   categoryGroupId: string;
-  data: any;
-  originalValue?: any;
+  data: unknown;
+  originalValue?: unknown;
   completed: boolean;
 }
 
@@ -53,7 +55,7 @@ class InventoryDeductionErrorHandler {
   /**
    * Handle and categorize deduction errors
    */
-  handleError(error: unknown, context?: any): DeductionError {
+  handleError(error: unknown, context?: Record<string, unknown>): DeductionError {
     const deductionError = this.categorizeError(error, context);
     
     // Log to monitoring service
@@ -81,7 +83,7 @@ class InventoryDeductionErrorHandler {
   /**
    * Categorize errors based on type and content
    */
-  private categorizeError(error: unknown, context?: any): DeductionError {
+  private categorizeError(error: unknown, context?: Record<string, unknown>): DeductionError {
     const errorId = this.generateErrorId();
     const timestamp = new Date().toISOString();
     let errorType: DeductionError['errorType'] = 'unknown';

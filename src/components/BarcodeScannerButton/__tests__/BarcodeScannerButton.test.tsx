@@ -4,7 +4,7 @@ import '@testing-library/jest-dom';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { BarcodeScannerButton } from '../BarcodeScannerButton';
-import { ProductService } from '../../../services/product.service';
+import { ProductService, ProductWithCategoryGroup } from '../../../services/product.service';
 import { BarcodeService } from '../../../services/barcode.service';
 import { ProductNavigationService } from '../../../services/productNavigation.service';
 import productsSlice, { fetchProducts } from '../../../store/slices/productsSlice';
@@ -56,7 +56,7 @@ describe('BarcodeScannerButton', () => {
   let mockNavigationService: jest.Mocked<ProductNavigationService>;
   
   // Helper function to create test store
-  const createTestStore = (initialProducts = []) => {
+  const createTestStore = (initialProducts: ProductWithCategoryGroup[] = []) => {
     return configureStore({
       reducer: {
         products: productsSlice,
@@ -90,7 +90,7 @@ describe('BarcodeScannerButton', () => {
   };
   
   // Helper function to render with Redux Provider
-  const renderWithProvider = (component: React.ReactElement, initialProducts = [mockProduct]) => {
+  const renderWithProvider = (component: React.ReactElement, initialProducts: ProductWithCategoryGroup[] = [mockProduct]) => {
     const store = createTestStore(initialProducts);
     return render(
       <Provider store={store}>
@@ -99,7 +99,7 @@ describe('BarcodeScannerButton', () => {
     );
   };
   
-  const mockProduct = {
+  const mockProduct: ProductWithCategoryGroup = {
     id: 'test-product-1',
     sku: 'TEST-SKU-001',
     name: 'Test Product',

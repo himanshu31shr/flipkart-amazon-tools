@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { Category } from '../../types/category';
 import { Timestamp } from 'firebase/firestore';
 import { InventoryService } from '../../services/inventory.service';
 import { InventoryOrderProcessor, ProductSummary } from '../../services/inventoryOrderProcessor.service';
@@ -93,7 +94,7 @@ export interface InventoryState {
   categoryDeduction: {
     isProcessing: boolean;
     preview: InventoryDeductionPreview | null;
-    categoriesWithDeduction: any[]; // Categories configured for automatic deduction
+    categoriesWithDeduction: Category[]; // Categories configured for automatic deduction
     deductionConfigurationSummary: Array<{
       categoryId: string;
       categoryName: string;

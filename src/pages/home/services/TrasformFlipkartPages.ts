@@ -36,7 +36,7 @@ export class FlipkartPageTransformer extends BaseTransformer {
     super(
       filePath,
       products,
-      categories as any,
+      categories,
       sortConfig,
       batchInfo,
       enableBarcodes

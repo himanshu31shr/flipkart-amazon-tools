@@ -68,7 +68,7 @@ export interface PerformanceAlert {
   message: string;
   threshold: number;
   actualValue: number;
-  context: Record<string, any>;
+  context: Record<string, unknown>;
 }
 
 class InventoryDeductionMonitoring {
@@ -93,7 +93,7 @@ class InventoryDeductionMonitoring {
   /**
    * Start monitoring a deduction operation
    */
-  startOperation(operation: string, context?: Record<string, any>): string {
+  startOperation(operation: string, context?: Record<string, unknown>): string {
     const operationId = this.generateOperationId();
     const startTime = Date.now();
     
@@ -104,7 +104,7 @@ class InventoryDeductionMonitoring {
     });
 
     // Store start time for duration calculation
-    (globalThis as any)[`op_${operationId}`] = startTime;
+    (globalThis as unknown as Record<string, number>)[`op_${operationId}`] = startTime;
     
     return operationId;
   }
@@ -119,15 +119,15 @@ class InventoryDeductionMonitoring {
       success: boolean;
       itemsProcessed: number;
       errorCount: number;
-      context?: Record<string, any>;
+      context?: Record<string, unknown>;
     }
   ): void {
     const endTime = Date.now();
-    const startTime = (globalThis as any)[`op_${operationId}`] || endTime;
+    const startTime = (globalThis as unknown as Record<string, number>)[`op_${operationId}`] || endTime;
     const duration = endTime - startTime;
 
     // Clean up
-    delete (globalThis as any)[`op_${operationId}`];
+    delete (globalThis as unknown as Record<string, number>)[`op_${operationId}`];
 
     // Create performance metric
     const metric: PerformanceMetric = {
@@ -140,10 +140,10 @@ class InventoryDeductionMonitoring {
       errorCount: result.errorCount,
       context: {
         sessionId: this.sessionId,
-        categoryGroupIds: result.context?.categoryGroupIds || [],
-        totalQuantity: result.context?.totalQuantity || 0,
-        batchSize: result.context?.batchSize,
-        retryCount: result.context?.retryCount
+        categoryGroupIds: (result.context?.categoryGroupIds as string[]) || [],
+        totalQuantity: (result.context?.totalQuantity as number) || 0,
+        batchSize: result.context?.batchSize as number | undefined,
+        retryCount: result.context?.retryCount as number | undefined
       }
     };
 
@@ -233,7 +233,7 @@ class InventoryDeductionMonitoring {
     newLevel: number,
     deductionQuantity: number,
     reason: string,
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ): void {
     this.logAudit('info', 'inventory_change', 'Inventory level updated', {
       categoryGroupId,
@@ -248,7 +248,7 @@ class InventoryDeductionMonitoring {
   /**
    * Log movement creation
    */
-  logMovementCreation(movement: InventoryMovement, context?: Record<string, any>): void {
+  logMovementCreation(movement: InventoryMovement, context?: Record<string, unknown>): void {
     this.logAudit('info', 'movement_creation', 'Inventory movement created', {
       categoryGroupId: movement.categoryGroupId,
       movementType: movement.movementType,
@@ -269,7 +269,7 @@ class InventoryDeductionMonitoring {
     batchSize: number,
     success: boolean,
     errors: string[] = [],
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ): void {
     this.logAudit(
       success ? 'info' : 'error',
@@ -293,7 +293,7 @@ class InventoryDeductionMonitoring {
     message: string,
     threshold: number,
     actualValue: number,
-    context: Record<string, any> = {}
+    context: Record<string, unknown> = {}
   ): void {
     const alert: PerformanceAlert = {
       id: this.generateAlertId(),
@@ -491,7 +491,7 @@ class InventoryDeductionMonitoring {
     }, 60000); // Check every minute
 
     // Set up memory monitoring
-    if ('performance' in window && 'memory' in (performance as any)) {
+    if ('performance' in window && 'memory' in (performance as Performance & { memory?: unknown })) {
       setInterval(() => {
         this.checkMemoryUsage();
       }, 30000); // Check every 30 seconds
@@ -556,8 +556,8 @@ class InventoryDeductionMonitoring {
   }
 
   private checkMemoryUsage(): void {
-    if ('performance' in window && 'memory' in (performance as any)) {
-      const memory = (performance as any).memory;
+    if ('performance' in window && 'memory' in (performance as Performance & { memory?: unknown })) {
+      const memory = (performance as Performance & { memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
       const usedMB = memory.usedJSHeapSize / 1024 / 1024;
       
       if (usedMB > this.PERFORMANCE_THRESHOLDS.maxMemoryUsageMB) {
