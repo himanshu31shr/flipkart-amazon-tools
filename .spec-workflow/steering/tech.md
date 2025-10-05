@@ -1,7 +1,7 @@
 # Technology Stack
 
 ## Project Type
-Single-page web application (SPA) with Progressive Web App (PWA) capabilities for e-commerce order management and inventory tracking across Amazon and Flipkart platforms.
+Cross-platform application supporting web browsers and native mobile platforms (iOS/Android). Web application is a single-page application (SPA) with Progressive Web App (PWA) capabilities. Mobile applications use Capacitor 6 hybrid architecture (native container + WebView) for 95%+ code reuse from the web codebase.
 
 ## Core Technologies
 
@@ -12,15 +12,18 @@ Single-page web application (SPA) with Progressive Web App (PWA) capabilities fo
 
 ### Key Dependencies/Libraries
 - **React 18**: Modern UI library with concurrent features and strict mode
-- **Material-UI (MUI) 6.1.9**: Comprehensive design system with emotion-based styling
+- **Material-UI (MUI) 6.1.9**: Comprehensive design system with emotion-based styling and responsive breakpoints
 - **Redux Toolkit 2.8.1**: State management with Redux Persist for selective data persistence
 - **Firebase 11.6.1**: Backend-as-a-Service for authentication, Firestore database, and cloud storage
+- **@capacitor-firebase/* plugins**: Native Firebase SDKs for mobile (authentication, firestore, storage)
+- **Capacitor 6**: Hybrid mobile framework for native iOS/Android apps with WebView-based web content
 - **PDF-lib 1.17.1**: Client-side PDF manipulation and generation
 - **PDFjs-dist 2.16.105**: PDF parsing and text extraction for invoice processing
 - **React Router DOM 7.1.1**: Client-side routing with nested routes
 - **React Hook Form 7.56.4**: Performant form handling with validation
 - **Recharts 2.15.3**: Data visualization and analytics charts
 - **Vite 6.3.2**: Build tool with hot module replacement and optimized bundling
+- **Playwright**: End-to-end testing with device emulation for mobile testing
 
 ### Application Architecture
 **Component-Based Architecture** with Redux state management:
@@ -59,8 +62,10 @@ Single-page web application (SPA) with Progressive Web App (PWA) capabilities fo
 ### Code Quality Tools
 - **Static Analysis**: TypeScript strict mode, ESLint with React and TypeScript rules
 - **Formatting**: ESLint auto-fix with consistent code style enforcement
-- **Testing Framework**: Jest with React Testing Library, jsdom environment, and coverage reporting
-- **Performance**: Vite build analysis, Firebase emulator performance testing, memory leak detection tests
+- **Testing Framework**: Jest with React Testing Library, jsdom environment, coverage reporting, and mobile viewport testing
+- **End-to-End Testing**: Playwright with device emulation for web and mobile user flows
+- **Performance**: Vite build analysis, Firebase emulator performance testing, memory leak detection tests, mobile performance profiling
+- **Mobile Build Tools**: Xcode 15+ (iOS), Android Studio Iguana+ (Android), CocoaPods (iOS dependencies)
 
 ### Version Control & Collaboration
 - **VCS**: Git with GitHub hosting and GitHub Pages deployment
@@ -74,29 +79,44 @@ Single-page web application (SPA) with Progressive Web App (PWA) capabilities fo
 - **Multi-Instance Support**: Firebase emulator isolation for concurrent development sessions
 
 ## Deployment & Distribution
-- **Target Platform(s)**: Web browsers (Chrome, Firefox, Safari, Edge) with PWA support for mobile devices
-- **Distribution Method**: GitHub Pages static hosting with automated deployment from master branch
-- **Installation Requirements**: Modern web browser with JavaScript enabled, internet connection for Firebase
-- **Update Mechanism**: Browser cache invalidation with service worker updates for PWA features
+- **Target Platform(s)**:
+  - Web: Modern browsers (Chrome, Firefox, Safari, Edge) with PWA support
+  - Mobile: iOS 13+ (native app), Android 7.0+ / API 24+ (native app)
+- **Distribution Method**:
+  - Web: GitHub Pages static hosting with automated deployment from master branch
+  - iOS: Apple App Store distribution (TestFlight for beta testing)
+  - Android: Google Play Store distribution (internal testing track for beta)
+- **Installation Requirements**:
+  - Web: Modern web browser with JavaScript enabled, internet connection for Firebase
+  - Mobile: iOS 13+ or Android 7.0+ device, approximately 50MB storage space
+- **Update Mechanism**:
+  - Web: Browser cache invalidation with service worker updates for PWA features
+  - Mobile: Over-the-air web content updates via Capacitor Live Updates, native app updates via App Store/Play Store for plugin/SDK updates
 
 ## Technical Requirements & Constraints
 
 ### Performance Requirements
-- **Response time**: <2 seconds for dashboard queries, <5 minutes for PDF batch processing
-- **Memory usage**: Efficient handling of large PDF files with chunked processing
-- **Startup time**: <3 seconds initial load with code splitting and lazy loading
+- **Response time**: <2 seconds for dashboard queries on web and mobile, <5 minutes for PDF batch processing
+- **Memory usage**: Efficient handling of large PDF files with chunked processing (<150MB on mobile)
+- **Startup time**: <3 seconds initial load on web and mobile with code splitting and lazy loading
 - **PDF Processing**: Support for 100+ page documents with progress tracking
+- **Mobile Performance**: 60fps navigation transitions, <300ms page transitions, <1 second list rendering for initial viewport
+- **Bundle Size**: Mobile app bundle <5MB (excluding cached data) for fast downloads
 
-### Compatibility Requirements  
-- **Platform Support**: Modern browsers (ES2020+), responsive design for desktop/tablet/mobile
-- **Dependency Versions**: Node.js 22+, Firebase SDK 11+, TypeScript 5.7+
-- **Standards Compliance**: Web Content Accessibility Guidelines (WCAG), PWA manifest standards
+### Compatibility Requirements
+- **Platform Support**:
+  - Web: Modern browsers (ES2020+), responsive design for desktop/tablet/mobile
+  - Mobile: iOS 13+ (WKWebView), Android 7.0+ / API 24+ (Chrome WebView)
+- **Dependency Versions**: Node.js 22+, Firebase SDK 11+, TypeScript 5.7+, Capacitor 6+
+- **Standards Compliance**: Web Content Accessibility Guidelines (WCAG), PWA manifest standards, iOS Human Interface Guidelines, Material Design for Android
+- **Screen Sizes**: 320px (iPhone SE) to 428px (iPhone Pro Max) width, responsive breakpoints at xs/sm/md
 
 ### Security & Compliance
 - **Security Requirements**: Firebase Authentication with secure rules, client-side data validation
 - **Data Protection**: Firestore security rules for multi-tenant data isolation
 - **PDF Security**: Client-side processing to avoid server-side file exposure
 - **Storage Security**: Firebase Storage rules with user-based access controls
+- **Mobile Security**: Capacitor SecureStorage for sensitive tokens, HTTPS/WSS only for network communication, platform-level permissions (camera for barcode scanning)
 
 ### Scalability & Reliability
 - **Expected Load**: 1000+ products, 100+ daily orders, multi-user concurrent access
@@ -112,10 +132,33 @@ Single-page web application (SPA) with Progressive Web App (PWA) capabilities fo
 4. **Material-UI over Custom CSS**: Accelerates development with consistent design system, accessibility features, and responsive components - reduces design debt and maintenance overhead
 5. **Vite over Create React App**: Superior development experience with faster builds, better tree-shaking, and native ESM support - reduces build times by 80% compared to Webpack-based solutions
 
+## Mobile Architecture
+
+### Capacitor Hybrid Approach
+- **Native Container + WebView**: iOS and Android apps embed web content in native WKWebView/Chrome WebView
+- **Code Reuse**: 95%+ of React/TypeScript codebase shared between web and mobile platforms
+- **Native Features**: Access to device camera (barcode scanning), secure storage, native navigation, offline persistence
+- **Platform Detection**: Runtime detection using Capacitor.isNativePlatform() to conditionally use native plugins vs web APIs
+
+### Mobile-Specific Technologies
+- **Firebase Integration**: @capacitor-firebase/authentication, @capacitor-firebase/firestore, @capacitor-firebase/storage for native Firebase SDKs
+- **Navigation**: Bottom navigation bars and platform-specific back button handling
+- **Responsive UI**: Material-UI breakpoints (useMediaQuery, theme.breakpoints.down('sm')) for mobile detection
+- **Offline Support**: Firestore offline persistence with queue-based synchronization for connectivity loss scenarios
+- **Performance**: Lazy loading, code splitting, skeleton screens for optimal mobile performance
+
+### Mobile Testing Requirements
+- **Unit Testing**: 80% minimum coverage for mobile components with responsive viewport testing (320px, 375px, 428px)
+- **Integration Testing**: Multi-component flows (order management, product search, category management)
+- **E2E Testing**: Playwright with device emulation for critical user journeys
+- **Device Testing**: Minimum 3 physical devices per platform (low/mid/high-end) for real-world validation
+- **Quality Gates**: Zero TypeScript errors (npm run type-check), zero ESLint errors (npm run lint), all tests pass (npm run test:ci)
+
 ## Known Limitations
 
-- **PDF Processing Memory**: Large PDF files (>50MB) may cause browser memory issues - mitigated through chunked processing and progress indicators
-- **Offline Functionality**: Limited offline capabilities for PDF processing - Firebase offline persistence covers data operations but file uploads require connectivity  
-- **Mobile PDF Handling**: Mobile browsers have reduced PDF processing performance - optimization needed for mobile-first workflows
+- **PDF Processing Memory**: Large PDF files (>50MB) may cause browser/mobile memory issues - mitigated through chunked processing and progress indicators
+- **Offline Functionality**: Limited offline capabilities for PDF processing - Firebase offline persistence covers data operations but file uploads require connectivity
+- **Mobile PDF Handling**: Mobile devices have reduced PDF processing performance compared to desktop - mobile app prioritizes order/inventory management over heavy PDF processing
 - **Concurrent Editing**: No real-time collaborative editing for inventory adjustments - future enhancement for multi-user scenarios
 - **Export Scalability**: Large dataset exports (>10k records) may timeout - chunked export implementation needed for enterprise usage
+- **Mobile Camera Access**: Barcode scanning requires camera permissions - graceful fallback to manual entry if permission denied

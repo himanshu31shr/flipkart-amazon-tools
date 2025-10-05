@@ -14,9 +14,15 @@ sacred-sutra-tools/
 │   │   ├── categoryGroups/       # Category group management
 │   │   ├── orderAnalytics/       # Sales analytics
 │   │   ├── todaysOrders/         # Current orders
+│   │   │   ├── TodaysOrdersPage.tsx
+│   │   │   └── mobile/           # Mobile-specific components
+│   │   │       └── MobileTodaysOrdersPage.tsx
 │   │   └── auth/                 # Authentication pages
 │   ├── components/               # Shared UI components
 │   │   ├── DataTable/            # Reusable data table
+│   │   │   ├── DataTable.tsx
+│   │   │   ├── MobileDataRow.tsx # Mobile variant
+│   │   │   └── MobileFilters.tsx # Mobile variant
 │   │   ├── InventoryStatusChip/  # Status display components
 │   │   └── [ComponentName]/      # Self-contained component modules
 │   ├── services/                 # Business logic services
@@ -33,6 +39,8 @@ sacred-sutra-tools/
 │   ├── utils/                    # Shared utility functions
 │   ├── shared/                   # Cross-cutting concerns
 │   └── __tests__/                # Global test utilities
+├── ios/                          # iOS native project (Capacitor)
+├── android/                      # Android native project (Capacitor)
 ├── scripts/                      # Build and utility scripts
 │   ├── migrations/               # Database migration scripts
 │   └── seed-emulator.js          # Development data seeding
@@ -40,18 +48,21 @@ sacred-sutra-tools/
 │   ├── steering/                 # Project steering documents
 │   ├── specs/                    # Feature specifications
 │   └── templates/                # Document templates
-└── public/                       # Static assets
+├── public/                       # Static assets
+└── capacitor.config.ts           # Capacitor mobile configuration
 ```
 
 ## Naming Conventions
 
 ### Files
 - **Components**: `PascalCase` (e.g., `InventoryDashboard.tsx`, `ManualAdjustmentModal.tsx`)
+- **Mobile Components**: `Mobile[ComponentName].tsx` (e.g., `MobileTodaysOrdersPage.tsx`, `MobileDataRow.tsx`)
 - **Pages**: `PascalCase` with `.page.tsx` suffix (e.g., `home.page.tsx`, `dashboard.page.tsx`)
 - **Services**: `camelCase` with `.service.ts` suffix (e.g., `product.service.ts`, `firebase.service.ts`)
 - **Types**: `camelCase` with `.ts` suffix (e.g., `inventory.ts`, `categoryGroup.ts`)
 - **Tests**: `[filename].test.tsx` or `[filename].test.ts` (e.g., `InventoryDashboard.test.tsx`)
 - **Utilities**: `camelCase` with `.ts` suffix (e.g., `dateUtils.ts`, `validationUtils.ts`)
+- **Capacitor Config**: `capacitor.config.ts` (mobile app configuration)
 
 ### Code
 - **Classes/Types**: `PascalCase` (e.g., `FirebaseService`, `InventoryItem`)
@@ -124,8 +135,14 @@ import { InventoryToolbar } from './InventoryToolbar';
 ### Feature Module Organization
 ```
 pages/[feature]/
-├── [Feature]Page.tsx           # Main page component
-├── components/                 # Feature-specific components
+├── [Feature]Page.tsx           # Main page component (desktop)
+├── mobile/                     # Mobile-specific components
+│   ├── Mobile[Feature]Page.tsx # Mobile page component
+│   ├── components/             # Mobile-specific sub-components
+│   │   └── [MobileComponent].tsx
+│   └── __tests__/              # Mobile component tests
+│       └── Mobile[Feature]Page.test.tsx
+├── components/                 # Feature-specific components (shared or desktop)
 │   ├── [Component].tsx         # Individual components
 │   ├── __tests__/              # Component tests
 │   │   └── [Component].test.tsx
@@ -211,17 +228,42 @@ describe('[ComponentName/ServiceName]', () => {
 ```
 components/[ComponentName]/
 ├── [ComponentName].tsx         # Main component implementation
+├── Mobile[ComponentName].tsx   # Mobile variant (if needed)
 ├── __tests__/                  # Component-specific tests
-│   └── [ComponentName].test.tsx
+│   ├── [ComponentName].test.tsx
+│   └── Mobile[ComponentName].test.tsx
 ├── index.ts                    # Export definitions
 └── types.ts                    # Component-specific types (if complex)
 ```
+
+**Mobile Component Examples**:
+- `DataTable/MobileDataRow.tsx` - Card-based layout for mobile table rows
+- `DataTable/MobileFilters.tsx` - Bottom sheet filter UI for mobile
+- Mobile components use Material-UI breakpoints: `useMediaQuery(theme.breakpoints.down('sm'))`
 
 ### Component Design Patterns
 - **Composition over inheritance**: Build complex UIs from simple, reusable components
 - **Props interface design**: Clear, typed interfaces with optional props having defaults
 - **Custom hooks**: Extract stateful logic for reusability across components
 - **Error boundaries**: Graceful error handling for PDF processing and data operations
+- **Responsive components**: Use Material-UI breakpoints for mobile/desktop variants
+- **Mobile-first approach**: Create mobile variants in `/mobile` subdirectories when significant UI divergence is needed
+
+### Mobile Component Pattern
+```typescript
+// Desktop/Web component (default)
+// src/pages/todaysOrders/TodaysOrdersPage.tsx
+
+// Mobile variant
+// src/pages/todaysOrders/mobile/MobileTodaysOrdersPage.tsx
+
+// Route detection at entry point
+const theme = useTheme();
+const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+// Conditional rendering
+return isMobile ? <MobileTodaysOrdersPage /> : <TodaysOrdersPage />;
+```
 
 ## Service Architecture
 
@@ -247,6 +289,42 @@ export class ProductService extends FirebaseService {
 - **Error handling**: Consistent error management across the application
 - **Validation**: Input validation before Firebase operations
 
+## Mobile Development Structure
+
+### Mobile Component Organization
+Mobile components are organized in `/mobile` subdirectories within feature folders when significant UI divergence from desktop is required:
+
+```
+pages/todaysOrders/
+├── TodaysOrdersPage.tsx        # Desktop/web version
+├── mobile/
+│   ├── MobileTodaysOrdersPage.tsx
+│   ├── components/
+│   │   ├── MobileOrderCard.tsx
+│   │   └── MobileOrderFilters.tsx
+│   └── __tests__/
+│       └── MobileTodaysOrdersPage.test.tsx
+```
+
+### Responsive Detection Pattern
+- **Entry Point Detection**: Use Material-UI `useMediaQuery(theme.breakpoints.down('sm'))` at route level
+- **Conditional Rendering**: Route to mobile variant component when `isMobile` is true
+- **Platform Detection**: Use `Capacitor.isNativePlatform()` for native-specific features (camera, secure storage)
+
+### Mobile Testing Structure
+```
+__tests__/
+├── [Component].test.tsx              # Desktop tests
+├── Mobile[Component].test.tsx        # Mobile-specific tests
+└── [Component].responsive.test.tsx   # Responsive behavior tests (320px, 375px, 428px)
+```
+
+### Mobile-Specific Files
+- **Capacitor Config**: `capacitor.config.ts` in project root
+- **Native Projects**: `ios/` and `android/` directories (generated by Capacitor)
+- **Mobile Pages**: `pages/[feature]/mobile/Mobile[Feature]Page.tsx`
+- **Mobile Components**: `components/[Component]/Mobile[Component].tsx`
+
 ## Documentation Standards
 
 ### Code Documentation
@@ -254,9 +332,11 @@ export class ProductService extends FirebaseService {
 - **Complex algorithms**: Inline comments explaining PDF parsing and cost calculations
 - **Business rules**: Clear comments for domain-specific logic (cost inheritance, category rules)
 - **Type definitions**: Comprehensive TypeScript interfaces with descriptions
+- **Mobile Responsiveness**: Comment mobile-specific behavior and breakpoint logic
 
 ### Module Documentation
 - **Feature READMEs**: Each major feature directory includes implementation notes
 - **Service documentation**: Public method signatures and usage examples
 - **Component stories**: Usage examples for complex shared components
 - **Migration guides**: Documentation for database schema changes and data migrations
+- **Mobile Development Guides**: Documentation for Capacitor setup, mobile-specific patterns, and device testing requirements

@@ -3,9 +3,10 @@ import * as ReactDOM from 'react-dom/client';
 import { useState, useMemo, useEffect } from 'react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, Paper } from '@mui/material';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, HashRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
+import { Capacitor } from '@capacitor/core';
 import { store, persistor } from './store';
 import { initializeAuthState } from './store/slices/authSlice';
 import getDesignTokens from './theme';
@@ -27,15 +28,18 @@ const AppWrapper = () => {
     store.dispatch(initializeAuthState());
   }, []);
 
+  // Use HashRouter for Capacitor (mobile apps) and BrowserRouter for web
+  const Router = Capacitor.isNativePlatform() ? HashRouter : BrowserRouter;
+
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <Paper sx={{ minHeight: '100vh' }}>
-            <BrowserRouter>
+            <Router>
               <App toggleTheme={toggleTheme} mode={mode} />
-            </BrowserRouter>
+            </Router>
           </Paper>
         </ThemeProvider>
       </PersistGate>

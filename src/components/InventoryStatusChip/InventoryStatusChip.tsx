@@ -1,5 +1,5 @@
 import React from 'react';
-import { Chip, Tooltip, useTheme } from '@mui/material';
+import { Chip, Tooltip, useTheme, useMediaQuery } from '@mui/material';
 import {
   CheckCircle,
   Warning,
@@ -39,6 +39,7 @@ export const InventoryStatusChip: React.FC<InventoryStatusChipProps> = ({
   className,
 }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // Status configuration mapping
   const statusConfig = {
@@ -116,6 +117,17 @@ export const InventoryStatusChip: React.FC<InventoryStatusChipProps> = ({
       sx={{
         fontWeight: 500,
         cursor: onClick ? 'pointer' : 'default',
+        // Mobile-specific enhancements
+        ...(isMobile && {
+          fontSize: '14px',
+          px: 1.5, // 12px horizontal padding
+          py: 1, // 8px vertical padding
+          m: 0.5, // 8px margin for spacing between chips
+          height: 'auto',
+          '& .MuiChip-label': {
+            px: 1
+          }
+        }),
         ...getCustomStyles(),
       }}
       aria-label={`Inventory status: ${config.label}`}

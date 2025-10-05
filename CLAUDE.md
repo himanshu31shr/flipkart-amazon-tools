@@ -4,13 +4,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Flipkart-Amazon Tools** (Sacred Sutra Tools) is a specialized e-commerce management application designed for businesses selling on Amazon and Flipkart platforms. It processes order invoices, manages inventory, tracks profitability, and provides comprehensive analytics.
+**Flipkart-Amazon Tools** (Sacred Sutra Tools) is a cross-platform e-commerce management application designed for businesses selling on Amazon and Flipkart platforms. Available as a web application and native mobile apps (iOS/Android via Capacitor 6).
 
 ### Primary Purpose
 - **PDF Invoice Processing**: Automatically parse Amazon and Flipkart order invoices/labels
 - **Inventory Management**: Track products with category-based organization and cost inheritance
 - **Order Analytics**: Comprehensive sales analysis and profitability tracking
 - **Multi-Platform Integration**: Unified dashboard for Amazon and Flipkart operations
+- **Mobile App**: Native iOS and Android apps for on-the-go order and inventory management
+
+### Mobile Implementation Status
+**Current Progress**: 13 of 66 tasks completed (19.7%)
+**Setup Status**: ✅ Complete (using Firebase emulators for development)
+
+- 📄 [MOBILE_IMPLEMENTATION_STATUS.md](MOBILE_IMPLEMENTATION_STATUS.md) - Detailed progress tracking
+- 🔧 [EMULATOR_DEVELOPMENT.md](EMULATOR_DEVELOPMENT.md) - **START HERE** - Develop without native Firebase config files
+- 📱 [NATIVE_PLATFORM_SETUP.md](NATIVE_PLATFORM_SETUP.md) - Production setup (only needed for App Store deployment)
 
 ## Development Commands
 
@@ -45,6 +54,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Deployment
 - `npm run deploy` - Deploy to GitHub Pages
 - `npm run deploy:all` - Deploy all Firebase services
+
+### Mobile App Development (Capacitor)
+- `npm run cap:sync` - Sync web build to native iOS/Android projects
+- `npm run cap:open:ios` - Open iOS project in Xcode
+- `npm run cap:open:android` - Open Android project in Android Studio
+- `npm run mobile:dev` - Build web assets and sync to native projects
 
 ### Release Management
 - `npm run changeset` - Create a changeset for version management
@@ -84,11 +99,12 @@ Before marking any task as complete, ensure:
 
 ### Core Technologies
 - **Frontend**: React 18 + TypeScript + Material-UI + Vite
+- **Mobile**: Capacitor 6 for native iOS/Android apps (hybrid architecture)
 - **State Management**: Redux Toolkit with Redux Persist
-- **Backend**: Firebase (Auth, Firestore, Storage)
+- **Backend**: Firebase (Auth, Firestore, Storage) with Capacitor plugins on mobile
 - **PDF Processing**: PDF-lib, PDFjs-dist for Amazon/Flipkart invoice parsing
-- **Testing**: Jest + React Testing Library
-- **Build Tools**: Vite, TypeScript, ESLint
+- **Testing**: Jest + React Testing Library + Playwright (E2E)
+- **Build Tools**: Vite, TypeScript, ESLint, Xcode (iOS), Android Studio (Android)
 
 ### Core Features & Pages
 
@@ -224,6 +240,74 @@ VITE_FIREBASE_MEASUREMENT_ID=your-measurement-id
 - `npm run migrate:cost-price` - Migrate to cost price inheritance system
 - `npm run migrate:cost-price:rollback` - Rollback cost price migration
 
+## Mobile App Architecture
+
+### Capacitor Hybrid Approach
+Sacred Sutra Tools is available as a **native mobile application** for iOS and Android using Capacitor's hybrid architecture:
+- **Native Container**: iOS (WKWebView) and Android (Chrome WebView) native shells
+- **Web Content**: Existing React app runs inside native WebView with 95%+ code reuse
+- **Native Plugins**: @capacitor-firebase/* plugins provide native Firebase SDK access
+- **Platform Detection**: Mobile-specific UI components render when `isMobile` is true
+
+### Mobile-Specific Features
+**First Release (MVP)**:
+- **Active Orders Page**: Mobile-optimized order cards, barcode scanning, pull-to-refresh
+- **Products Page**: Search, infinite scroll, mobile card layouts, product details modal
+- **Categories Pages**: Category/group management with mobile-friendly forms
+
+**Mobile Navigation**:
+- Bottom navigation tabs (Orders, Products, Categories)
+- Hardware back button support (Android)
+- Safe area handling for notched devices (iOS)
+
+**Mobile Components Pattern**:
+```
+src/pages/[feature]/
+├── [Feature]Page.tsx          # Detects mobile, renders appropriate version
+├── mobile/                    # Mobile-specific components
+│   ├── Mobile[Feature]Page.tsx
+│   └── components/
+└── components/                # Shared desktop components
+```
+
+**Responsive Detection**:
+- Use `useMediaQuery(theme.breakpoints.down('sm'))` for viewport detection
+- Use `Capacitor.isNativePlatform()` for native app detection
+- Mobile breakpoint: 600px (Material-UI 'sm')
+
+### Mobile Development Workflow
+1. **Web Development**: Standard `npm run dev` with hot reload
+2. **Mobile Development**:
+   - Build: `npm run build`
+   - Sync: `npm run cap:sync`
+   - Open native IDE: `npm run cap:open:ios` or `npm run cap:open:android`
+3. **Live Reload**: Configure `server.url` in capacitor.config.ts for instant updates on device
+
+### Mobile Testing Requirements
+- **Unit Tests**: Mobile components with viewport simulation (80% coverage)
+- **Integration Tests**: Page flows with Redux/Firebase mocks
+- **Responsive Tests**: Verify rendering at 320px, 375px, 428px viewports
+- **E2E Tests**: Playwright with mobile device emulation (iPhone, Android)
+- **Device Testing**: Minimum 3 physical devices per platform (low/mid/high-end)
+
+### Firebase on Mobile
+- **@capacitor-firebase/authentication**: Native Firebase Auth for iOS/Android
+- **@capacitor-firebase/firestore**: Native Firestore with offline persistence
+- **@capacitor-firebase/storage**: Native Cloud Storage for PDF files
+- API compatibility maintained with web SDK (same method signatures in services)
+
+### Mobile Build Configuration
+- **iOS**: Xcode project in `ios/`, requires macOS, iOS 13+ deployment target
+- **Android**: Gradle project in `android/`, minSdkVersion 24 (Android 7.0+)
+- **App Icons**: 1024x1024 source, adaptive icons for Android
+- **Splash Screens**: Brand colors (#2196f3 blue), platform-specific sizes
+
+### Platform-Specific Considerations
+- **iOS**: Safe areas (notch/home indicator), WKWebView, App Store guidelines
+- **Android**: Back button handling, status bar color, Play Store requirements
+- **Offline**: Queue mutations when offline, sync when connectivity restored
+- **Permissions**: Camera (barcode scanning), storage (file access) with clear descriptions
+
 ## Important Implementation Notes
 
 **PDF Processing Patterns**:
@@ -241,3 +325,5 @@ VITE_FIREBASE_MEASUREMENT_ID=your-measurement-id
 - Large PDF files require memory management
 - Progress tracking for multi-file operations  
 - Background processing for bulk operations
+
+- Whenever is include spec, check if spec mcp server can be used here.

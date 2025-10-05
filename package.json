@@ -19,6 +19,7 @@
     "seed:wait-and-run": "node -e \"setTimeout(() => process.exit(0), 4000)\" && npm run seed:emulator",
     "build": "tsc && vite build",
     "build:prod": "vite build",
+    "build:mobile": "vite build --mode mobile --base=/",
     "preview": "vite preview",
     "serve:prod": "npm run build:prod && vite preview",
     "predeploy": "npm run build:prod",
@@ -50,7 +51,13 @@
     "migrate:inventory:dry-run": "node scripts/migrations/add-inventory-fields.js --dry-run",
     "migrate:inventory:run": "node scripts/migrations/add-inventory-fields.js",
     "migrate:inventory:rollback": "node scripts/migrations/add-inventory-fields.js --rollback",
-    "migrate:inventory:help": "node scripts/migrations/add-inventory-fields.js --help"
+    "migrate:inventory:help": "node scripts/migrations/add-inventory-fields.js --help",
+    "cap:sync": "npx cap sync",
+    "cap:open:ios": "npx cap open ios",
+    "cap:open:android": "npx cap open android",
+    "cap:build:ios": "npm run build:mobile && npx cap sync ios",
+    "cap:build:android": "npm run build:mobile && npx cap sync android",
+    "mobile:dev": "npm run build:mobile && npx cap sync"
   },
   "lint-staged": {
     "src/**/*.{ts,tsx,js,jsx}": [
@@ -59,6 +66,16 @@
     ]
   },
   "dependencies": {
+    "@capacitor-firebase/app": "^7.3.1",
+    "@capacitor-firebase/authentication": "^7.3.1",
+    "@capacitor-firebase/firestore": "^7.3.1",
+    "@capacitor-firebase/storage": "^7.3.1",
+    "@capacitor-mlkit/barcode-scanning": "^7.3.0",
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/app": "^7.1.0",
+    "@capacitor/cli": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/ios": "^7.4.3",
     "@emotion/react": "latest",
     "@emotion/styled": "latest",
     "@hookform/resolvers": "^5.0.1",

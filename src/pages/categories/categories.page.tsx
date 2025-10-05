@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Paper, 
-  Container, 
+import React, { useEffect, lazy, Suspense } from 'react';
+import {
+  Box,
+  Typography,
+  Paper,
+  Container,
   Button,
   CircularProgress,
   Snackbar,
@@ -20,8 +20,15 @@ import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import SimpleCategoryTable from './SimpleCategoryTable';
 import { CategoryDataService } from '../../services/categoryData.service';
 import CategoryImportModal from './components/CategoryImportSection';
+import { useIsMobile } from '../../utils/mobile';
 
-export const CategoriesPage: React.FC = () => {
+// Lazy load mobile component
+const MobileCategoriesPage = lazy(() =>
+  import('./mobile/MobileCategoriesPage').then(m => ({ default: m.MobileCategoriesPage }))
+);
+
+// Desktop component
+const DesktopCategoriesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   
@@ -172,6 +179,27 @@ export const CategoriesPage: React.FC = () => {
       </Snackbar>
     </Container>
   );
+};
+
+// Main wrapper component with mobile detection
+export const CategoriesPage: React.FC = () => {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Suspense
+        fallback={
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <CircularProgress />
+          </Box>
+        }
+      >
+        <MobileCategoriesPage />
+      </Suspense>
+    );
+  }
+
+  return <DesktopCategoriesPage />;
 };
 
 export default CategoriesPage;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import {
   Box,
   Typography,
@@ -17,6 +17,7 @@ import {
   Chip,
   Alert,
   Snackbar,
+  CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -33,8 +34,15 @@ import { CategoryGroupWithStats } from '../../types/categoryGroup';
 import { CategoryGroupService } from '../../services/categoryGroup.service';
 import CategoryGroupList from './CategoryGroupList';
 import CategoryGroupForm from './CategoryGroupForm';
+import { useIsMobile } from '../../utils/mobile';
 
-const CategoryGroupsPage: React.FC = () => {
+// Lazy load mobile component
+const MobileCategoryGroupsPage = lazy(() =>
+  import('./mobile/MobileCategoryGroupsPage').then(m => ({ default: m.MobileCategoryGroupsPage }))
+);
+
+// Desktop component
+const DesktopCategoryGroupsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const groups = useAppSelector(selectCategoryGroups);
@@ -297,6 +305,27 @@ const CategoryGroupsPage: React.FC = () => {
       </Snackbar>
     </Container>
   );
+};
+
+// Main wrapper component with mobile detection
+const CategoryGroupsPage: React.FC = () => {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Suspense
+        fallback={
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <CircularProgress />
+          </Box>
+        }
+      >
+        <MobileCategoryGroupsPage />
+      </Suspense>
+    );
+  }
+
+  return <DesktopCategoryGroupsPage />;
 };
 
 export default CategoryGroupsPage;

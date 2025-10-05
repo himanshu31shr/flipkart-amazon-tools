@@ -18,6 +18,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthService } from "../services/auth.service";
 import { BarcodeScannerButton } from "./BarcodeScannerButton";
+import { createRoutePath } from "../utils/routing";
 
 const DRAWER_WIDTH = 250;
 
@@ -92,7 +93,7 @@ export const AppBar = ({
   const handleLogout = async () => {
     try {
       await authService.signOut();
-      navigate('/login');
+      navigate(createRoutePath('/login'));
     } catch {
       // Error signing out, but don't prevent the UI from updating
     }

@@ -14,7 +14,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { format } from "date-fns";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, lazy, Suspense } from "react";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
   clearAllFilters,
@@ -40,8 +40,15 @@ import {
 } from "./components/ModernFilters";
 import { Platform } from "./components/PlatformFilter";
 import { groupOrdersByCategory } from "./utils/groupingUtils";
+import { useIsMobile } from "../../utils/mobile";
 
-export const TodaysOrderPage: React.FC = () => {
+// Lazy load mobile component
+const MobileTodaysOrdersPage = lazy(() =>
+  import("./mobile/MobileTodaysOrdersPage").then(m => ({ default: m.MobileTodaysOrdersPage }))
+);
+
+// Desktop component
+const DesktopTodaysOrderPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const {
     items: orders,
@@ -350,4 +357,25 @@ export const TodaysOrderPage: React.FC = () => {
       </Paper>
     </Container>
   );
+};
+
+// Main wrapper component with mobile detection
+export const TodaysOrderPage: React.FC = () => {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Suspense
+        fallback={
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <CircularProgress />
+          </Box>
+        }
+      >
+        <MobileTodaysOrdersPage />
+      </Suspense>
+    );
+  }
+
+  return <DesktopTodaysOrderPage />;
 };

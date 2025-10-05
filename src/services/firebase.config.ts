@@ -1,10 +1,10 @@
 import { FirebaseApp, initializeApp } from 'firebase/app';
 import { Auth, getAuth, connectAuthEmulator } from 'firebase/auth';
-import { 
-  Firestore, 
-  enableIndexedDbPersistence, 
-  initializeFirestore, 
-  CACHE_SIZE_UNLIMITED, 
+import {
+  Firestore,
+  enableIndexedDbPersistence,
+  initializeFirestore,
+  CACHE_SIZE_UNLIMITED,
   connectFirestoreEmulator,
   FirestoreError
 } from 'firebase/firestore';
@@ -13,6 +13,7 @@ import {
   getStorage,
   connectStorageEmulator
 } from 'firebase/storage';
+import { Capacitor } from '@capacitor/core';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'test-api-key',
@@ -75,40 +76,66 @@ if (process.env.NODE_ENV === 'test') {
   
   // Initialize Firebase Storage
   storage = getStorage(app);
-  
-  // Connect to the emulators if the environment variables are set
-  if (import.meta.env.VITE_FIREBASE_FIRESTORE_EMULATOR_HOST && import.meta.env.VITE_FIREBASE_FIRESTORE_EMULATOR_PORT) {
-    connectFirestoreEmulator(
-      db,
-      import.meta.env.VITE_FIREBASE_FIRESTORE_EMULATOR_HOST,
-      parseInt(import.meta.env.VITE_FIREBASE_FIRESTORE_EMULATOR_PORT, 10)
-    );
-  }
 
-  // Connect to Auth emulator if environment variables are set
-  if (import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_HOST && import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_PORT) {
-    const authUrl = `http://${import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_HOST}:${import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_PORT}`;
-    connectAuthEmulator(auth, authUrl, { disableWarnings: true });
-  }
-  
-  // Connect to Storage emulator if environment variables are set or in development mode
-  const isDevEnvironment = process.env.NODE_ENV === 'development' || import.meta.env.DEV;
-  
-  if (import.meta.env.VITE_FIREBASE_STORAGE_EMULATOR_HOST && import.meta.env.VITE_FIREBASE_STORAGE_EMULATOR_PORT) {
-    // Use environment variables if available
-    connectStorageEmulator(
-      storage,
-      import.meta.env.VITE_FIREBASE_STORAGE_EMULATOR_HOST,
-      parseInt(import.meta.env.VITE_FIREBASE_STORAGE_EMULATOR_PORT, 10)
-    );
-  } else if (isDevEnvironment) {
-    // Default to localhost:9199 for development if not specified
-    try {
-      // Use port 9199 which is the default for Firebase Storage emulator
-      connectStorageEmulator(storage, 'localhost', 9199);
-    } catch (error) {
-      console.error('Failed to connect to Firebase Storage emulator:', error);
+  // Determine emulator host based on platform
+  // Android emulator needs 10.0.2.2 to reach host machine's localhost
+  // iOS simulator and web can use localhost
+  const getEmulatorHost = (): string => {
+    if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+      console.log('🤖 Android detected: Using 10.0.2.2 for emulator connection');
+      return '10.0.2.2';
     }
+    return 'localhost';
+  };
+
+  const emulatorHost = getEmulatorHost();
+
+  // For mobile development, always connect to emulators
+  // For web, use environment variables or DEV mode
+  const shouldConnectToEmulators =
+    Capacitor.isNativePlatform() || // Always use emulators on native platforms (dev builds)
+    import.meta.env.VITE_FIREBASE_FIRESTORE_EMULATOR_HOST ||
+    import.meta.env.DEV;
+
+  if (shouldConnectToEmulators) {
+    try {
+      // Connect to Firestore emulator
+      const firestorePort = import.meta.env.VITE_FIREBASE_FIRESTORE_EMULATOR_PORT
+        ? parseInt(import.meta.env.VITE_FIREBASE_FIRESTORE_EMULATOR_PORT, 10)
+        : 8080; // Default Firestore emulator port
+
+      connectFirestoreEmulator(db, emulatorHost, firestorePort);
+      console.log(`✓ Connected to Firestore emulator at ${emulatorHost}:${firestorePort}`);
+    } catch (error) {
+      console.error('Failed to connect to Firestore emulator:', error);
+    }
+
+    try {
+      // Connect to Auth emulator
+      const authPort = import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_PORT
+        ? parseInt(import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_PORT, 10)
+        : 9099; // Default Auth emulator port
+
+      const authUrl = `http://${emulatorHost}:${authPort}`;
+      connectAuthEmulator(auth, authUrl, { disableWarnings: true });
+      console.log(`✓ Connected to Auth emulator at ${authUrl}`);
+    } catch (error) {
+      console.error('Failed to connect to Auth emulator:', error);
+    }
+
+    try {
+      // Connect to Storage emulator
+      const storagePort = import.meta.env.VITE_FIREBASE_STORAGE_EMULATOR_PORT
+        ? parseInt(import.meta.env.VITE_FIREBASE_STORAGE_EMULATOR_PORT, 10)
+        : 9199; // Default Storage emulator port
+
+      connectStorageEmulator(storage, emulatorHost, storagePort);
+      console.log(`✓ Connected to Storage emulator at ${emulatorHost}:${storagePort}`);
+    } catch (error) {
+      console.error('Failed to connect to Storage emulator:', error);
+    }
+  } else {
+    console.log('🌐 Production mode: Connecting to live Firebase services');
   }
   
   // Enable offline persistence

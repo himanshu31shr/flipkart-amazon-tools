@@ -7,7 +7,7 @@ import {
   Divider,
   Chip,
 } from "@mui/material";
-import React, { useEffect } from "react";
+import React, { useEffect, lazy, Suspense } from "react";
 import InventoryIcon from "@mui/icons-material/Inventory";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import {
@@ -22,8 +22,15 @@ import { Product, ProductFilter } from "../../services/product.service";
 import { ProductEditModal } from "./components/ProductEditModal";
 import { ProductImportSection } from "./components/ProductImportSection";
 import { ProductTable } from "./components/ProductTable";
+import { useIsMobile } from "../../utils/mobile";
 
-export const ProductsPage: React.FC = () => {
+// Lazy load mobile component
+const MobileProductsPage = lazy(() =>
+  import("./mobile/MobileProductsPage").then(m => ({ default: m.MobileProductsPage }))
+);
+
+// Desktop component
+const DesktopProductsPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const {
     items: products,
@@ -143,6 +150,27 @@ export const ProductsPage: React.FC = () => {
       </Paper>
     </Container>
   );
+};
+
+// Main wrapper component with mobile detection
+export const ProductsPage: React.FC = () => {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Suspense
+        fallback={
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <CircularProgress />
+          </Box>
+        }
+      >
+        <MobileProductsPage />
+      </Suspense>
+    );
+  }
+
+  return <DesktopProductsPage />;
 };
 
 export default ProductsPage;

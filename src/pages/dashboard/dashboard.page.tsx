@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import {
     Box,
     CircularProgress,
@@ -23,18 +23,25 @@ import { fetchOrderHistory } from '../../store/slices/orderHistorySlice';
 import { fetchOrders } from '../../store/slices/ordersSlice';
 import { fetchProducts } from '../../store/slices/productsSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
-import { 
+import {
     fetchInventoryLevels,
     fetchInventoryAlerts,
     selectInventoryLevels,
-    selectInventoryLoading 
+    selectInventoryLoading
 } from '../../store/slices/inventorySlice';
 import { HighPricedProductsWidget } from './components/ProductAlertWidgets';
 import UncategorizedProductsWidget from './components/UncategorizedProductsWidget';
 import InventoryAlertsWidget from './components/InventoryAlertsWidget';
 import InventorySummaryWidget from './components/InventorySummaryWidget';
+import { useIsMobile } from '../../utils/mobile';
 
-export const DashboardPage = () => {
+// Lazy load mobile component
+const MobileDashboardPage = lazy(() =>
+  import('./mobile/MobileDashboardPage').then(m => ({ default: m.MobileDashboardPage }))
+);
+
+// Desktop component
+const DesktopDashboardPage = () => {
     const dispatch = useAppDispatch();
     const { items: products, loading: productsLoading } = useAppSelector(state => state.products);
     const { items: orders } = useAppSelector(state => state.orders);
@@ -238,4 +245,25 @@ export const DashboardPage = () => {
             </Grid>
         </Box>
     );
+};
+
+// Main wrapper component with mobile detection
+export const DashboardPage: React.FC = () => {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <Suspense
+        fallback={
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <CircularProgress />
+          </Box>
+        }
+      >
+        <MobileDashboardPage />
+      </Suspense>
+    );
+  }
+
+  return <DesktopDashboardPage />;
 }; 

@@ -39,3 +39,22 @@ firebase-debug.log
 
 .gemini*
 GEMINI.md
+
+# Capacitor
+.capacitor/
+ios/App/Pods
+ios/App/App/GoogleService-Info.plist
+android/app/google-services.json
+android/.gradle
+android/build
+android/app/build
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcworkspace/xcuserdata

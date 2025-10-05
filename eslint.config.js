@@ -17,7 +17,11 @@ export default [
       "scripts/test-setup.js",
       "scripts/seed-emulator-enhanced.js",
       "scripts/seed-emulator-fixed.js",
-      "src/__tests__/performance-benchmarks.disabled/**"
+      "src/__tests__/performance-benchmarks.disabled/**",
+      // Capacitor native platform build artifacts
+      "ios/**",
+      "android/**",
+      ".capacitor/**"
     ]
   },
   {files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"]},

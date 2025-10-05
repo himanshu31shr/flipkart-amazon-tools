@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { CircularProgress, Box } from '@mui/material';
 import { useAppSelector } from '../store/hooks';
 import { selectIsAuthenticated, selectAuthStateLoaded } from '../store/slices/authSlice';
+import { createRoutePath } from '../utils/routing';
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
@@ -20,7 +21,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to={createRoutePath('/login')} state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

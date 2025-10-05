@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/mobile-app-capacitor-conversion/design.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-03T12:55:30.012Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759496130010_ucy7y5pai",
+      "approvalTitle": "Design Document - Mobile App Technical Architecture"
+    }
+  ]
+}

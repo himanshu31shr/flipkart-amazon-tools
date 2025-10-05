@@ -1,0 +1,14 @@
+{
+  "filePath": ".spec-workflow/specs/mobile-app-capacitor-conversion/requirements.md",
+  "currentVersion": 1,
+  "snapshots": [
+    {
+      "version": 1,
+      "filename": "snapshot-001.json",
+      "timestamp": "2025-10-03T12:39:59.328Z",
+      "trigger": "initial",
+      "approvalId": "approval_1759495199320_sdc3qtysn",
+      "approvalTitle": "Requirements Document - Mobile App Capacitor Conversion"
+    }
+  ]
+}

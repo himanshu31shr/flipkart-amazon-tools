@@ -1,25 +1,25 @@
 import React, { useState } from 'react';
-import { 
-  Box, 
-  IconButton, 
-  TextField, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
+import {
+  Box,
+  IconButton,
+  TextField,
+  SwipeableDrawer,
   Button,
   Grid,
   Typography,
   Chip,
   InputAdornment,
-  Paper
+  Paper,
+  Divider
 } from '@mui/material';
-import { 
-  Sort as SortIcon, 
+import {
+  Sort as SortIcon,
   Search as SearchIcon,
-  Clear as ClearIcon
+  Clear as ClearIcon,
+  DragHandle as DragHandleIcon
 } from '@mui/icons-material';
 import { Column } from './DataTable';
+import { getSafeAreaInsets } from '../../utils/mobile';
 
 interface MobileFiltersProps<T> {
   columns: Column<T>[];
@@ -32,8 +32,17 @@ interface MobileFiltersProps<T> {
 
 export function MobileFilters<T>(props: MobileFiltersProps<T>) {
   const { columns, orderBy, order, filters, onRequestSort, onFilterChange } = props;
-  const [sortDialogOpen, setSortDialogOpen] = useState(false);
+  const [sortDrawerOpen, setSortDrawerOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [tempOrderBy, setTempOrderBy] = useState<keyof T>(orderBy);
+  const [tempOrder, setTempOrder] = useState<'asc' | 'desc'>(order);
+  const safeAreaInsets = getSafeAreaInsets();
+
+  // Update temp values when props change (e.g., applied filters)
+  React.useEffect(() => {
+    setTempOrderBy(orderBy);
+    setTempOrder(order);
+  }, [orderBy, order]);
 
   // Columns that have filters enabled
   const filterableColumns = columns.filter(col => col.filter);
@@ -66,6 +75,41 @@ export function MobileFilters<T>(props: MobileFiltersProps<T>) {
   const handleClearSearch = () => {
     setSearchText('');
     applySearch('');
+  };
+
+  // Handle sort selection in drawer (temp state)
+  const handleSortSelect = (columnId: keyof T) => {
+    if (tempOrderBy === columnId) {
+      // Toggle order if same column
+      setTempOrder(tempOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to asc
+      setTempOrderBy(columnId);
+      setTempOrder('asc');
+    }
+  };
+
+  // Apply sorting and close drawer
+  const handleApplySort = () => {
+    if (tempOrderBy !== orderBy || tempOrder !== order) {
+      onRequestSort(tempOrderBy);
+    }
+    setSortDrawerOpen(false);
+  };
+
+  // Clear sorting to default
+  const handleClearSort = () => {
+    const firstColumn = columns[0];
+    setTempOrderBy(firstColumn.id as keyof T);
+    setTempOrder('asc');
+  };
+
+  // Handle drawer close without applying
+  const handleDrawerClose = () => {
+    // Reset temp values to current values
+    setTempOrderBy(orderBy);
+    setTempOrder(order);
+    setSortDrawerOpen(false);
   };
 
   return (
@@ -109,10 +153,11 @@ export function MobileFilters<T>(props: MobileFiltersProps<T>) {
             disableUnderline: true
           }}
         />
-        <IconButton 
-          size="small" 
-          onClick={() => setSortDialogOpen(true)}
+        <IconButton
+          size="small"
+          onClick={() => setSortDrawerOpen(true)}
           sx={{ ml: 1 }}
+          aria-label="Sort options"
         >
           <SortIcon />
         </IconButton>
@@ -134,43 +179,101 @@ export function MobileFilters<T>(props: MobileFiltersProps<T>) {
         </Box>
       )}
 
-      {/* Sort Dialog */}
-      <Dialog
-        open={sortDialogOpen}
-        onClose={() => setSortDialogOpen(false)}
-        fullWidth
-        maxWidth="xs"
+      {/* Sort Bottom Sheet */}
+      <SwipeableDrawer
+        anchor="bottom"
+        open={sortDrawerOpen}
+        onClose={handleDrawerClose}
+        onOpen={() => setSortDrawerOpen(true)}
+        disableSwipeToOpen
+        sx={{
+          '& .MuiDrawer-paper': {
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            paddingBottom: safeAreaInsets.bottom, // iOS safe area
+            maxHeight: '80vh'
+          }
+        }}
+        transitionDuration={300} // Smooth 300ms animation
       >
-        <DialogTitle>Sort By</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={1.5} sx={{ mt: 0.5 }}>
+        {/* Drag Handle */}
+        <Box
+          sx={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            pt: 1,
+            pb: 0.5,
+            cursor: 'grab'
+          }}
+        >
+          <DragHandleIcon sx={{ color: 'text.disabled' }} />
+        </Box>
+
+        {/* Header */}
+        <Box sx={{ px: 2, py: 1 }}>
+          <Typography variant="h6" component="h2">
+            Sort By
+          </Typography>
+        </Box>
+
+        <Divider />
+
+        {/* Sort Options */}
+        <Box sx={{ px: 2, py: 2, flexGrow: 1, overflow: 'auto' }}>
+          <Grid container spacing={1.5}>
             {columns.map((column) => (
               <Grid item xs={12} key={String(column.id)}>
                 <Button
                   fullWidth
-                  variant={orderBy === column.id ? 'contained' : 'outlined'}
-                  onClick={() => {
-                    onRequestSort(column.id as keyof T);
-                    setSortDialogOpen(false);
-                  }}
-                  endIcon={orderBy === column.id ? (
-                    order === 'asc' ? '↑' : '↓'
+                  variant={tempOrderBy === column.id ? 'contained' : 'outlined'}
+                  onClick={() => handleSortSelect(column.id as keyof T)}
+                  endIcon={tempOrderBy === column.id ? (
+                    tempOrder === 'asc' ? '↑' : '↓'
                   ) : null}
-                  sx={{ justifyContent: 'space-between' }}
-                  size="small"
+                  sx={{
+                    justifyContent: 'space-between',
+                    minHeight: 48, // 48px touch target for Android
+                    textTransform: 'none'
+                  }}
                 >
                   {column.label}
                 </Button>
               </Grid>
             ))}
           </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSortDialogOpen(false)} color="inherit">
-            Cancel
+        </Box>
+
+        <Divider />
+
+        {/* Action Buttons */}
+        <Box
+          sx={{
+            px: 2,
+            py: 2,
+            display: 'flex',
+            gap: 1,
+            justifyContent: 'space-between'
+          }}
+        >
+          <Button
+            onClick={handleClearSort}
+            variant="outlined"
+            color="inherit"
+            sx={{ flex: 1, minHeight: 48 }}
+          >
+            Clear
           </Button>
-        </DialogActions>
-      </Dialog>
+          <Button
+            onClick={handleApplySort}
+            variant="contained"
+            color="primary"
+            sx={{ flex: 1, minHeight: 48 }}
+          >
+            Apply
+          </Button>
+        </Box>
+      </SwipeableDrawer>
 
       {/* No filters message */}
       {activeFilterCount === 0 && (
