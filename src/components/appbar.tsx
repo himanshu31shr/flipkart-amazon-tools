@@ -40,19 +40,19 @@ const StyledAppBar = styled(MuiAppBar, {
 
 const getRouteTitle = (pathname: string): string => {
   switch (pathname) {
-    case "/flipkart-amazon-tools/":
+    case "/":
       return "Dashboard";
-    case "/flipkart-amazon-tools/transactions/":
+    case "/transactions/":
       return "Transaction Analytics";
-    case "/flipkart-amazon-tools/activeOrders/":
+    case "/activeOrders/":
       return "Active Orders";    
-    case "/flipkart-amazon-tools/products/":
+    case "/products/":
       return "Products";
-    case "/flipkart-amazon-tools/order-analytics/":
+    case "/order-analytics/":
       return "Order Analytics";
-    case "/flipkart-amazon-tools/storage-management/":
+    case "/storage-management/":
       return "Storage Management";
-    case "/flipkart-amazon-tools/inventory/":
+    case "/inventory/":
       return "Inventory Management";
     default:
       return "Label Merger";
@@ -92,7 +92,7 @@ export const AppBar = ({
   const handleLogout = async () => {
     try {
       await authService.signOut();
-      navigate('/flipkart-amazon-tools/login');
+      navigate('/login');
     } catch {
       // Error signing out, but don't prevent the UI from updating
     }

@@ -69,7 +69,7 @@ describe('NotFound', () => {
       renderNotFound();
       
       const homeLink = screen.getByRole('link', { name: 'Go Home' }) as any;
-      expect(homeLink).toHaveAttribute('href', '/flipkart-amazon-tools/');
+      expect(homeLink).toHaveAttribute('href', '/');
     }) as any;
   }) as any;
 

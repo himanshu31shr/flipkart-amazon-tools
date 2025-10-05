@@ -45,9 +45,9 @@ export default function App({
           }
         >
           <Routes>
-          <Route path="/flipkart-amazon-tools/login" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route 
-            path="/flipkart-amazon-tools/health" 
+            path="/health" 
             element={
               React.createElement(
                 React.lazy(() => import("./pages/health/health.page").then(module => ({ default: module.default })))
@@ -55,7 +55,7 @@ export default function App({
             } 
           />
           <Route
-            path="/flipkart-amazon-tools/*"
+            path="/*"
             element={
               <ProtectedRoute>
                 <ProtectedRoutes toggleTheme={toggleTheme} mode={mode} />

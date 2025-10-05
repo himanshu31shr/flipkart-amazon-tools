@@ -23,7 +23,10 @@ import { useNavigate } from "react-router-dom";
 import { TransactionAnalysisService } from "../../services/transactionAnalysis.service";
 import { useAppDispatch, useAppSelector } from "../../store/hooks";
 import { fetchProducts } from "../../store/slices/productsSlice";
-import { fetchTransactions, saveTransactions } from "../../store/slices/transactionsSlice";
+import {
+  fetchTransactions,
+  saveTransactions,
+} from "../../store/slices/transactionsSlice";
 import { TransactionSummary } from "../../types/transaction.type";
 import OrderList from "./components/order-list.component";
 import ProductList from "./components/product-list.component";
@@ -47,8 +50,12 @@ function TabPanel(props: TabPanelProps) {
 
 export const TransactionAnalytics: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { items: transactions, loading, error } = useAppSelector(state => state.transactions);
-  const { items: products } = useAppSelector(state => state.products);
+  const {
+    items: transactions,
+    loading,
+    error,
+  } = useAppSelector((state) => state.transactions);
+  const { items: products } = useAppSelector((state) => state.products);
   const [summary, setSummary] = useState<TransactionSummary | null>(null);
   const [tabValue, setTabValue] = useState(0);
   const [dateRange, setDateRange] = useState<{
@@ -67,7 +74,7 @@ export const TransactionAnalytics: React.FC = () => {
       try {
         await Promise.all([
           dispatch(fetchTransactions()),
-          dispatch(fetchProducts({}))
+          dispatch(fetchProducts({})),
         ]);
       } catch {
         // Error handling - could show toast notification
@@ -82,21 +89,19 @@ export const TransactionAnalytics: React.FC = () => {
       if (transactions.length > 0 && products.length > 0) {
         try {
           setAnalyzingPrices(true);
-          
+
           // Convert products to ProductPrice format and store in Map
           const priceMap = new Map(
-            products.map(product => [product.sku.toLowerCase(), product])
+            products.map((product) => [product.sku.toLowerCase(), product])
           );
 
-          const transactionsWithPrices = transactions.map(
-            (transaction) => ({
-              ...transaction,
-              product: {
-                ...transaction.product,
-                ...priceMap.get(transaction.sku.toLowerCase()),
-              },
-            })
-          );
+          const transactionsWithPrices = transactions.map((transaction) => ({
+            ...transaction,
+            product: {
+              ...transaction.product,
+              ...priceMap.get(transaction.sku.toLowerCase()),
+            },
+          }));
 
           const dates = transactionsWithPrices.map(
             (transaction) => new Date(transaction.orderDate)
@@ -112,7 +117,7 @@ export const TransactionAnalytics: React.FC = () => {
             transactionsWithPrices,
             priceMap
           );
-          
+
           // Wait for async analyze to complete
           const results = await transactionService.analyze();
           setSummary(results);
@@ -170,16 +175,20 @@ export const TransactionAnalytics: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
       <Paper sx={{ p: 3, mb: 4, borderRadius: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <AnalyticsIcon sx={{ fontSize: 32, mr: 2, color: 'primary.main' }} />
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.dark' }}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+          <AnalyticsIcon sx={{ fontSize: 32, mr: 2, color: "primary.main" }} />
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{ fontWeight: "bold", color: "primary.dark" }}
+          >
             Transaction Analytics
           </Typography>
           {transactions.length > 0 && (
-            <Chip 
-              label={`${transactions.length} Transactions`} 
-              color="primary" 
-              size="medium" 
+            <Chip
+              label={`${transactions.length} Transactions`}
+              color="primary"
+              size="medium"
               sx={{ ml: 2 }}
             />
           )}
@@ -195,12 +204,22 @@ export const TransactionAnalytics: React.FC = () => {
         </Box>
 
         <Divider sx={{ mb: 3 }} />
-        
-        <Card sx={{ mb: 3, borderRadius: 2, border: '1px solid', borderColor: dateRange.minDate ? 'info.light' : 'divider' }}>
+
+        <Card
+          sx={{
+            mb: 3,
+            borderRadius: 2,
+            border: "1px solid",
+            borderColor: dateRange.minDate ? "info.light" : "divider",
+          }}
+        >
           <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <DateRangeIcon sx={{ color: 'info.main', mr: 1 }} />
-              <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'info.dark' }}>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+              <DateRangeIcon sx={{ color: "info.main", mr: 1 }} />
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: "bold", color: "info.dark" }}
+              >
                 {dateRange.minDate ? (
                   <>Transaction Period</>
                 ) : (
@@ -208,10 +227,12 @@ export const TransactionAnalytics: React.FC = () => {
                 )}
               </Typography>
             </Box>
-            
+
             {dateRange.minDate ? (
               <Typography variant="body1">
-                Analyzing transactions from <strong>{dateRange.minDate?.toDateString()}</strong> to <strong>{dateRange.maxDate?.toDateString()}</strong>
+                Analyzing transactions from{" "}
+                <strong>{dateRange.minDate?.toDateString()}</strong> to{" "}
+                <strong>{dateRange.maxDate?.toDateString()}</strong>
               </Typography>
             ) : (
               <Typography variant="body1" color="text.secondary">
@@ -220,16 +241,16 @@ export const TransactionAnalytics: React.FC = () => {
             )}
           </CardContent>
         </Card>
-        
+
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6}>
-            <Button 
-              variant="contained" 
-              component="label" 
+            <Button
+              variant="contained"
+              component="label"
               disabled={loading}
               startIcon={<UploadFileIcon />}
               fullWidth
-              sx={{ py: 1.5, fontWeight: 'medium' }}
+              sx={{ py: 1.5, fontWeight: "medium" }}
             >
               Upload Transaction File
               <input
@@ -244,11 +265,11 @@ export const TransactionAnalytics: React.FC = () => {
             <Button
               variant="contained"
               color="secondary"
-              onClick={() => navigate("/flipkart-amazon-tools/products")}
+              onClick={() => navigate("/products")}
               disabled={!availableProducts.length}
               startIcon={<PriceChangeIcon />}
               fullWidth
-              sx={{ py: 1.5, fontWeight: 'medium' }}
+              sx={{ py: 1.5, fontWeight: "medium" }}
             >
               Manage Product Prices
             </Button>
@@ -256,22 +277,24 @@ export const TransactionAnalytics: React.FC = () => {
         </Grid>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
         )}
-        
+
         {summary && (
           <>
             <SummaryTiles summary={summary} />
-            
+
             <Box sx={{ mt: 4, mb: 2 }}>
               <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-                <Tabs 
-                  value={tabValue} 
+                <Tabs
+                  value={tabValue}
                   onChange={handleTabChange}
                   sx={{
-                    '& .MuiTab-root': { fontWeight: 'bold' },
-                    '& .Mui-selected': { color: 'primary.main' },
-                    '& .MuiTabs-indicator': { backgroundColor: 'primary.main' },
+                    "& .MuiTab-root": { fontWeight: "bold" },
+                    "& .Mui-selected": { color: "primary.main" },
+                    "& .MuiTabs-indicator": { backgroundColor: "primary.main" },
                   }}
                 >
                   <Tab label="Orders" />
@@ -289,9 +312,9 @@ export const TransactionAnalytics: React.FC = () => {
             </TabPanel>
           </>
         )}
-        
+
         {!summary && !loading && (
-          <Box sx={{ textAlign: 'center', py: 5 }}>
+          <Box sx={{ textAlign: "center", py: 5 }}>
             <Typography variant="h6" color="text.secondary" gutterBottom>
               No transaction data available
             </Typography>

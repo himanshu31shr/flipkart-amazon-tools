@@ -41,7 +41,7 @@ export const LoginPage: React.FC = () => {
         setIsResetMode(false);
       } else {
         await dispatch(login({ email, password, rememberMe })).unwrap();
-        navigate('/flipkart-amazon-tools/');
+        navigate('/');
       }
     } catch {
       // Error is handled by Redux, no need to set local error

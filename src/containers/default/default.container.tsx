@@ -35,9 +35,9 @@ import { AppBar } from "../../components/appbar";
 
 // Responsive drawer width
 const DRAWER_WIDTH = {
-  xs: 240,  // Smaller on mobile
-  sm: 240,  // Same on tablet
-  md: 250,  // Default on desktop
+  xs: 240, // Smaller on mobile
+  sm: 240, // Same on tablet
+  md: 250, // Default on desktop
 };
 
 const DrawerHeader = styled("div")(({ theme }) => ({
@@ -54,12 +54,12 @@ const StyledListItemButton = styled(ListItemButton)(({ theme }) => ({
   margin: theme.spacing(0.5, 0),
   borderRadius: theme.shape.borderRadius,
   padding: theme.spacing(1, 1.5),
-  '&:hover': {
+  "&:hover": {
     backgroundColor: alpha(theme.palette.primary.main, 0.08),
   },
-  '&.Mui-selected': {
+  "&.Mui-selected": {
     backgroundColor: alpha(theme.palette.primary.main, 0.12),
-    '&:hover': {
+    "&:hover": {
       backgroundColor: alpha(theme.palette.primary.main, 0.16),
     },
   },
@@ -72,7 +72,7 @@ const StyledListItemIcon = styled(ListItemIcon)(({ theme }) => ({
 }));
 
 const StyledListItemText = styled(ListItemText)({
-  '& .MuiTypography-root': {
+  "& .MuiTypography-root": {
     fontWeight: 500,
   },
 });
@@ -81,19 +81,19 @@ const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{
   open?: boolean;
 }>(({ theme, open }) => ({
   flexGrow: 1,
-  transition: theme.transitions.create(['margin', 'width'], {
+  transition: theme.transitions.create(["margin", "width"], {
     easing: theme.transitions.easing.sharp,
     duration: theme.transitions.duration.leavingScreen,
   }),
   marginLeft: 0,
   width: "100%",
   ...(open && {
-    [theme.breakpoints.up('sm')]: {
-      transition: theme.transitions.create(['margin', 'width'], {
+    [theme.breakpoints.up("sm")]: {
+      transition: theme.transitions.create(["margin", "width"], {
         easing: theme.transitions.easing.easeOut,
         duration: theme.transitions.duration.enteringScreen,
       }),
-    }
+    },
   }),
 }));
 
@@ -107,7 +107,7 @@ export const DefaultContainer = ({
   mode: "light" | "dark";
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const location = useLocation();
 
   // Initialize drawer state - closed by default on mobile
@@ -125,10 +125,16 @@ export const DefaultContainer = ({
   // Update section states based on current route
   React.useEffect(() => {
     const path = location.pathname;
-    setOrdersOpen(path.includes('/flipkart-amazon-tools/home/') || path.includes('/flipkart-amazon-tools/activeOrders/'));
-    setProductsOpen(path.includes('/flipkart-amazon-tools/products/') || path.includes('/flipkart-amazon-tools/uncategorized-products/'));
-    setCategoriesOpen(path.includes('/flipkart-amazon-tools/categories/') || path.includes('/flipkart-amazon-tools/category-groups/'));
-    setManagementOpen(path.includes('/flipkart-amazon-tools/storage-management/') || path.includes('/flipkart-amazon-tools/inventory/'));
+    setOrdersOpen(path.includes("/home/") || path.includes("/activeOrders/"));
+    setProductsOpen(
+      path.includes("/products/") || path.includes("/uncategorized-products/")
+    );
+    setCategoriesOpen(
+      path.includes("/categories/") || path.includes("/category-groups/")
+    );
+    setManagementOpen(
+      path.includes("/storage-management/") || path.includes("/inventory/")
+    );
   }, [location.pathname]);
 
   const toggleDrawer = (newOpen: boolean) => () => {
@@ -147,20 +153,34 @@ export const DefaultContainer = ({
   };
 
   const DrawerList = (
-    <Box sx={{ width: { xs: DRAWER_WIDTH.xs, sm: DRAWER_WIDTH.sm, md: DRAWER_WIDTH.md } }} role="presentation">
+    <Box
+      sx={{
+        width: {
+          xs: DRAWER_WIDTH.xs,
+          sm: DRAWER_WIDTH.sm,
+          md: DRAWER_WIDTH.md,
+        },
+      }}
+      role="presentation"
+    >
       <DrawerHeader>
-        <Typography variant="h6" noWrap component="div" sx={{
-          fontWeight: 600,
-          fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' }
-        }}>
+        <Typography
+          variant="h6"
+          noWrap
+          component="div"
+          sx={{
+            fontWeight: 600,
+            fontSize: { xs: "1rem", sm: "1.1rem", md: "1.25rem" },
+          }}
+        >
           Sacred Sutra
         </Typography>
         <IconButton
           onClick={toggleDrawer(false)}
           sx={{
-            color: 'inherit',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            color: "inherit",
+            "&:hover": {
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
             },
           }}
         >
@@ -172,13 +192,13 @@ export const DefaultContainer = ({
         {/* Dashboard */}
         <Link
           component={RouterLink}
-          to={"/flipkart-amazon-tools/"}
+          to={"/"}
           data-testid="dashboard"
-          style={{ textDecoration: 'none', color: 'inherit' }}
+          style={{ textDecoration: "none", color: "inherit" }}
           onClick={handleNavigation}
         >
           <ListItem key={"Dashboard"} disablePadding>
-            <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/")}>
+            <StyledListItemButton selected={isActiveRoute("/")}>
               <StyledListItemIcon>
                 <DashboardIcon />
               </StyledListItemIcon>
@@ -201,13 +221,13 @@ export const DefaultContainer = ({
           <List component="div" disablePadding sx={{ pl: 1 }}>
             <Link
               component={RouterLink}
-              to={"/flipkart-amazon-tools/home/"}
+              to={"/home/"}
               data-testid="merge-labels"
-              style={{ textDecoration: 'none', color: 'inherit' }}
+              style={{ textDecoration: "none", color: "inherit" }}
               onClick={handleNavigation}
             >
               <ListItem key={"Merge Labels"} disablePadding>
-                <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/home/")}>
+                <StyledListItemButton selected={isActiveRoute("/home/")}>
                   <StyledListItemIcon>
                     <LabelIcon />
                   </StyledListItemIcon>
@@ -217,13 +237,15 @@ export const DefaultContainer = ({
             </Link>
             <Link
               component={RouterLink}
-              to={"/flipkart-amazon-tools/activeOrders/"}
+              to={"/activeOrders/"}
               data-testid="active-orders"
-              style={{ textDecoration: 'none', color: 'inherit' }}
+              style={{ textDecoration: "none", color: "inherit" }}
               onClick={handleNavigation}
             >
               <ListItem key={"Active Orders"} disablePadding>
-                <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/activeOrders/")}>
+                <StyledListItemButton
+                  selected={isActiveRoute("/activeOrders/")}
+                >
                   <StyledListItemIcon>
                     <ShoppingCartIcon />
                   </StyledListItemIcon>
@@ -248,13 +270,13 @@ export const DefaultContainer = ({
           <List component="div" disablePadding sx={{ pl: 1 }}>
             <Link
               component={RouterLink}
-              to={"/flipkart-amazon-tools/products/"}
+              to={"/products/"}
               data-testid="products"
-              style={{ textDecoration: 'none', color: 'inherit' }}
+              style={{ textDecoration: "none", color: "inherit" }}
               onClick={handleNavigation}
             >
               <ListItem key={"All Products"} disablePadding>
-                <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/products/")}>
+                <StyledListItemButton selected={isActiveRoute("/products/")}>
                   <StyledListItemIcon>
                     <ShoppingCartIcon />
                   </StyledListItemIcon>
@@ -264,13 +286,15 @@ export const DefaultContainer = ({
             </Link>
             <Link
               component={RouterLink}
-              to={"/flipkart-amazon-tools/uncategorized-products/"}
+              to={"/uncategorized-products/"}
               data-testid="uncategorized-products"
-              style={{ textDecoration: 'none', color: 'inherit' }}
+              style={{ textDecoration: "none", color: "inherit" }}
               onClick={handleNavigation}
             >
               <ListItem key={"Uncategorized Products"} disablePadding>
-                <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/uncategorized-products/")}>
+                <StyledListItemButton
+                  selected={isActiveRoute("/uncategorized-products/")}
+                >
                   <StyledListItemIcon>
                     <WarningIcon />
                   </StyledListItemIcon>
@@ -295,13 +319,13 @@ export const DefaultContainer = ({
           <List component="div" disablePadding sx={{ pl: 1 }}>
             <Link
               component={RouterLink}
-              to={"/flipkart-amazon-tools/categories/"}
+              to={"/categories/"}
               data-testid="all-categories"
-              style={{ textDecoration: 'none', color: 'inherit' }}
+              style={{ textDecoration: "none", color: "inherit" }}
               onClick={handleNavigation}
             >
               <ListItem key={"All Categories"} disablePadding>
-                <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/categories/")}>
+                <StyledListItemButton selected={isActiveRoute("/categories/")}>
                   <StyledListItemIcon>
                     <CategoryIcon />
                   </StyledListItemIcon>
@@ -311,13 +335,15 @@ export const DefaultContainer = ({
             </Link>
             <Link
               component={RouterLink}
-              to={"/flipkart-amazon-tools/category-groups/"}
+              to={"/category-groups/"}
               data-testid="category-groups"
-              style={{ textDecoration: 'none', color: 'inherit' }}
+              style={{ textDecoration: "none", color: "inherit" }}
               onClick={handleNavigation}
             >
               <ListItem key={"Category Groups"} disablePadding>
-                <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/category-groups/")}>
+                <StyledListItemButton
+                  selected={isActiveRoute("/category-groups/")}
+                >
                   <StyledListItemIcon>
                     <GroupIcon />
                   </StyledListItemIcon>
@@ -342,13 +368,13 @@ export const DefaultContainer = ({
           <List component="div" disablePadding sx={{ pl: 1 }}>
             <Link
               component={RouterLink}
-              to={"/flipkart-amazon-tools/inventory/"}
+              to={"/inventory/"}
               data-testid="inventory-management"
-              style={{ textDecoration: 'none', color: 'inherit' }}
+              style={{ textDecoration: "none", color: "inherit" }}
               onClick={handleNavigation}
             >
               <ListItem key={"Inventory Management"} disablePadding>
-                <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/inventory/")}>
+                <StyledListItemButton selected={isActiveRoute("/inventory/")}>
                   <StyledListItemIcon>
                     <ManagementIcon />
                   </StyledListItemIcon>
@@ -358,13 +384,15 @@ export const DefaultContainer = ({
             </Link>
             <Link
               component={RouterLink}
-              to={"/flipkart-amazon-tools/storage-management/"}
+              to={"/storage-management/"}
               data-testid="storage-management"
-              style={{ textDecoration: 'none', color: 'inherit' }}
+              style={{ textDecoration: "none", color: "inherit" }}
               onClick={handleNavigation}
             >
               <ListItem key={"Storage Management"} disablePadding>
-                <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/storage-management/")}>
+                <StyledListItemButton
+                  selected={isActiveRoute("/storage-management/")}
+                >
                   <StyledListItemIcon>
                     <StorageIcon />
                   </StyledListItemIcon>
@@ -378,13 +406,13 @@ export const DefaultContainer = ({
         {/* Analytics Section */}
         <Link
           component={RouterLink}
-          to={"/flipkart-amazon-tools/transactions/"}
+          to={"/transactions/"}
           data-testid="transactions"
-          style={{ textDecoration: 'none', color: 'inherit' }}
+          style={{ textDecoration: "none", color: "inherit" }}
           onClick={handleNavigation}
         >
           <ListItem key={"Transaction Analytics"} disablePadding>
-            <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/transactions/")}>
+            <StyledListItemButton selected={isActiveRoute("/transactions/")}>
               <StyledListItemIcon>
                 <AnalyticsIcon />
               </StyledListItemIcon>
@@ -394,13 +422,13 @@ export const DefaultContainer = ({
         </Link>
         <Link
           component={RouterLink}
-          to={"/flipkart-amazon-tools/order-analytics/"}
+          to={"/order-analytics/"}
           data-testid="order-analytics"
-          style={{ textDecoration: 'none', color: 'inherit' }}
+          style={{ textDecoration: "none", color: "inherit" }}
           onClick={handleNavigation}
         >
           <ListItem key={"Order Analytics"} disablePadding>
-            <StyledListItemButton selected={isActiveRoute("/flipkart-amazon-tools/order-analytics/")}>
+            <StyledListItemButton selected={isActiveRoute("/order-analytics/")}>
               <StyledListItemIcon>
                 <AnalyticsIcon />
               </StyledListItemIcon>
@@ -428,11 +456,15 @@ export const DefaultContainer = ({
           flexShrink: 0,
           "& .MuiDrawer-paper": {
             width: open
-              ? { xs: DRAWER_WIDTH.xs, sm: DRAWER_WIDTH.sm, md: DRAWER_WIDTH.md }
+              ? {
+                  xs: DRAWER_WIDTH.xs,
+                  sm: DRAWER_WIDTH.sm,
+                  md: DRAWER_WIDTH.md,
+                }
               : 0,
             boxSizing: "border-box",
-            borderRight: 'none',
-            boxShadow: '0 0 35px 0 rgba(154,161,171,.15)',
+            borderRight: "none",
+            boxShadow: "0 0 35px 0 rgba(154,161,171,.15)",
           },
           transition: "width 0.3s ease-in-out",
         }}
@@ -449,7 +481,7 @@ export const DefaultContainer = ({
             maxWidth: "100%",
             mt: 8, // Add margin top to account for AppBar
             px: { xs: 2, sm: 3 }, // Add responsive padding
-            transition: "padding 0.3s ease-in-out"
+            transition: "padding 0.3s ease-in-out",
           }}
         >
           {children}

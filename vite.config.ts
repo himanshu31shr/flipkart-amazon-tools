@@ -44,7 +44,7 @@
         },
       }),
     ],
-    base: "/flipkart-amazon-tools/",
+    base: "/",
     server: {
       port: 5173, // Use Vite's default port
       strictPort: false, // Allow fallback to another port if needed
