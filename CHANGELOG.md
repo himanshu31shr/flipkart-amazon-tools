@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.11.3
+
+### Patch Changes
+
+- [#75](https://github.com/webdev3103/flipkart-amazon-tools/pull/75) [`1f01e46`](https://github.com/webdev3103/flipkart-amazon-tools/commit/1f01e46e8468380e2e4a8865a1749b4bda007272) Thanks [@webdev3103](https://github.com/webdev3103)! - Added domain
+
 ## 9.11.2
 
 ### Patch Changes
