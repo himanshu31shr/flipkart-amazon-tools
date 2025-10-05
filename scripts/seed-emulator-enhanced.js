@@ -486,7 +486,7 @@ async function seedEmulatorData() {
     console.log(`💳 Transactions: ${TRANSACTIONS_SEED_DATA.length}`);
     console.log('');
     console.log('🔥 Emulator UI: http://localhost:4000');
-    console.log('🌐 App URL: http://localhost:5173/flipkart-amazon-tools/');
+    console.log('🌐 App URL: http://localhost:5173/');
     
     process.exit(0);
   } catch (error) {

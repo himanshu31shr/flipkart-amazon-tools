@@ -20,7 +20,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Navigate to="/flipkart-amazon-tools/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;

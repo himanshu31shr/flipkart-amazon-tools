@@ -29,7 +29,7 @@ const NotFound = () => {
         <Button variant="contained" onClick={() => navigate(-1)}>
           Go Back
         </Button>
-        <Button variant="outlined" component={Link} to="/flipkart-amazon-tools/">
+        <Button variant="outlined" component={Link} to="/">
           Go Home
         </Button>
       </Box>

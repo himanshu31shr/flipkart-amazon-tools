@@ -120,7 +120,7 @@ export const HighPricedProductsWidget: React.FC<ProductAlertWidgetProps> = ({ pr
             color="error"
             size="small"
             component={RouterLink}
-            to="/flipkart-amazon-tools/hidden-products/"
+            to="/hidden-products/"
             sx={{ fontSize: '0.75rem' }}
           >
             View {remainingCount} more high-priced products
@@ -132,7 +132,7 @@ export const HighPricedProductsWidget: React.FC<ProductAlertWidgetProps> = ({ pr
         <Box sx={{ textAlign: 'center' }}>
           <Link 
             component={RouterLink}
-            to="/flipkart-amazon-tools/hidden-products/"
+            to="/hidden-products/"
             color="primary"
             underline="hover"
             sx={{ fontSize: '0.875rem' }}

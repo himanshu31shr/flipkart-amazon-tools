@@ -34,7 +34,7 @@ const UncategorizedProductsWidget: React.FC<UncategorizedProductsWidgetProps> = 
     }, [products]);
 
     const handleViewAll = () => {
-        navigate('/flipkart-amazon-tools/uncategorized-products/');
+        navigate('/uncategorized-products/');
     };
 
     if (loading) {
