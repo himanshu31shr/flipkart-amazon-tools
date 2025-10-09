@@ -1,5 +1,11 @@
 # Changelog
 
+## 9.11.4
+
+### Patch Changes
+
+- [#78](https://github.com/webdev3103/flipkart-amazon-tools/pull/78) [`4691716`](https://github.com/webdev3103/flipkart-amazon-tools/commit/46917164d6016bebc2ca273d3d8feef06205c576) Thanks [@webdev3103](https://github.com/webdev3103)! - Fixed multiple request in loop
+
 ## 9.11.3
 
 ### Patch Changes

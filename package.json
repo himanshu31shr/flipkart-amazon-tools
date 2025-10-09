@@ -1,7 +1,7 @@
 {
   "name": "sacred-sutra-tools",
   "private": true,
-  "version": "9.11.3",
+  "version": "9.11.4",
   "type": "module",
   "homepage": "https://tool.sacredsutra.in/",
   "scripts": {
