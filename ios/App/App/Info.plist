@@ -45,5 +45,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Required for barcode scanning orders</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Required to save and access order documents</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Required to save order documents</string>
 </dict>
 </plist>

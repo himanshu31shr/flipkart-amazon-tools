@@ -267,8 +267,8 @@ describe('MobileBarcodeScanner', () => {
       });
 
       // Simulate barcode scan
-      if (barcodeScanHandler) {
-        await barcodeScanHandler({
+      if (barcodeScanHandler && typeof barcodeScanHandler === 'function') {
+        await (barcodeScanHandler as (event: { barcodes: Array<{ rawValue: string; format: string }> }) => Promise<void>)({
           barcodes: [{
             rawValue: '1234567890123',
             format: 'EAN_13'
@@ -308,8 +308,8 @@ describe('MobileBarcodeScanner', () => {
       });
 
       // Simulate barcode scan
-      if (barcodeScanHandler) {
-        await barcodeScanHandler({
+      if (barcodeScanHandler && typeof barcodeScanHandler === 'function') {
+        await (barcodeScanHandler as (event: { barcodes: Array<{ rawValue: string; format: string }> }) => Promise<void>)({
           barcodes: [{
             rawValue: '1234567890123',
             format: 'EAN_13'

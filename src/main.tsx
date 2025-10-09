@@ -9,6 +9,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { Capacitor } from '@capacitor/core';
 import { store, persistor } from './store';
 import { initializeAuthState } from './store/slices/authSlice';
+import { initializeFirebaseCapacitor } from './services/firebase.capacitor';
 import getDesignTokens from './theme';
 import App from './App';
 
@@ -23,8 +24,14 @@ const AppWrapper = () => {
     localStorage.setItem('theme', newMode);
   };
 
-  // Initialize auth state when app starts
+  // Initialize Firebase Capacitor plugins and auth state when app starts
   useEffect(() => {
+    // Initialize Firebase Capacitor plugins for native platforms
+    initializeFirebaseCapacitor().catch((error) => {
+      console.error('Failed to initialize Firebase Capacitor:', error);
+    });
+
+    // Initialize auth state
     store.dispatch(initializeAuthState());
   }, []);
 

@@ -130,7 +130,7 @@ import React from 'react';
  * @returns boolean
  */
 export function isTouchDevice(): boolean {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     return false;
   }
 

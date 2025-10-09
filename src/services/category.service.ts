@@ -1,27 +1,26 @@
-import { Timestamp, orderBy, where } from 'firebase/firestore';
-import { FirebaseService } from './firebase.service';
-import { Category, CategoryLink } from '../types/category';
-import { inventoryDeductionValidator } from '../utils/inventoryDeductionValidation';
-import { circularDependencyValidator } from '../utils/circularDependencyValidator';
-import { ValidationResult } from '../types/categoryExportImport.types';
+import { Timestamp, orderBy, where } from "firebase/firestore";
+import { FirebaseService } from "./firebase.service";
+import { Category, CategoryLink } from "../types/category";
+import { inventoryDeductionValidator } from "../utils/inventoryDeductionValidation";
+import { circularDependencyValidator } from "../utils/circularDependencyValidator";
+import { ValidationResult } from "../types/categoryExportImport.types";
 
 // Re-export Category interface for backward compatibility
 export type { Category };
 
 export class CategoryService extends FirebaseService {
-  private readonly COLLECTION_NAME = 'categories';
+  private readonly COLLECTION_NAME = "categories";
 
   async getCategories(): Promise<Category[]> {
-    const categories = await this.getDocuments<Category>(
-      this.COLLECTION_NAME,
-      [orderBy('name', 'asc')]
-    );
-    
+    const categories = await this.getDocuments<Category>(this.COLLECTION_NAME, [
+      orderBy("name", "asc"),
+    ]);
+
     // Handle case where getDocuments returns undefined (e.g., in tests or emulator issues)
     if (!categories || !Array.isArray(categories)) {
       return [];
     }
-    
+
     return categories;
   }
 
@@ -29,35 +28,41 @@ export class CategoryService extends FirebaseService {
     return this.getDocument<Category>(this.COLLECTION_NAME, id);
   }
 
-  async createCategory(category: Omit<Category, 'id'>): Promise<string> {
+  async createCategory(category: Omit<Category, "id">): Promise<string> {
     // Sanitize the data to ensure Firestore compatibility
     const sanitizedCategory = {
       name: category.name,
-      description: category.description || '',
-      tag: category.tag || '',
+      description: category.description || "",
+      tag: category.tag || "",
       categoryGroupId: category.categoryGroupId || null,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
     };
-    
-    const docRef = await this.addDocument(this.COLLECTION_NAME, sanitizedCategory);
+
+    const docRef = await this.addDocument(
+      this.COLLECTION_NAME,
+      sanitizedCategory
+    );
     return docRef.id;
   }
 
-  async updateCategory(id: string, category: Partial<Omit<Category, 'id'>>): Promise<void> {
+  async updateCategory(
+    id: string,
+    category: Partial<Omit<Category, "id">>
+  ): Promise<void> {
     // Sanitize the data to ensure Firestore compatibility
     const sanitizedUpdates: Partial<Category> & { updatedAt: Timestamp } = {
       updatedAt: Timestamp.now(),
     };
-    
+
     if (category.name !== undefined) {
       sanitizedUpdates.name = category.name;
     }
     if (category.description !== undefined) {
-      sanitizedUpdates.description = category.description || '';
+      sanitizedUpdates.description = category.description || "";
     }
     if (category.tag !== undefined) {
-      sanitizedUpdates.tag = category.tag || '';
+      sanitizedUpdates.tag = category.tag || "";
     }
     if (category.categoryGroupId !== undefined) {
       sanitizedUpdates.categoryGroupId = category.categoryGroupId || undefined;
@@ -72,12 +77,13 @@ export class CategoryService extends FirebaseService {
       sanitizedUpdates.unitConversionRate = category.unitConversionRate;
     }
     if (category.inventoryDeductionQuantity !== undefined) {
-      sanitizedUpdates.inventoryDeductionQuantity = category.inventoryDeductionQuantity;
+      sanitizedUpdates.inventoryDeductionQuantity =
+        category.inventoryDeductionQuantity;
     }
     if (category.linkedCategories !== undefined) {
       sanitizedUpdates.linkedCategories = category.linkedCategories;
     }
-    
+
     await this.updateDocument(this.COLLECTION_NAME, id, sanitizedUpdates);
   }
 
@@ -87,31 +93,37 @@ export class CategoryService extends FirebaseService {
   }
 
   async isCategoryInUse(categoryId: string): Promise<boolean> {
-    const products = await this.getDocuments<{ id: string }>(
-      'products',
-      [
-        where('categoryId', '==', categoryId),
-        orderBy('id', 'asc')
-      ]
-    );
+    const products = await this.getDocuments<{ id: string }>("products", [
+      where("categoryId", "==", categoryId),
+      orderBy("id", "asc"),
+    ]);
     return products.length > 0;
   }
 
   // Group-related methods
-  async getCategoriesWithGroups(): Promise<Array<Category & { categoryGroup?: { id: string; name: string; color: string } }>> {
+  async getCategoriesWithGroups(): Promise<
+    Array<
+      Category & { categoryGroup?: { id: string; name: string; color: string } }
+    >
+  > {
     const categories = await this.getCategories();
     const categoriesWithGroups = [];
 
+    const categoryGroups = await this.getDocuments("categoryGroups", [
+      orderBy("name", "asc"),
+    ]); // Pre-fetch groups to reduce calls
+
     for (const category of categories) {
       if (category.categoryGroupId) {
-        try {
-          const group = await this.getDocument<{ id: string; name: string; color: string }>('categoryGroups', category.categoryGroupId);
+        const group = categoryGroups.find(
+          (g) => g.id === category.categoryGroupId
+        );
+        if (group) {
           categoriesWithGroups.push({
             ...category,
-            categoryGroup: group
+            categoryGroup: group,
           });
-        } catch {
-          // If group doesn't exist, just add category without group
+        } else {
           categoriesWithGroups.push(category);
         }
       } else {
@@ -122,28 +134,33 @@ export class CategoryService extends FirebaseService {
     return categoriesWithGroups;
   }
 
-  async assignCategoryToGroup(categoryId: string, groupId: string | null): Promise<void> {
-    await this.updateCategory(categoryId, { categoryGroupId: groupId || undefined });
+  async assignCategoryToGroup(
+    categoryId: string,
+    groupId: string | null
+  ): Promise<void> {
+    await this.updateCategory(categoryId, {
+      categoryGroupId: groupId || undefined,
+    });
   }
 
   async getCategoriesByGroup(groupId: string): Promise<Category[]> {
-    return this.getDocuments<Category>(
-      this.COLLECTION_NAME,
-      [
-        where('categoryGroupId', '==', groupId),
-        orderBy('name', 'asc')
-      ]
-    );
+    return this.getDocuments<Category>(this.COLLECTION_NAME, [
+      where("categoryGroupId", "==", groupId),
+      orderBy("name", "asc"),
+    ]);
   }
 
   async getUnassignedCategories(): Promise<Category[]> {
     // Get categories without a group assignment
     const allCategories = await this.getCategories();
-    return allCategories.filter(category => !category.categoryGroupId);
+    return allCategories.filter((category) => !category.categoryGroupId);
   }
 
-  async assignMultipleCategoriesToGroup(categoryIds: string[], groupId: string | null): Promise<void> {
-    const updatePromises = categoryIds.map(categoryId =>
+  async assignMultipleCategoriesToGroup(
+    categoryIds: string[],
+    groupId: string | null
+  ): Promise<void> {
+    const updatePromises = categoryIds.map((categoryId) =>
       this.updateCategory(categoryId, { categoryGroupId: groupId || undefined })
     );
     await Promise.all(updatePromises);
@@ -157,10 +174,11 @@ export class CategoryService extends FirebaseService {
    */
   async getCategoriesWithInventoryDeduction(): Promise<Category[]> {
     const allCategories = await this.getCategories();
-    return allCategories.filter(category => 
-      category.inventoryDeductionQuantity !== null && 
-      category.inventoryDeductionQuantity !== undefined &&
-      category.inventoryDeductionQuantity > 0
+    return allCategories.filter(
+      (category) =>
+        category.inventoryDeductionQuantity !== null &&
+        category.inventoryDeductionQuantity !== undefined &&
+        category.inventoryDeductionQuantity > 0
     );
   }
 
@@ -170,7 +188,9 @@ export class CategoryService extends FirebaseService {
    * @returns ValidationResult with validation status and messages
    */
   validateInventoryDeductionConfig(category: Category): ValidationResult {
-    return inventoryDeductionValidator.validateCategoryDeductionConfig(category);
+    return inventoryDeductionValidator.validateCategoryDeductionConfig(
+      category
+    );
   }
 
   /**
@@ -179,18 +199,24 @@ export class CategoryService extends FirebaseService {
    * @param quantity New deduction quantity (null to disable)
    * @returns Promise<void>
    */
-  async updateInventoryDeductionQuantity(categoryId: string, quantity: number | null): Promise<void> {
+  async updateInventoryDeductionQuantity(
+    categoryId: string,
+    quantity: number | null
+  ): Promise<void> {
     // Validate the quantity before updating
     if (quantity !== null) {
-      const validation = inventoryDeductionValidator.validateDeductionQuantity(quantity);
+      const validation =
+        inventoryDeductionValidator.validateDeductionQuantity(quantity);
       if (!validation.isValid) {
-        throw new Error(`Invalid deduction quantity: ${validation.errors.join(', ')}`);
+        throw new Error(
+          `Invalid deduction quantity: ${validation.errors.join(", ")}`
+        );
       }
     }
 
-    await this.updateCategory(categoryId, { 
+    await this.updateCategory(categoryId, {
       inventoryDeductionQuantity: quantity || undefined,
-      updatedAt: Timestamp.now()
+      updatedAt: Timestamp.now(),
     });
   }
 
@@ -199,12 +225,15 @@ export class CategoryService extends FirebaseService {
    * @param groupId ID of the category group
    * @returns Promise<Category[]> Categories in the group with deduction configured
    */
-  async getCategoriesWithDeductionByGroup(groupId: string): Promise<Category[]> {
+  async getCategoriesWithDeductionByGroup(
+    groupId: string
+  ): Promise<Category[]> {
     const groupCategories = await this.getCategoriesByGroup(groupId);
-    return groupCategories.filter(category => 
-      category.inventoryDeductionQuantity !== null && 
-      category.inventoryDeductionQuantity !== undefined &&
-      category.inventoryDeductionQuantity > 0
+    return groupCategories.filter(
+      (category) =>
+        category.inventoryDeductionQuantity !== null &&
+        category.inventoryDeductionQuantity !== undefined &&
+        category.inventoryDeductionQuantity > 0
     );
   }
 
@@ -226,22 +255,31 @@ export class CategoryService extends FirebaseService {
    * @param updates Array of {categoryId, quantity} objects
    * @returns Promise<void>
    */
-  async bulkUpdateDeductionQuantities(updates: Array<{categoryId: string, quantity: number | null}>): Promise<void> {
+  async bulkUpdateDeductionQuantities(
+    updates: Array<{ categoryId: string; quantity: number | null }>
+  ): Promise<void> {
     // Validate all quantities first
     for (const update of updates) {
       if (update.quantity !== null) {
-        const validation = inventoryDeductionValidator.validateDeductionQuantity(update.quantity);
+        const validation =
+          inventoryDeductionValidator.validateDeductionQuantity(
+            update.quantity
+          );
         if (!validation.isValid) {
-          throw new Error(`Invalid deduction quantity for category ${update.categoryId}: ${validation.errors.join(', ')}`);
+          throw new Error(
+            `Invalid deduction quantity for category ${
+              update.categoryId
+            }: ${validation.errors.join(", ")}`
+          );
         }
       }
     }
 
     // Perform all updates
-    const updatePromises = updates.map(update =>
-      this.updateCategory(update.categoryId, { 
+    const updatePromises = updates.map((update) =>
+      this.updateCategory(update.categoryId, {
         inventoryDeductionQuantity: update.quantity || undefined,
-        updatedAt: Timestamp.now()
+        updatedAt: Timestamp.now(),
       })
     );
     await Promise.all(updatePromises);
@@ -255,7 +293,7 @@ export class CategoryService extends FirebaseService {
   async getDeductionValidationSummary(categoryId: string): Promise<string> {
     const category = await this.getCategory(categoryId);
     if (!category) {
-      return 'Category not found';
+      return "Category not found";
     }
     return inventoryDeductionValidator.getValidationSummary(category);
   }
@@ -269,17 +307,17 @@ export class CategoryService extends FirebaseService {
    * @returns Promise<ValidationResult> Result of enabling deduction
    */
   async enableInventoryDeduction(
-    categoryId: string, 
+    categoryId: string,
     quantity: number,
-    inventoryType?: 'weight' | 'qty',
-    inventoryUnit?: 'kg' | 'g' | 'pcs'
+    inventoryType?: "weight" | "qty",
+    inventoryUnit?: "kg" | "g" | "pcs"
   ): Promise<ValidationResult> {
     const category = await this.getCategory(categoryId);
     if (!category) {
       return {
         isValid: false,
-        errors: ['Category not found'],
-        warnings: []
+        errors: ["Category not found"],
+        warnings: [],
       };
     }
 
@@ -288,17 +326,17 @@ export class CategoryService extends FirebaseService {
       ...category,
       inventoryDeductionQuantity: quantity,
       inventoryType: inventoryType || category.inventoryType,
-      inventoryUnit: inventoryUnit || category.inventoryUnit
+      inventoryUnit: inventoryUnit || category.inventoryUnit,
     };
 
     const validation = this.validateInventoryDeductionConfig(testCategory);
-    
+
     if (validation.isValid) {
       // Update the category with new settings
       const updates: Partial<Category> = {
-        inventoryDeductionQuantity: quantity
+        inventoryDeductionQuantity: quantity,
       };
-      
+
       if (inventoryType) {
         updates.inventoryType = inventoryType;
       }
@@ -330,12 +368,20 @@ export class CategoryService extends FirebaseService {
    * @param isActive Whether the link should be active (default true)
    * @returns Promise<ValidationResult> Result of adding the link
    */
-  async addCategoryLink(sourceId: string, targetId: string, isActive: boolean = true): Promise<ValidationResult> {
+  async addCategoryLink(
+    sourceId: string,
+    targetId: string,
+    isActive: boolean = true
+  ): Promise<ValidationResult> {
     const allCategories = await this.getCategories();
-    
+
     // Validate the link before adding
-    const validation = circularDependencyValidator.validateLink(sourceId, targetId, allCategories);
-    
+    const validation = circularDependencyValidator.validateLink(
+      sourceId,
+      targetId,
+      allCategories
+    );
+
     if (!validation.isValid) {
       return validation;
     }
@@ -345,19 +391,21 @@ export class CategoryService extends FirebaseService {
       return {
         isValid: false,
         errors: [`Source category with ID '${sourceId}' not found`],
-        warnings: []
+        warnings: [],
       };
     }
 
     // Check if link already exists
     const existingLinks = sourceCategory.linkedCategories || [];
-    const linkExists = existingLinks.some(link => link.categoryId === targetId);
-    
+    const linkExists = existingLinks.some(
+      (link) => link.categoryId === targetId
+    );
+
     if (linkExists) {
       return {
         isValid: false,
-        errors: ['Link already exists between these categories'],
-        warnings: []
+        errors: ["Link already exists between these categories"],
+        warnings: [],
       };
     }
 
@@ -365,7 +413,7 @@ export class CategoryService extends FirebaseService {
     const newLink: CategoryLink = {
       categoryId: targetId,
       isActive,
-      createdAt: Timestamp.now()
+      createdAt: Timestamp.now(),
     };
 
     // Update the source category with the new link
@@ -375,7 +423,7 @@ export class CategoryService extends FirebaseService {
     return {
       isValid: true,
       errors: [],
-      warnings: validation.warnings
+      warnings: validation.warnings,
     };
   }
 
@@ -385,35 +433,42 @@ export class CategoryService extends FirebaseService {
    * @param targetId ID of the target category to unlink
    * @returns Promise<ValidationResult> Result of removing the link
    */
-  async removeCategoryLink(sourceId: string, targetId: string): Promise<ValidationResult> {
+  async removeCategoryLink(
+    sourceId: string,
+    targetId: string
+  ): Promise<ValidationResult> {
     const sourceCategory = await this.getCategory(sourceId);
     if (!sourceCategory) {
       return {
         isValid: false,
         errors: [`Source category with ID '${sourceId}' not found`],
-        warnings: []
+        warnings: [],
       };
     }
 
     const existingLinks = sourceCategory.linkedCategories || [];
-    const linkIndex = existingLinks.findIndex(link => link.categoryId === targetId);
-    
+    const linkIndex = existingLinks.findIndex(
+      (link) => link.categoryId === targetId
+    );
+
     if (linkIndex === -1) {
       return {
         isValid: false,
-        errors: ['Link does not exist between these categories'],
-        warnings: []
+        errors: ["Link does not exist between these categories"],
+        warnings: [],
       };
     }
 
     // Remove the link
-    const updatedLinks = existingLinks.filter((_, index) => index !== linkIndex);
+    const updatedLinks = existingLinks.filter(
+      (_, index) => index !== linkIndex
+    );
     await this.updateCategory(sourceId, { linkedCategories: updatedLinks });
 
     return {
       isValid: true,
       errors: [],
-      warnings: []
+      warnings: [],
     };
   }
 
@@ -424,24 +479,30 @@ export class CategoryService extends FirebaseService {
    * @param updates Updates to apply to the link
    * @returns Promise<ValidationResult> Result of updating the link
    */
-  async updateCategoryLink(sourceId: string, targetId: string, updates: Partial<CategoryLink>): Promise<ValidationResult> {
+  async updateCategoryLink(
+    sourceId: string,
+    targetId: string,
+    updates: Partial<CategoryLink>
+  ): Promise<ValidationResult> {
     const sourceCategory = await this.getCategory(sourceId);
     if (!sourceCategory) {
       return {
         isValid: false,
         errors: [`Source category with ID '${sourceId}' not found`],
-        warnings: []
+        warnings: [],
       };
     }
 
     const existingLinks = sourceCategory.linkedCategories || [];
-    const linkIndex = existingLinks.findIndex(link => link.categoryId === targetId);
-    
+    const linkIndex = existingLinks.findIndex(
+      (link) => link.categoryId === targetId
+    );
+
     if (linkIndex === -1) {
       return {
         isValid: false,
-        errors: ['Link does not exist between these categories'],
-        warnings: []
+        errors: ["Link does not exist between these categories"],
+        warnings: [],
       };
     }
 
@@ -450,7 +511,7 @@ export class CategoryService extends FirebaseService {
     updatedLinks[linkIndex] = {
       ...updatedLinks[linkIndex],
       ...updates,
-      categoryId: targetId // Ensure categoryId cannot be changed
+      categoryId: targetId, // Ensure categoryId cannot be changed
     };
 
     await this.updateCategory(sourceId, { linkedCategories: updatedLinks });
@@ -458,7 +519,7 @@ export class CategoryService extends FirebaseService {
     return {
       isValid: true,
       errors: [],
-      warnings: []
+      warnings: [],
     };
   }
 
@@ -468,16 +529,21 @@ export class CategoryService extends FirebaseService {
    * @param includeInactive Whether to include inactive links (default false)
    * @returns Promise<Category[]> Array of linked categories
    */
-  async getLinkedCategories(sourceId: string, includeInactive: boolean = false): Promise<Category[]> {
+  async getLinkedCategories(
+    sourceId: string,
+    includeInactive: boolean = false
+  ): Promise<Category[]> {
     const sourceCategory = await this.getCategory(sourceId);
     if (!sourceCategory || !sourceCategory.linkedCategories) {
       return [];
     }
 
     // Filter links based on active status
-    const links = includeInactive 
+    const links = includeInactive
       ? sourceCategory.linkedCategories
-      : sourceCategory.linkedCategories.filter(link => link.isActive !== false);
+      : sourceCategory.linkedCategories.filter(
+          (link) => link.isActive !== false
+        );
 
     // Fetch the actual category objects
     const linkedCategories: Category[] = [];
@@ -497,17 +563,21 @@ export class CategoryService extends FirebaseService {
    * @param includeInactive Whether to include inactive links (default false)
    * @returns Promise<Category[]> Array of categories that link to the target
    */
-  async getCategoriesLinkingTo(targetId: string, includeInactive: boolean = false): Promise<Category[]> {
+  async getCategoriesLinkingTo(
+    targetId: string,
+    includeInactive: boolean = false
+  ): Promise<Category[]> {
     const allCategories = await this.getCategories();
     const linkingCategories: Category[] = [];
 
     for (const category of allCategories) {
       if (category.linkedCategories) {
-        const hasLink = category.linkedCategories.some(link => 
-          link.categoryId === targetId && 
-          (includeInactive || link.isActive !== false)
+        const hasLink = category.linkedCategories.some(
+          (link) =>
+            link.categoryId === targetId &&
+            (includeInactive || link.isActive !== false)
         );
-        
+
         if (hasLink) {
           linkingCategories.push(category);
         }
@@ -522,7 +592,9 @@ export class CategoryService extends FirebaseService {
    * @param sourceId ID of the source category
    * @returns Promise<Array> Array of link details with target category info
    */
-  async getCategoryLinkDetails(sourceId: string): Promise<Array<CategoryLink & { targetCategory?: Category }>> {
+  async getCategoryLinkDetails(
+    sourceId: string
+  ): Promise<Array<CategoryLink & { targetCategory?: Category }>> {
     const sourceCategory = await this.getCategory(sourceId);
     if (!sourceCategory || !sourceCategory.linkedCategories) {
       return [];
@@ -533,7 +605,7 @@ export class CategoryService extends FirebaseService {
       const targetCategory = await this.getCategory(link.categoryId);
       linkDetails.push({
         ...link,
-        targetCategory
+        targetCategory,
       });
     }
 
@@ -548,10 +620,15 @@ export class CategoryService extends FirebaseService {
   async validateCategoryLinks(categoryId?: string): Promise<ValidationResult> {
     if (categoryId) {
       const allCategories = await this.getCategories();
-      return circularDependencyValidator.checkCircularDependency(categoryId, allCategories);
+      return circularDependencyValidator.checkCircularDependency(
+        categoryId,
+        allCategories
+      );
     } else {
       const allCategories = await this.getCategories();
-      return circularDependencyValidator.validateAllCategoryLinks(allCategories);
+      return circularDependencyValidator.validateAllCategoryLinks(
+        allCategories
+      );
     }
   }
 
@@ -563,11 +640,14 @@ export class CategoryService extends FirebaseService {
   async getCategoryLinkSummary(categoryId: string): Promise<string> {
     const category = await this.getCategory(categoryId);
     if (!category) {
-      return 'Category not found';
+      return "Category not found";
     }
 
     const allCategories = await this.getCategories();
-    return circularDependencyValidator.getLinkValidationSummary(category, allCategories);
+    return circularDependencyValidator.getLinkValidationSummary(
+      category,
+      allCategories
+    );
   }
 
   /**
@@ -575,14 +655,20 @@ export class CategoryService extends FirebaseService {
    * @param links Array of {sourceId, targetId, isActive} objects
    * @returns Promise<ValidationResult[]> Array of validation results for each link
    */
-  async bulkAddCategoryLinks(links: Array<{sourceId: string, targetId: string, isActive?: boolean}>): Promise<ValidationResult[]> {
+  async bulkAddCategoryLinks(
+    links: Array<{ sourceId: string; targetId: string; isActive?: boolean }>
+  ): Promise<ValidationResult[]> {
     const results: ValidationResult[] = [];
-    
+
     // Process links one by one to ensure proper validation after each addition
     for (const link of links) {
-      const result = await this.addCategoryLink(link.sourceId, link.targetId, link.isActive);
+      const result = await this.addCategoryLink(
+        link.sourceId,
+        link.targetId,
+        link.isActive
+      );
       results.push(result);
-      
+
       // Stop processing if we encounter an error to prevent inconsistent state
       if (!result.isValid) {
         break;
@@ -599,7 +685,11 @@ export class CategoryService extends FirebaseService {
    * @param isActive Whether the link should be active
    * @returns Promise<ValidationResult> Result of the operation
    */
-  async setCategoryLinkActive(sourceId: string, targetId: string, isActive: boolean): Promise<ValidationResult> {
+  async setCategoryLinkActive(
+    sourceId: string,
+    targetId: string,
+    isActive: boolean
+  ): Promise<ValidationResult> {
     return this.updateCategoryLink(sourceId, targetId, { isActive });
   }
 
@@ -609,8 +699,10 @@ export class CategoryService extends FirebaseService {
    */
   async getCategoriesWithCascadeDeduction(): Promise<Category[]> {
     const allCategories = await this.getCategories();
-    return allCategories.filter(category => {
-      const activeLinks = category.linkedCategories?.filter(link => link.isActive !== false) || [];
+    return allCategories.filter((category) => {
+      const activeLinks =
+        category.linkedCategories?.filter((link) => link.isActive !== false) ||
+        [];
       return activeLinks.length > 0;
     });
   }
@@ -621,8 +713,15 @@ export class CategoryService extends FirebaseService {
    * @param maxDepth Maximum depth to traverse (default 10)
    * @returns Promise<string[]> Array of dependency chain descriptions
    */
-  async getDependencyChains(categoryId: string, maxDepth: number = 10): Promise<string[]> {
+  async getDependencyChains(
+    categoryId: string,
+    maxDepth: number = 10
+  ): Promise<string[]> {
     const allCategories = await this.getCategories();
-    return circularDependencyValidator.getDependencyChains(categoryId, allCategories, maxDepth);
+    return circularDependencyValidator.getDependencyChains(
+      categoryId,
+      allCategories,
+      maxDepth
+    );
   }
 }

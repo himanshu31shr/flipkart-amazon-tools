@@ -1,9 +1,9 @@
 import { format } from "date-fns";
 import { ProductSummary } from "../pages/home/services/base.transformer";
+import { BarcodeService } from "./barcode.service";
+import { Category, CategoryService } from "./category.service";
 import { FirebaseService } from "./firebase.service";
 import { Product, ProductService } from "./product.service";
-import { Category, CategoryService } from "./category.service";
-import { BarcodeService } from "./barcode.service";
 
 export type ActiveOrder = ProductSummary;
 

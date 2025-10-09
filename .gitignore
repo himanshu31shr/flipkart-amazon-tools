@@ -58,3 +58,5 @@ DerivedData
 *.hmap
 *.ipa
 *.xcworkspace/xcuserdata
+*playwright*
+test-results/

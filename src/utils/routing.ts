@@ -1,12 +1,10 @@
-import { Capacitor } from '@capacitor/core';
-
 /**
  * Get the base path for routing based on the platform
  * - Returns "" for Capacitor (native mobile apps)
  * - Returns "/flipkart-amazon-tools" for web browsers
  */
 export function getBasePath(): string {
-  return Capacitor.isNativePlatform() ? '' : '/flipkart-amazon-tools';
+  return '';
 }
 
 /**

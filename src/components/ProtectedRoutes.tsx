@@ -39,6 +39,12 @@ const ActiveOrders = React.lazy(() =>
   }))
 );
 
+const MobileBarcodeScannerPage = React.lazy(() =>
+  import("../pages/todaysOrders/mobile/MobileBarcodeScannerPage").then((module) => ({
+    default: module.MobileBarcodeScannerPage,
+  }))
+);
+
 
 
 const CategoriesPage = React.lazy(() =>
@@ -118,6 +124,7 @@ export const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({
       <Route path="/transactions/" element={<TransactionAnalytics />} />
       <Route path="/activeOrders/" element={<ActiveOrders />} />
       <Route path="/todays-orders" element={<ActiveOrders />} />
+      <Route path="/todays-orders/scanner" element={<MobileBarcodeScannerPage />} />
       <Route path="/categories/" element={<CategoriesPage />} />
       <Route path="/category-groups/" element={<CategoryGroupsPage />} />
       <Route path="/order-analytics/" element={<OrderAnalytics />} />
