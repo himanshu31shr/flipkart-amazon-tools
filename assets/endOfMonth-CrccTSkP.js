@@ -1,0 +1,1 @@
+import{aj as r}from"./index-BIOtAz8Z.js";function c(a,t){const e=r(a,t==null?void 0:t.in);return e.setHours(23,59,59,999),e}function f(a,t){const e=r(a,t==null?void 0:t.in),n=e.getMonth();return e.setFullYear(e.getFullYear(),n+1,0),e.setHours(23,59,59,999),e}export{f as a,c as e};

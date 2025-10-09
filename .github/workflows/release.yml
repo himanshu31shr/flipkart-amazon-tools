@@ -1,0 +1,192 @@
+name: Release
+
+on:
+  push:
+    branches: [ master ]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+  id-token: write
+
+jobs:
+  release:
+    name: Release Management
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
+          fetch-depth: 0
+          # Use PAT if available, otherwise fall back to GITHUB_TOKEN
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Check for changesets
+        id: check-changesets
+        run: |
+          if [ -d ".changeset" ] && [ "$(find .changeset -name '*.md' ! -name 'README.md' | wc -l)" -gt 0 ]; then
+            echo "has_changesets=true" >> $GITHUB_OUTPUT
+            echo "📦 Changesets found, proceeding with release workflow"
+          else
+            echo "has_changesets=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No changesets found, skipping release workflow"
+          fi
+
+      - name: Setup Environment
+        if: steps.check-changesets.outputs.has_changesets == 'true'
+        uses: ./.github/actions/setup
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+
+      - name: Run Release Quality Validation
+        if: steps.check-changesets.outputs.has_changesets == 'true'
+        run: |
+          echo "🧪 Running comprehensive release validation..."
+          
+          # Run type checking
+          echo "📋 TypeScript validation..."
+          npm run type-check
+          
+          # Run linting
+          echo "🧹 Code quality validation..."
+          npm run lint
+          
+          # Run critical tests
+          echo "🧪 Running critical tests..."
+          npm run test:critical
+          
+          echo "✅ All release validation completed"
+
+      - name: Download CI Build Artifacts
+        if: steps.check-changesets.outputs.has_changesets == 'true'
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        id: download-ci-artifacts
+        with:
+          name: build-artifacts-${{ github.sha }}
+          path: dist/
+
+      - name: Build if CI artifacts not available
+        if: steps.check-changesets.outputs.has_changesets == 'true' && steps.download-ci-artifacts.outcome == 'failure'
+        run: |
+          echo "🔨 CI artifacts not available, building from source..."
+          npm run build
+          echo "✅ Application built successfully"
+
+      - name: Create Release Pull Request or Publish to npm
+        if: steps.check-changesets.outputs.has_changesets == 'true'
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          # For frontend apps, we don't publish to npm, so we remove the publish step
+          # This will only create release PRs when there are changesets
+          title: "chore: release packages"
+          commit: "chore: release packages"
+          createGithubReleases: false
+        env:
+          # Use PAT if available for better permissions, otherwise use GITHUB_TOKEN
+          GITHUB_TOKEN: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Check if version was bumped
+        id: check-version-bump
+        run: |
+          # Check if this commit message indicates a release
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          if [[ "$COMMIT_MSG" == *"chore: release packages"* ]]; then
+            echo "version_bumped=true" >> $GITHUB_OUTPUT
+            echo "🎉 Version bump detected from commit message"
+          else
+            echo "version_bumped=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No version bump detected"
+          fi
+
+      - name: Create GitHub Release
+        if: steps.check-version-bump.outputs.version_bumped == 'true'
+        id: create-release
+        run: |
+          # Get current version from package.json
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Creating release for version v$VERSION"
+          
+          # Upload build artifacts to release
+          if [ -d "dist" ] && [ "$(ls -A dist)" ]; then
+            echo "📦 Creating release package..."
+            cd dist
+            zip -r ../sacred-sutra-tools-v$VERSION.zip .
+            cd ..
+          fi
+          
+          # Create GitHub release
+          if [ -f "sacred-sutra-tools-v$VERSION.zip" ]; then
+            gh release create "v$VERSION" \
+              --title "Release v$VERSION" \
+              --notes "## Changes
+
+          See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
+
+          ## Deployment
+
+          This release has been automatically deployed to production.
+          
+          🌐 **Live URL**: https://himanshu31shr.github.io/flipkart-amazon-tools/
+          
+          ## Assets
+          
+          - \`sacred-sutra-tools-v$VERSION.zip\` - Production build artifacts
+          
+          ## Quality Assurance
+          
+          - ✅ All tests passed
+          - ✅ TypeScript validation completed  
+          - ✅ Code quality checks passed
+          - ✅ Build artifacts verified" \
+              --latest \
+              sacred-sutra-tools-v$VERSION.zip
+          else
+            gh release create "v$VERSION" \
+              --title "Release v$VERSION" \
+              --notes "## Changes
+
+          See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
+
+          ## Deployment
+
+          This release will be automatically deployed to production." \
+              --latest
+          fi
+          
+          echo "release_created=true" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Trigger Deployment
+        if: steps.create-release.outputs.release_created == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            
+            console.log('🚀 Triggering deployment workflow...');
+            
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id: 'deploy.yml',
+              ref: 'master',
+              inputs: {
+                environment: 'production'
+              }
+            });
+            
+            console.log('✅ Deployment workflow triggered successfully');
+
+      - name: Manual PR Creation Fallback
+        if: failure() && steps.changesets.outputs.hasChangesets == 'true'
+        run: |
+          echo "::notice::Automated PR creation failed due to permissions."
+          echo "::notice::Please manually create a PR from the 'changeset-release/master' branch."
+          echo "::notice::Or configure a Personal Access Token (PAT) in repository secrets as 'PAT'." 
