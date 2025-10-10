@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: 
       name: ${{ github.event.inputs.environment || 'production' }}
-      url: ${{ steps.deployment.outputs.page_url || 'https://himanshu31shr.github.io/flipkart-amazon-tools/' }}
+      url: ${{ steps.deployment.outputs.page_url || 'https://tool.sacredsutra.in/' }}
     
     steps:
       - name: Checkout
@@ -128,7 +128,7 @@ jobs:
           sleep 30
           
           # Validate site accessibility
-          SITE_URL="${{ steps.deployment.outputs.page_url || 'https://himanshu31shr.github.io/flipkart-amazon-tools/' }}"
+          SITE_URL="${{ steps.deployment.outputs.page_url || 'https://tool.sacredsutra.in/' }}"
           echo "🌐 Testing site accessibility: $SITE_URL"
           
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SITE_URL" || echo "000")
@@ -154,7 +154,7 @@ jobs:
         if: steps.post-validation.outputs.validation_success == 'true'
         run: |
           ENVIRONMENT="${{ github.event.inputs.environment || 'production' }}"
-          URL="${{ steps.deployment.outputs.page_url || 'https://himanshu31shr.github.io/flipkart-amazon-tools/' }}"
+          URL="${{ steps.deployment.outputs.page_url || 'https://tool.sacredsutra.in/' }}"
           VERSION="${{ github.event.release.tag_name || 'latest' }}"
           
           echo "✅ Deployment successful to $ENVIRONMENT"

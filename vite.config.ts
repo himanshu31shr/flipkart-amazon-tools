@@ -50,7 +50,28 @@
       strictPort: false, // Allow fallback to another port if needed
       allowedHosts: [
         '8690-2405-201-3034-5047-acbc-3d30-cd62-9d80.ngrok-free.app'
-      ]
+      ],
+      // Proxy Firebase emulator requests to avoid CORS issues in E2E tests
+      proxy: {
+        // Proxy Firestore emulator requests
+        '/__/firestore': {
+          target: 'http://localhost:8080',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/__\/firestore/, ''),
+        },
+        // Proxy Auth emulator requests
+        '/__/auth': {
+          target: 'http://localhost:9099',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/__\/auth/, ''),
+        },
+        // Proxy Storage emulator requests
+        '/__/storage': {
+          target: 'http://localhost:9199',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/__\/storage/, ''),
+        },
+      },
     },
     worker: {
       format: "es",

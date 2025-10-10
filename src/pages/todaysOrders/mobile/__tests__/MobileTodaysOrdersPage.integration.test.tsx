@@ -865,7 +865,7 @@ describe('MobileTodaysOrdersPage Integration Tests', () => {
       expect(screen.getByText(/200\s+Orders/i)).toBeInTheDocument();
     });
 
-    it('should efficiently group orders by batch', () => {
+    it('should efficiently group orders by batch', async () => {
       // Create 50 orders across 5 batches
       const batchedOrders = Array.from({ length: 50 }, (_, i) => ({
         name: `Product ${i}`,
@@ -900,8 +900,10 @@ describe('MobileTodaysOrdersPage Integration Tests', () => {
       renderWithProviders(store);
 
       // Should render 5 batch sections
-      const batchHeaders = screen.getAllByText(/^Batch batch_/i);
-      expect(batchHeaders).toHaveLength(5);
+      await waitFor(() => {
+        const batchHeaders = screen.getAllByText(/^Batch batch_/i);
+        expect(batchHeaders).toHaveLength(5);
+      });
     });
   });
 

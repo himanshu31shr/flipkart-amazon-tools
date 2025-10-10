@@ -228,7 +228,7 @@ export const ProductIdentificationScanner: React.FC<ProductIdentificationScanner
       }
       
       // Then do full camera cleanup
-      await camera.stopCamera();
+      await camera.stopCamera().catch(console.log);
     } catch (error) {
       console.warn('ProductIdentificationScanner: Error stopping camera:', error);
     }

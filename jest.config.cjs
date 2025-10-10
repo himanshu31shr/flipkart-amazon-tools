@@ -34,7 +34,8 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.(test|spec).[jt]s?(x)', '**/?(*.)+(spec|test).[tj]s?(x)'],
   testPathIgnorePatterns: [
     '<rootDir>/node_modules/',
-    '<rootDir>/src/__tests__/performance-benchmarks.disabled/'
+    '<rootDir>/src/__tests__/performance-benchmarks.disabled/',
+    '<rootDir>/e2e/' // Exclude Playwright E2E tests from Jest
   ],
   // Performance optimizations
   cache: true,

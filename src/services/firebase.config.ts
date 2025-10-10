@@ -92,10 +92,15 @@ if (process.env.NODE_ENV === 'test') {
 
   // For mobile development, always connect to emulators
   // For web, use environment variables or DEV mode
+  // E2E Test Detection: Playwright sets navigator.webdriver to true
+  const isE2ETest = typeof window !== 'undefined' && window.navigator.webdriver === true;
+
   const shouldConnectToEmulators =
-    Capacitor.isNativePlatform() || // Always use emulators on native platforms (dev builds)
-    import.meta.env.VITE_FIREBASE_FIRESTORE_EMULATOR_HOST ||
-    import.meta.env.DEV;
+    !isE2ETest && ( // Disable emulators for E2E tests (Playwright can't access localhost emulators)
+      Capacitor.isNativePlatform() || // Always use emulators on native platforms (dev builds)
+      import.meta.env.VITE_FIREBASE_FIRESTORE_EMULATOR_HOST ||
+      import.meta.env.DEV
+    );
 
   if (shouldConnectToEmulators) {
     try {
