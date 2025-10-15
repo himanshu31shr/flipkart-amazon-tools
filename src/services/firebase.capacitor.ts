@@ -7,6 +7,7 @@ import { FirebaseStorage } from '@capacitor-firebase/storage';
 /**
  * Check if we should use Firebase emulators
  * Returns true if running in development with emulator environment variables set
+ * or if using dummy Firebase config (which indicates emulator-only development)
  */
 function shouldUseEmulators(): boolean {
   // Check for development mode
@@ -18,7 +19,11 @@ function shouldUseEmulators(): boolean {
     import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_HOST
   );
 
-  return isDev && hasEmulatorConfig;
+  // Check if using dummy Firebase config (indicates emulator-only development)
+  const usingDummyConfig = import.meta.env.VITE_FIREBASE_PROJECT_ID === 'dummy-project' ||
+    import.meta.env.VITE_FIREBASE_API_KEY === 'dummy_key';
+
+  return (isDev && hasEmulatorConfig) || usingDummyConfig;
 }
 
 /**

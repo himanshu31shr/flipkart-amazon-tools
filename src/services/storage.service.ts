@@ -7,15 +7,43 @@ import {
   updateMetadata,
   getMetadata,
   UploadMetadata,
-  FullMetadata
+  FullMetadata,
+  StorageReference
 } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { storage } from './firebase.config';
+import { Capacitor } from '@capacitor/core';
+import { FirebaseStorage } from '@capacitor-firebase/storage';
 
 /**
  * Service for managing file storage in Firebase
  */
 export class StorageService {
+  private isNativePlatform: boolean;
+
+  constructor() {
+    this.isNativePlatform = Capacitor.isNativePlatform();
+  }
+
+  /**
+   * Convert a Blob or File to base64 string for Capacitor
+   * 
+   * @param blob - Blob or File to convert
+   * @returns Promise with base64 string
+   */
+  private async blobToBase64(blob: Blob | File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove data URL prefix for Capacitor
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
   /**
    * Upload a file to Firebase Storage
    * 
@@ -38,25 +66,49 @@ export class StorageService {
         throw new Error('User must be authenticated to upload files');
       }
 
-      // Create storage reference
-      const storageRef = ref(storage, path);
-      
-      // Ensure we have valid metadata
-      const metadataToUse = {
-        ...metadata,
-        customMetadata: {
-          userId: currentUser.uid,
-          uploadedAt: Date.now().toString(),
-          ...metadata?.customMetadata
-        }
-      };
-      
-      // Upload the file with metadata
-      const uploadTask = await uploadBytesResumable(storageRef, file, metadataToUse);
-      
-      // Get the download URL
-      const downloadUrl = await getDownloadURL(uploadTask.ref);
-      return downloadUrl;
+      if (this.isNativePlatform) {
+        // Use Capacitor Firebase Storage
+        // Note: Capacitor Firebase Storage API is more limited
+        // For now, we'll fall back to web SDK for upload operations on native
+        console.warn('File upload on native platform using web SDK fallback');
+        
+        // Create storage reference using web SDK as fallback
+        const storageRef = ref(storage, path);
+        
+        const metadataToUse = {
+          ...metadata,
+          customMetadata: {
+            userId: currentUser.uid,
+            uploadedAt: Date.now().toString(),
+            ...metadata?.customMetadata
+          }
+        };
+        
+        const uploadTask = await uploadBytesResumable(storageRef, file, metadataToUse);
+        const downloadUrl = await getDownloadURL(uploadTask.ref);
+        return downloadUrl;
+      } else {
+        // Use web SDK
+        // Create storage reference
+        const storageRef = ref(storage, path);
+        
+        // Ensure we have valid metadata
+        const metadataToUse = {
+          ...metadata,
+          customMetadata: {
+            userId: currentUser.uid,
+            uploadedAt: Date.now().toString(),
+            ...metadata?.customMetadata
+          }
+        };
+        
+        // Upload the file with metadata
+        const uploadTask = await uploadBytesResumable(storageRef, file, metadataToUse);
+        
+        // Get the download URL
+        const downloadUrl = await getDownloadURL(uploadTask.ref);
+        return downloadUrl;
+      }
     } catch (error) {
       console.error('Error uploading file:', error);
       throw error;
@@ -71,9 +123,16 @@ export class StorageService {
    */
   async getFileUrl(path: string): Promise<string> {
     try {
-      const storageRef = ref(storage, path);
-      const downloadUrl = await getDownloadURL(storageRef);
-      return downloadUrl;
+      if (this.isNativePlatform) {
+        // Use Capacitor Firebase Storage
+        const result = await FirebaseStorage.getDownloadUrl({ path });
+        return result.downloadUrl;
+      } else {
+        // Use web SDK
+        const storageRef = ref(storage, path);
+        const downloadUrl = await getDownloadURL(storageRef);
+        return downloadUrl;
+      }
     } catch (error) {
       console.error('Error getting file URL:', error);
       throw error;
@@ -88,8 +147,14 @@ export class StorageService {
    */
   async deleteFile(path: string): Promise<void> {
     try {
-      const storageRef = ref(storage, path);
-      await deleteObject(storageRef);
+      if (this.isNativePlatform) {
+        // Use Capacitor Firebase Storage
+        await FirebaseStorage.deleteFile({ path });
+      } else {
+        // Use web SDK
+        const storageRef = ref(storage, path);
+        await deleteObject(storageRef);
+      }
     } catch (error) {
       console.error('Error deleting file:', error);
       throw error;
@@ -104,11 +169,19 @@ export class StorageService {
    */
   async listFiles(path: string): Promise<string[]> {
     try {
-      const storageRef = ref(storage, path);
-      const result = await listAll(storageRef);
-      
-      // Return the list of file paths
-      return result.items.map(item => item.fullPath);
+      if (this.isNativePlatform) {
+        // Capacitor Firebase Storage doesn't support listAll directly
+        // This would require a custom implementation or server-side solution
+        console.warn('listFiles is not supported on native platforms with Capacitor Firebase Storage');
+        throw new Error('File listing is not supported on native platforms');
+      } else {
+        // Use web SDK
+        const storageRef = ref(storage, path);
+        const result = await listAll(storageRef);
+        
+        // Return the list of file paths
+        return result.items.map(item => item.fullPath);
+      }
     } catch (error) {
       console.error('Error listing files:', error);
       throw error;
@@ -123,9 +196,37 @@ export class StorageService {
    */
   async getFileMetadata(path: string): Promise<FullMetadata> {
     try {
-      const storageRef = ref(storage, path);
-      const metadata = await getMetadata(storageRef);
-      return metadata;
+      if (this.isNativePlatform) {
+        // Use Capacitor Firebase Storage
+        const result = await FirebaseStorage.getMetadata({ path });
+        
+        // Convert Capacitor metadata format to Firebase web SDK format
+        return {
+          bucket: result.bucket || '',
+          fullPath: path,
+          generation: result.generation || '',
+          metageneration: result.generation || '', // Use generation as fallback
+          name: result.name || path.split('/').pop() || '',
+          size: result.size || 0,
+          timeCreated: result.createdAt || new Date().toISOString(),
+          updated: result.updatedAt || new Date().toISOString(),
+          md5Hash: result.md5Hash,
+          cacheControl: result.cacheControl,
+          contentDisposition: result.contentDisposition,
+          contentEncoding: result.contentEncoding,
+          contentLanguage: result.contentLanguage,
+          contentType: result.contentType || 'application/octet-stream',
+          customMetadata: result.customMetadata || {},
+          downloadTokens: [], // Not available in Capacitor
+          ref: {} as StorageReference, // StorageReference not available in Capacitor
+          type: 'file'
+        } as FullMetadata;
+      } else {
+        // Use web SDK
+        const storageRef = ref(storage, path);
+        const metadata = await getMetadata(storageRef);
+        return metadata;
+      }
     } catch (error) {
       console.error('Error getting file metadata:', error);
       throw error;
@@ -144,14 +245,21 @@ export class StorageService {
     metadata: { [key: string]: string }
   ): Promise<FullMetadata> {
     try {
-      const storageRef = ref(storage, path);
-      
-      // Update only the custom metadata
-      const updatedMetadata = await updateMetadata(storageRef, {
-        customMetadata: metadata
-      });
-      
-      return updatedMetadata;
+      if (this.isNativePlatform) {
+        // Capacitor Firebase Storage doesn't support metadata updates directly
+        console.warn('updateFileMetadata is limited on native platforms with Capacitor Firebase Storage');
+        throw new Error('Metadata updates are not supported on native platforms');
+      } else {
+        // Use web SDK
+        const storageRef = ref(storage, path);
+        
+        // Update only the custom metadata
+        const updatedMetadata = await updateMetadata(storageRef, {
+          customMetadata: metadata
+        });
+        
+        return updatedMetadata;
+      }
     } catch (error) {
       console.error('Error updating file metadata:', error);
       throw error;

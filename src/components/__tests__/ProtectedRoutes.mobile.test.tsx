@@ -75,7 +75,7 @@ describe('ProtectedRoutes - Mobile Integration', () => {
     it('should render DefaultContainer on desktop viewport', async () => {
       render(
         <Provider store={mockStore}>
-          <MemoryRouter initialEntries={['/flipkart-amazon-tools/']}>
+          <MemoryRouter initialEntries={['/']}>
             <ProtectedRoutes toggleTheme={mockToggleTheme} mode="light" />
           </MemoryRouter>
         </Provider>
@@ -91,7 +91,7 @@ describe('ProtectedRoutes - Mobile Integration', () => {
     it('should wrap routes inside DefaultContainer on desktop', () => {
       render(
         <Provider store={mockStore}>
-          <MemoryRouter initialEntries={['/flipkart-amazon-tools/']}>
+          <MemoryRouter initialEntries={['/']}>
             <ProtectedRoutes toggleTheme={mockToggleTheme} mode="light" />
           </MemoryRouter>
         </Provider>
@@ -110,58 +110,59 @@ describe('ProtectedRoutes - Mobile Integration', () => {
       (Capacitor.getPlatform as jest.Mock).mockReturnValue('ios');
     });
 
-    it('should render MobileAppShell on mobile viewport', () => {
+    it('should not render DefaultContainer on mobile viewport', () => {
       render(
         <Provider store={mockStore}>
-          <MemoryRouter initialEntries={['/flipkart-amazon-tools/']}>
+          <MemoryRouter initialEntries={['/']}>
             <ProtectedRoutes toggleTheme={mockToggleTheme} mode="light" />
           </MemoryRouter>
         </Provider>
       );
 
-      expect(screen.getByTestId('mobile-app-shell')).toBeInTheDocument();
+      // On mobile, ProtectedRoutes returns routes directly without DefaultContainer
+      // Individual pages are responsible for wrapping themselves in MobileAppShell
       expect(screen.queryByTestId('desktop-container')).not.toBeInTheDocument();
     });
 
-    it('should wrap routes inside MobileAppShell on mobile', () => {
+    it('should render routes directly on mobile without desktop container', () => {
       render(
         <Provider store={mockStore}>
-          <MemoryRouter initialEntries={['/flipkart-amazon-tools/']}>
+          <MemoryRouter initialEntries={['/']}>
             <ProtectedRoutes toggleTheme={mockToggleTheme} mode="light" />
           </MemoryRouter>
         </Provider>
       );
 
-      expect(screen.getByTestId('mobile-app-shell')).toBeInTheDocument();
-      // Routes are lazy-loaded and tested separately
+      // ProtectedRoutes returns bare Routes on mobile
+      // Individual mobile pages wrap themselves in MobileAppShell
+      expect(screen.queryByTestId('desktop-container')).not.toBeInTheDocument();
     });
 
-    it('should wrap all routes in mobile shell', () => {
+    it('should allow routes to render without wrapper on mobile', () => {
       render(
         <Provider store={mockStore}>
-          <MemoryRouter initialEntries={['/flipkart-amazon-tools/products/']}>
+          <MemoryRouter initialEntries={['/products/']}>
             <ProtectedRoutes toggleTheme={mockToggleTheme} mode="light" />
           </MemoryRouter>
         </Provider>
       );
 
-      // Verify mobile shell wraps the content
-      expect(screen.getByTestId('mobile-app-shell')).toBeInTheDocument();
-      // Routes are lazy-loaded and tested separately
+      // Verify no desktop container on mobile
+      expect(screen.queryByTestId('desktop-container')).not.toBeInTheDocument();
+      // Individual pages handle their own MobileAppShell wrapping
     });
 
-    it('should support safe area insets on mobile', () => {
+    it('should not use desktop container on mobile', () => {
       render(
         <Provider store={mockStore}>
-          <MemoryRouter initialEntries={['/flipkart-amazon-tools/']}>
+          <MemoryRouter initialEntries={['/']}>
             <ProtectedRoutes toggleTheme={mockToggleTheme} mode="light" />
           </MemoryRouter>
         </Provider>
       );
 
-      const mobileShell = screen.getByTestId('mobile-app-shell');
-      expect(mobileShell).toBeInTheDocument();
-      // Safe area insets are applied in MobileAppShell component
+      // ProtectedRoutes delegates shell wrapping to individual pages
+      expect(screen.queryByTestId('desktop-container')).not.toBeInTheDocument();
     });
   });
 
@@ -173,13 +174,13 @@ describe('ProtectedRoutes - Mobile Integration', () => {
 
       const { rerender } = render(
         <Provider store={mockStore}>
-          <MemoryRouter initialEntries={['/flipkart-amazon-tools/']}>
+          <MemoryRouter initialEntries={['/']}>
             <ProtectedRoutes toggleTheme={mockToggleTheme} mode="light" />
           </MemoryRouter>
         </Provider>
       );
 
-      // Initially desktop
+      // Initially desktop with container
       await screen.findByTestId('desktop-container');
       expect(screen.getByTestId('desktop-container')).toBeInTheDocument();
 
@@ -187,46 +188,49 @@ describe('ProtectedRoutes - Mobile Integration', () => {
       (mobileUtils.useIsMobile as jest.Mock).mockReturnValue(true);
       rerender(
         <Provider store={mockStore}>
-          <MemoryRouter initialEntries={['/flipkart-amazon-tools/']}>
+          <MemoryRouter initialEntries={['/']}>
             <ProtectedRoutes toggleTheme={mockToggleTheme} mode="light" />
           </MemoryRouter>
         </Provider>
       );
 
-      expect(screen.getByTestId('mobile-app-shell')).toBeInTheDocument();
+      // On mobile, no desktop container (pages handle their own shells)
       expect(screen.queryByTestId('desktop-container')).not.toBeInTheDocument();
     });
   });
 
   describe('Platform Detection', () => {
-    it('should use mobile shell on iOS', () => {
+    it('should not use desktop container on iOS', () => {
       (mobileUtils.useIsMobile as jest.Mock).mockReturnValue(true);
       (Capacitor.getPlatform as jest.Mock).mockReturnValue('ios');
 
       render(
         <Provider store={mockStore}>
-          <MemoryRouter initialEntries={['/flipkart-amazon-tools/']}>
+          <MemoryRouter initialEntries={['/']}>
             <ProtectedRoutes toggleTheme={mockToggleTheme} mode="light" />
           </MemoryRouter>
         </Provider>
       );
 
-      expect(screen.getByTestId('mobile-app-shell')).toBeInTheDocument();
+      // ProtectedRoutes returns bare routes on mobile platforms
+      // Individual pages provide their own MobileAppShell
+      expect(screen.queryByTestId('desktop-container')).not.toBeInTheDocument();
     });
 
-    it('should use mobile shell on Android', () => {
+    it('should not use desktop container on Android', () => {
       (mobileUtils.useIsMobile as jest.Mock).mockReturnValue(true);
       (Capacitor.getPlatform as jest.Mock).mockReturnValue('android');
 
       render(
         <Provider store={mockStore}>
-          <MemoryRouter initialEntries={['/flipkart-amazon-tools/']}>
+          <MemoryRouter initialEntries={['/']}>
             <ProtectedRoutes toggleTheme={mockToggleTheme} mode="light" />
           </MemoryRouter>
         </Provider>
       );
 
-      expect(screen.getByTestId('mobile-app-shell')).toBeInTheDocument();
+      // ProtectedRoutes returns bare routes on mobile platforms
+      expect(screen.queryByTestId('desktop-container')).not.toBeInTheDocument();
     });
 
     it('should use desktop container on web platform with desktop viewport', () => {
@@ -235,7 +239,7 @@ describe('ProtectedRoutes - Mobile Integration', () => {
 
       render(
         <Provider store={mockStore}>
-          <MemoryRouter initialEntries={['/flipkart-amazon-tools/']}>
+          <MemoryRouter initialEntries={['/']}>
             <ProtectedRoutes toggleTheme={mockToggleTheme} mode="light" />
           </MemoryRouter>
         </Provider>

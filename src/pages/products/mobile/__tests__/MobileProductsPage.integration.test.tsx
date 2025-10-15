@@ -10,9 +10,24 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { configureStore } from '@reduxjs/toolkit';
 import type { User } from 'firebase/auth';
 import { MobileProductsPage } from '../MobileProductsPage';
-import { productsReducer, ProductsState } from '../../../../store/slices/productsSlice';
+import type { ProductsState } from '../../../../store/slices/productsSlice';
 import { authReducer, AuthState } from '../../../../store/slices/authSlice';
+import categoriesReducer, { CategoriesState } from '../../../../store/slices/categoriesSlice';
 import { ProductWithCategoryGroup } from '../../../../services/product.service';
+
+// Mock fetchProducts thunk to prevent async override of preloaded state
+jest.mock('../../../../store/slices/productsSlice', () => {
+  const actual = jest.requireActual('../../../../store/slices/productsSlice');
+  return {
+    ...actual,
+    fetchProducts: jest.fn(() => (dispatch: any) => {
+      // Return a mock thunk that doesn't actually fetch data
+      return Promise.resolve({
+        unwrap: () => Promise.resolve([])
+      });
+    })
+  };
+});
 
 // Mock mobile utilities
 jest.mock('../../../../utils/mobile', () => ({
@@ -53,12 +68,73 @@ jest.mock('../../../../hooks/useInfiniteScroll', () => ({
   })),
 }));
 
-// Mock Capacitor
+// Mock Capacitor core with registerPlugin
 jest.mock('@capacitor/core', () => ({
   Capacitor: {
     isNativePlatform: jest.fn(() => false),
     getPlatform: jest.fn(() => 'web')
-  }
+  },
+  registerPlugin: jest.fn(() => ({
+    // Default empty plugin implementation
+  }))
+}));
+
+// Mock Capacitor Firebase plugins before they try to register
+jest.mock('@capacitor-firebase/authentication', () => ({
+  FirebaseAuthentication: {
+    createUserWithEmailAndPassword: jest.fn(() => Promise.resolve({
+      user: {
+        uid: 'test-uid',
+        email: 'test@example.com',
+        emailVerified: false,
+        displayName: null,
+        photoUrl: null,
+        phoneNumber: null,
+        isAnonymous: false,
+      }
+    })),
+    signInWithEmailAndPassword: jest.fn(() => Promise.resolve({
+      user: {
+        uid: 'test-uid',
+        email: 'test@example.com',
+        emailVerified: false,
+        displayName: null,
+        photoUrl: null,
+        phoneNumber: null,
+        isAnonymous: false,
+      }
+    })),
+    signOut: jest.fn(() => Promise.resolve()),
+    getCurrentUser: jest.fn(() => Promise.resolve({ user: null })),
+    sendPasswordResetEmail: jest.fn(() => Promise.resolve()),
+    addListener: jest.fn(() => Promise.resolve({ remove: jest.fn() })),
+  },
+}));
+
+jest.mock('@capacitor-firebase/firestore', () => ({
+  FirebaseFirestore: {
+    getCollection: jest.fn(() => Promise.resolve({ snapshots: [] })),
+    getDocument: jest.fn(() => Promise.resolve({ snapshot: { exists: false, data: null } })),
+    setDocument: jest.fn(() => Promise.resolve()),
+    addDocument: jest.fn(() => Promise.resolve({ reference: { id: 'test-id' } })),
+    updateDocument: jest.fn(() => Promise.resolve()),
+    deleteDocument: jest.fn(() => Promise.resolve()),
+  },
+}));
+
+jest.mock('@capacitor-firebase/storage', () => ({
+  FirebaseStorage: {
+    uploadFile: jest.fn(() => Promise.resolve()),
+    getDownloadUrl: jest.fn(() => Promise.resolve({ downloadUrl: 'test-url' })),
+    deleteFile: jest.fn(() => Promise.resolve()),
+    getMetadata: jest.fn(() => Promise.resolve({
+      bucket: 'test-bucket',
+      name: 'test-file',
+      size: 1024,
+      contentType: 'application/octet-stream',
+      customMetadata: {},
+    })),
+  },
 }));
 
 // Mock Firebase
@@ -130,13 +206,16 @@ const mockProducts: ProductWithCategoryGroup[] = [
 interface TestStoreState {
   products?: Partial<ProductsState>;
   auth?: Partial<AuthState>;
+  categories?: Partial<CategoriesState>;
 }
 
 const createMockStore = (initialState: TestStoreState = {}) => {
+  const { productsReducer } = jest.requireActual('../../../../store/slices/productsSlice');
   return configureStore({
     reducer: {
       products: productsReducer,
       auth: authReducer,
+      categories: categoriesReducer,
     } as any,
     preloadedState: {
       products: {
@@ -152,6 +231,27 @@ const createMockStore = (initialState: TestStoreState = {}) => {
         error: null,
         authStateLoaded: true,
         ...initialState.auth
+      },
+      categories: {
+        items: [
+          { id: 'cat-1', name: 'Category 1', description: 'Test category 1' },
+          { id: 'cat-2', name: 'Category 2', description: 'Test category 2' },
+        ],
+        loading: false,
+        error: null,
+        selectedCategory: null,
+        categoryInventoryLevels: {},
+        categoryGroupInventoryLevels: {},
+        categoryInventoryAlerts: [],
+        inventoryLoading: false,
+        inventoryError: null,
+        categoryGroupsLoading: false,
+        categoryGroupsError: null,
+        categoriesWithLowStock: [],
+        categoriesWithZeroStock: [],
+        categoryInventoryStatus: {},
+        categoryGroups: [],
+        ...initialState.categories
       }
     }
   });
@@ -271,7 +371,7 @@ describe('MobileProductsPage - Integration Tests', () => {
       const platformButton = screen.getByRole('button', { name: /all/i });
       fireEvent.click(platformButton);
 
-      const amazonOption = screen.getByText('Amazon');
+      const amazonOption = screen.getAllByText('Amazon')[0]; // Get first Amazon option (likely from dropdown)
       fireEvent.click(amazonOption);
 
       await waitFor(() => {
@@ -289,7 +389,7 @@ describe('MobileProductsPage - Integration Tests', () => {
       const platformButton = screen.getByRole('button', { name: /all/i });
       fireEvent.click(platformButton);
 
-      const flipkartOption = screen.getByText('Flipkart');
+      const flipkartOption = screen.getAllByText('Flipkart')[0]; // Get first Flipkart option
       fireEvent.click(flipkartOption);
 
       await waitFor(() => {
@@ -383,7 +483,7 @@ describe('MobileProductsPage - Integration Tests', () => {
       expect(screen.getByText(/5 Products/i)).toBeInTheDocument();
 
       // Check that products are displayed (exact sort order hard to verify in JSDOM)
-      expect(screen.queryByText(/Amazon Product/i)).toBeTruthy();
+      expect(screen.queryAllByText(/Amazon Product/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -413,8 +513,9 @@ describe('MobileProductsPage - Integration Tests', () => {
       fireEvent.click(scanButton);
 
       // Scanner should be active (check for scanner UI elements)
+      // In web mode, it shows manual input UI
       await waitFor(() => {
-        const scannerText = screen.queryByText(/Scan product/i);
+        const scannerText = screen.queryByText(/Enter Barcode Manually/i);
         expect(scannerText).toBeTruthy();
       }, { timeout: 3000 });
     });
@@ -454,20 +555,28 @@ describe('MobileProductsPage - Integration Tests', () => {
       const searchInput = screen.getByPlaceholderText(/search products/i);
       fireEvent.change(searchInput, { target: { value: 'Product' } });
 
+      await waitFor(() => {
+        // Ensure search results are shown first
+        expect(screen.queryByText('Amazon Product 1')).toBeTruthy();
+      });
+
       // Filter by Amazon
       const platformButton = screen.getByRole('button', { name: /all/i });
       fireEvent.click(platformButton);
-      const amazonOption = screen.getByText('Amazon');
+      const amazonOption = screen.getAllByText('Amazon')[0]; // Get first Amazon option
       fireEvent.click(amazonOption);
 
       await waitFor(() => {
-        // Check for Amazon products
-        expect(screen.queryByText(/Amazon Product/i)).toBeTruthy();
+        // Check for Amazon products with "Product" in name
+        expect(screen.queryByText('Amazon Product 1')).toBeTruthy();
+        // Flipkart product with "Product" should not be visible
+        expect(screen.queryByText('Another Product')).not.toBeInTheDocument();
       });
 
-      // Should show filtered count
-      const productCount = screen.queryByText(/Products?/i);
-      expect(productCount).toBeTruthy();
+      // Should show filtered count (should be 2: Amazon Product 1 and Amazon Product 2)
+      await waitFor(() => {
+        expect(screen.getByText(/2 Products/i)).toBeInTheDocument();
+      });
     });
   });
 });

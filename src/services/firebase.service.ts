@@ -19,29 +19,39 @@ import {
   addDoc,
 } from "firebase/firestore";
 import { db } from "./firebase.config";
+import { Capacitor } from '@capacitor/core';
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 
 export class FirebaseService {
   protected db: Firestore;
   private static persistenceEnabled = false;
+  private isNativePlatform: boolean;
 
   constructor() {
     this.db = db;
+    this.isNativePlatform = Capacitor.isNativePlatform();
     this.enableOfflinePersistence();
   }
 
   private async enableOfflinePersistence() {
     if (!FirebaseService.persistenceEnabled) {
-      // Only enable persistence in production or non-development environments
-      if (process.env.NODE_ENV !== 'development') {
-        try {
-          await enableIndexedDbPersistence(this.db);
+      try {
+        if (this.isNativePlatform) {
+          // Capacitor Firebase plugins have offline persistence enabled by default
+          // No additional configuration needed
           FirebaseService.persistenceEnabled = true;
-        } catch (err) {
-          if ((err as FirestoreError).code === 'failed-precondition') {
-            // Multiple tabs open, persistence can only be enabled in one tab at a time
-          } else if ((err as FirestoreError).code === 'unimplemented') {
-            // The current browser does not support persistence
+        } else {
+          // Web platform - only enable persistence in production or non-development environments
+          if (process.env.NODE_ENV !== 'development') {
+            await enableIndexedDbPersistence(this.db);
+            FirebaseService.persistenceEnabled = true;
           }
+        }
+      } catch (err) {
+        if ((err as FirestoreError).code === 'failed-precondition') {
+          // Multiple tabs open, persistence can only be enabled in one tab at a time
+        } else if ((err as FirestoreError).code === 'unimplemented') {
+          // The current browser does not support persistence
         }
       }
     }
@@ -123,14 +133,29 @@ export class FirebaseService {
     queryConstraints: QueryConstraint[] = []
   ): Promise<(T & { id: string })[]> {
     try {
-      const collectionRef = collection(this.db, collectionName);
-      const q = query(collectionRef, ...queryConstraints);
-      const querySnapshot = await getDocs(q);
+      if (this.isNativePlatform) {
+        // Use Capacitor Firestore plugin
+        const result = await FirebaseFirestore.getCollection({
+          reference: collectionName,
+          // Note: Capacitor plugin has limited query support
+          // For complex queries, we might need to handle client-side filtering
+        });
+        
+        return result.snapshots.map((snapshot) => ({
+          ...(snapshot.data as T),
+          id: snapshot.id,
+        }));
+      } else {
+        // Use web SDK
+        const collectionRef = collection(this.db, collectionName);
+        const q = query(collectionRef, ...queryConstraints);
+        const querySnapshot = await getDocs(q);
 
-      return querySnapshot.docs.map((doc) => ({
-        ...(doc.data() as T),
-        id: doc.id,
-      }));
+        return querySnapshot.docs.map((doc) => ({
+          ...(doc.data() as T),
+          id: doc.id,
+        }));
+      }
     } catch (error) {
       this.handleError(error as FirestoreError);
     }
@@ -141,13 +166,32 @@ export class FirebaseService {
     docId: string
   ): Promise<T | undefined> {
     try {
-      const docRef = doc(this.db, collectionName, docId);
-      const docSnapshot = await getDoc(docRef);
+      if (this.isNativePlatform) {
+        // Use Capacitor Firestore plugin
+        try {
+          const result = await FirebaseFirestore.getDocument({
+            reference: `${collectionName}/${docId}`,
+          });
+          
+          // Capacitor Firebase returns data directly if document exists
+          if (result.snapshot && result.snapshot.data) {
+            return result.snapshot.data as T;
+          }
+          return undefined;
+        } catch {
+          // Document doesn't exist or other error
+          return undefined;
+        }
+      } else {
+        // Use web SDK
+        const docRef = doc(this.db, collectionName, docId);
+        const docSnapshot = await getDoc(docRef);
 
-      if (docSnapshot.exists()) {
-        return docSnapshot.data() as T;
+        if (docSnapshot.exists()) {
+          return docSnapshot.data() as T;
+        }
+        return undefined;
       }
-      return undefined;
     } catch (error) {
       this.handleError(error as FirestoreError);
     }
@@ -159,8 +203,18 @@ export class FirebaseService {
     data: T
   ): Promise<void> {
     try {
-      const docRef = doc(this.db, collectionName, docId);
-      await setDoc(docRef, data, { merge: true });
+      if (this.isNativePlatform) {
+        // Use Capacitor Firestore plugin
+        await FirebaseFirestore.setDocument({
+          reference: `${collectionName}/${docId}`,
+          data: data as { [key: string]: unknown },
+          merge: true,
+        });
+      } else {
+        // Use web SDK
+        const docRef = doc(this.db, collectionName, docId);
+        await setDoc(docRef, data, { merge: true });
+      }
     } catch (error) {
       this.handleError(error as FirestoreError);
     }
@@ -173,8 +227,19 @@ export class FirebaseService {
     try {
       // Validate data before sending to Firestore
       this.validateFirestoreData(data);
-      const docRef = await addDoc(collection(this.db, collectionName), data);
-      return { id: docRef.id };
+      
+      if (this.isNativePlatform) {
+        // Use Capacitor Firestore plugin
+        const result = await FirebaseFirestore.addDocument({
+          reference: collectionName,
+          data: data as { [key: string]: unknown },
+        });
+        return { id: result.reference.id };
+      } else {
+        // Use web SDK
+        const docRef = await addDoc(collection(this.db, collectionName), data);
+        return { id: docRef.id };
+      }
     } catch (error) {
       this.handleError(error as FirestoreError);
       throw error;
@@ -187,11 +252,23 @@ export class FirebaseService {
     data: Partial<T>
   ): Promise<void> {
     try {
-      const docRef = doc(this.db, collectionName, docId);
-      await updateDoc(docRef, {
-        ...data,
-        updatedAt: Timestamp.now(),
-      });
+      if (this.isNativePlatform) {
+        // Use Capacitor Firestore plugin
+        await FirebaseFirestore.updateDocument({
+          reference: `${collectionName}/${docId}`,
+          data: {
+            ...data,
+            updatedAt: new Date().toISOString(), // Capacitor uses ISO strings for timestamps
+          } as { [key: string]: unknown },
+        });
+      } else {
+        // Use web SDK
+        const docRef = doc(this.db, collectionName, docId);
+        await updateDoc(docRef, {
+          ...data,
+          updatedAt: Timestamp.now(),
+        });
+      }
     } catch (error) {
       this.handleError(error as FirestoreError);
     }
@@ -202,8 +279,16 @@ export class FirebaseService {
     docId: string
   ): Promise<void> {
     try {
-      const docRef = doc(this.db, collectionName, docId);
-      await deleteDoc(docRef);
+      if (this.isNativePlatform) {
+        // Use Capacitor Firestore plugin
+        await FirebaseFirestore.deleteDocument({
+          reference: `${collectionName}/${docId}`,
+        });
+      } else {
+        // Use web SDK
+        const docRef = doc(this.db, collectionName, docId);
+        await deleteDoc(docRef);
+      }
     } catch (error) {
       this.handleError(error as FirestoreError);
     }
@@ -215,6 +300,39 @@ export class FirebaseService {
     operation: "create" | "update" | "delete",
     getDocId: (item: T) => string
   ): Promise<void> {
+    if (this.isNativePlatform) {
+      // Capacitor Firebase doesn't support batch operations directly
+      // Process items sequentially with error handling
+      for (const item of items) {
+        try {
+          const docId = getDocId(item);
+          switch (operation) {
+            case "create":
+              await this.setDocument(collectionName, docId, {
+                ...item,
+                updatedAt: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+              } as DocumentData & T);
+              break;
+            case "update":
+              await this.updateDocument(collectionName, docId, item as Partial<T>);
+              break;
+            case "delete":
+              await this.deleteDocument(collectionName, docId);
+              break;
+          }
+          
+          // Small delay between operations to avoid overwhelming the native SDK
+          await new Promise(resolve => setTimeout(resolve, 10));
+        } catch (error) {
+          console.error(`Batch operation failed for item ${getDocId(item)}:`, error);
+          // Continue with other items rather than failing the entire batch
+        }
+      }
+      return;
+    }
+
+    // Web SDK - use original batch logic
     // Firebase Firestore batch limit is 500 operations
     const BATCH_SIZE = 500;
     

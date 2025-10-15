@@ -1,8 +1,8 @@
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import { DefaultContainer } from "../containers/default/default.container";
-import { useIsMobile } from "../utils/mobile";
 import NotFound from "../pages/NotFound";
+import { useIsMobile } from "../utils/mobile";
 
 // ... existing code ...
 
@@ -138,8 +138,7 @@ export const ProtectedRoutes: React.FC<ProtectedRoutesProps> = ({
     </Routes>
   );
 
-  // Individual pages handle their own MobileAppShell vs Desktop Container
-  // based on viewport size, so we don't wrap them here
+  // Wrap content based on mobile vs desktop viewport
   if (isMobile) {
     return routesContent;
   }

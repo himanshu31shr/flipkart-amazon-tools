@@ -55,9 +55,10 @@ describe('MobileDrawer', () => {
     it('should not be visible when closed', () => {
       renderWithProviders(<MobileDrawer open={false} onClose={jest.fn()} />);
 
-      // Drawer exists in DOM but is hidden
-      const drawer = document.querySelector('.MuiDrawer-root');
-      expect(drawer).toBeInTheDocument();
+      // When closed, drawer content should not be visible
+      expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
+      expect(screen.queryByText('Products')).not.toBeInTheDocument();
+      expect(screen.queryByText('Categories')).not.toBeInTheDocument();
     });
 
     it('should render all menu items', () => {

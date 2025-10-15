@@ -336,16 +336,16 @@ describe('DataTable', () => {
       expect(screen.getByText('Sort By')).toBeInTheDocument();
       
       // Instead of checking all column labels which might appear multiple times,
-      // just check that dialog content exists and contains buttons
-      const dialogContent = screen.getByRole('dialog');
-      expect(dialogContent).toBeInTheDocument();
+      // just check that drawer content exists and contains buttons
+      const drawerContent = screen.getByRole('presentation');
+      expect(drawerContent).toBeInTheDocument();
       
-      // Find all buttons in the dialog
-      const dialogButtons = within(dialogContent).getAllByRole('button');
-      expect(dialogButtons.length).toBeGreaterThan(testColumns.length); // At least one button per column plus Cancel
+      // Find all buttons in the drawer
+      const drawerButtons = within(drawerContent).getAllByRole('button');
+      expect(drawerButtons.length).toBeGreaterThan(testColumns.length); // At least one button per column plus Cancel
       
-          // Click a sort option (e.g., Name) - find it specifically within the dialog
-    const nameButton = within(dialogContent).getByRole('button', { name: /Name/i }) as any;
+          // Click a sort option (e.g., Name) - find it specifically within the drawer
+    const nameButton = within(drawerContent).getByRole('button', { name: /Name/i }) as any;
     await userEvent.click(nameButton);
     
     // We won't check if the dialog closed, as this is causing timing issues in tests

@@ -1,8 +1,8 @@
+import { Box, CircularProgress } from '@mui/material';
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { CircularProgress, Box } from '@mui/material';
 import { useAppSelector } from '../store/hooks';
-import { selectIsAuthenticated, selectAuthStateLoaded } from '../store/slices/authSlice';
+import { selectAuthStateLoaded, selectIsAuthenticated } from '../store/slices/authSlice';
 import { createRoutePath } from '../utils/routing';
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {

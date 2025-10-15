@@ -1,0 +1,369 @@
+name: Mobile CI/CD
+
+on:
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'ios/**'
+      - 'android/**'
+      - 'capacitor.config.ts'
+      - 'src/**'
+      - 'package.json'
+      - '.github/workflows/mobile-ci.yml'
+  push:
+    branches: [ master ]
+    paths:
+      - 'ios/**'
+      - 'android/**'
+      - 'capacitor.config.ts'
+      - 'src/**'
+      - 'package.json'
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+  statuses: write
+
+env:
+  NODE_VERSION: '20'
+  JAVA_VERSION: '17'
+  XCODE_VERSION: '15.4'
+
+jobs:
+  setup:
+    name: 🔧 Setup & Install Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+
+      - name: Cache Capacitor
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.capacitor
+            android/.gradle
+            ios/Pods
+          key: ${{ runner.os }}-capacitor-${{ hashFiles('**/capacitor.config.ts', '**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-capacitor-
+
+  web-build:
+    name: 🌐 Build Web Assets
+    runs-on: ubuntu-latest
+    needs: setup
+    outputs:
+      build-success: ${{ steps.build.outputs.success }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+
+      - name: Build Web App for Mobile
+        id: build
+        run: |
+          echo "🏗️ Building web assets for mobile platforms..."
+          echo "## 🌐 Mobile Web Build Results" >> $GITHUB_STEP_SUMMARY
+          
+          if npm run build:mobile; then
+            echo "✅ Web build completed successfully"
+            echo "✅ **Status:** Mobile web assets built successfully" >> $GITHUB_STEP_SUMMARY
+            echo "📱 **Target:** Optimized for mobile WebView containers" >> $GITHUB_STEP_SUMMARY
+            echo "success=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Web build failed"
+            echo "❌ **Status:** Mobile web build failed" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Action needed:** Fix build errors before mobile compilation" >> $GITHUB_STEP_SUMMARY
+            echo "success=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Upload Web Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build-mobile-${{ github.sha }}
+          path: dist/
+          retention-days: 7
+
+  android-build:
+    name: 🤖 Android Build & Test
+    runs-on: ubuntu-latest
+    needs: [setup, web-build]
+    if: needs.web-build.outputs.build-success == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Download Web Build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build-mobile-${{ github.sha }}
+          path: dist/
+
+      - name: Sync Capacitor
+        run: |
+          echo "📱 Syncing Capacitor for Android..."
+          npx cap sync android
+          echo "✅ Capacitor sync completed"
+
+      - name: Grant Execute Permission for Gradlew
+        run: chmod +x android/gradlew
+
+      - name: Build Android APK (Debug)
+        id: android-build
+        run: |
+          echo "🤖 Building Android APK..."
+          echo "## 🤖 Android Build Results" >> $GITHUB_STEP_SUMMARY
+          
+          cd android
+          if ./gradlew assembleDebug; then
+            echo "✅ Android APK built successfully"
+            echo "✅ **Status:** Debug APK built successfully" >> $GITHUB_STEP_SUMMARY
+            echo "📱 **Output:** app-debug.apk ready for testing" >> $GITHUB_STEP_SUMMARY
+            echo "🔧 **Build type:** Debug (development)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Android build failed"
+            echo "❌ **Status:** Android APK build failed" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Action needed:** Fix Android build errors" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Run Android Tests
+        run: |
+          echo "🧪 Running Android unit tests..."
+          cd android
+          ./gradlew testDebugUnitTest
+          echo "✅ Android tests completed"
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-debug-${{ github.sha }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+
+      - name: Upload Android Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-results-${{ github.sha }}
+          path: android/app/build/test-results/
+          retention-days: 7
+
+  ios-build:
+    name: 🍎 iOS Build & Test
+    runs-on: macos-latest
+    needs: [setup, web-build]
+    if: needs.web-build.outputs.build-success == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Install CocoaPods
+        run: |
+          gem install cocoapods
+          echo "✅ CocoaPods installed"
+
+      - name: Download Web Build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build-mobile-${{ github.sha }}
+          path: dist/
+
+      - name: Sync Capacitor
+        run: |
+          echo "📱 Syncing Capacitor for iOS..."
+          npx cap sync ios
+          echo "✅ Capacitor sync completed"
+
+      - name: Install iOS Dependencies
+        run: |
+          cd ios/App
+          pod install
+          echo "✅ iOS dependencies installed"
+
+      - name: Build iOS App (Debug)
+        id: ios-build
+        run: |
+          echo "🍎 Building iOS app..."
+          echo "## 🍎 iOS Build Results" >> $GITHUB_STEP_SUMMARY
+          
+          cd ios/App
+          if xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 15' build; then
+            echo "✅ iOS app built successfully"
+            echo "✅ **Status:** iOS app built for simulator" >> $GITHUB_STEP_SUMMARY
+            echo "📱 **Target:** iPhone 15 Simulator (Debug)" >> $GITHUB_STEP_SUMMARY
+            echo "🔧 **Build type:** Debug (development)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ iOS build failed"
+            echo "❌ **Status:** iOS build failed" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **Action needed:** Fix iOS build errors" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Run iOS Tests
+        run: |
+          echo "🧪 Running iOS unit tests..."
+          cd ios/App
+          xcodebuild test -workspace App.xcworkspace -scheme App -destination 'platform=iOS Simulator,name=iPhone 15'
+          echo "✅ iOS tests completed"
+
+      - name: Upload iOS Build Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-logs-${{ github.sha }}
+          path: ~/Library/Developer/Xcode/DerivedData/
+          retention-days: 7
+
+  mobile-summary:
+    name: 📱 Mobile Build Summary
+    runs-on: ubuntu-latest
+    needs: [setup, web-build, android-build, ios-build]
+    if: always()
+    steps:
+      - name: Mobile Build Status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jobs = [
+              { name: 'Setup & Dependencies', result: '${{ needs.setup.result }}', icon: '🔧' },
+              { name: 'Web Build (Mobile)', result: '${{ needs.web-build.result }}', icon: '🌐' },
+              { name: 'Android Build', result: '${{ needs.android-build.result }}', icon: '🤖' },
+              { name: 'iOS Build', result: '${{ needs.ios-build.result }}', icon: '🍎' }
+            ];
+
+            let summary = '## 📱 Mobile CI/CD Pipeline Results\n\n';
+            let allPassed = true;
+
+            // Main status table
+            summary += '| Platform | Status | Result |\n';
+            summary += '|----------|--------|--------|\n';
+
+            jobs.forEach(job => {
+              const result = job.result || 'unknown';
+              
+              const statusIcon = result === 'success' ? '✅' : 
+                               result === 'skipped' ? '⏭️' : 
+                               result === 'failure' ? '❌' : 
+                               result === 'cancelled' ? '⚪' : '⚠️';
+              
+              summary += `| ${job.icon} ${job.name} | ${statusIcon} | \`${result}\` |\n`;
+              
+              if (result !== 'success' && result !== 'skipped') {
+                allPassed = false;
+              }
+            });
+
+            summary += '\n';
+
+            // Platform-specific results
+            const webBuildSuccess = '${{ needs.web-build.outputs.build-success }}' === 'true';
+            const androidResult = '${{ needs.android-build.result }}';
+            const iosResult = '${{ needs.ios-build.result }}';
+
+            summary += '### 📊 Build Details\n\n';
+            
+            if (webBuildSuccess) {
+              summary += '✅ **Web Assets:** Mobile-optimized build completed\n';
+            } else {
+              summary += '❌ **Web Assets:** Build failed - blocking mobile compilation\n';
+            }
+
+            if (androidResult === 'success') {
+              summary += '✅ **Android:** APK built successfully, ready for testing\n';
+            } else if (androidResult === 'failure') {
+              summary += '❌ **Android:** Build failed, check logs for details\n';
+            } else {
+              summary += '⏭️ **Android:** Skipped due to web build failure\n';
+            }
+
+            if (iosResult === 'success') {
+              summary += '✅ **iOS:** App built successfully for simulator\n';
+            } else if (iosResult === 'failure') {
+              summary += '❌ **iOS:** Build failed, check logs for details\n';
+            } else {
+              summary += '⏭️ **iOS:** Skipped due to web build failure\n';
+            }
+
+            summary += '\n';
+
+            // Overall status
+            if (allPassed) {
+              summary += '## 🎉 Mobile Build Success!\n\n';
+              summary += '**All mobile platforms built successfully!** 📱\n\n';
+              summary += '### 🚀 Ready for:\n';
+              summary += '- 🧪 Device testing (download artifacts)\n';
+              summary += '- 📱 App store deployment (after release builds)\n';
+              summary += '- 🔍 Code review and merge\n';
+            } else {
+              summary += '## ⚠️ Mobile Build Issues\n\n';
+              summary += '**Some mobile builds failed.** Please check the issues above.\n\n';
+              summary += '### 🔧 How to fix:\n';
+              summary += '1. Check failed job logs in the Actions tab\n';
+              summary += '2. Fix platform-specific issues locally\n';
+              summary += '3. Test with `npm run mobile:dev` or `npx cap run [platform]`\n';
+              summary += '4. Push changes to update this build\n';
+            }
+
+            // Add artifacts info if successful
+            if (allPassed) {
+              summary += '\n### 📦 Available Artifacts:\n';
+              summary += '- `android-apk-debug-${{ github.sha }}` - Android APK for testing\n';
+              summary += '- `web-build-mobile-${{ github.sha }}` - Web assets for mobile\n';
+              summary += '- Build logs and test results for debugging\n';
+            }
+
+            summary += `\n---\n📊 **[View detailed logs](${context.payload.repository.html_url}/actions/runs/${context.runId})**`;
+
+            // Add this as a comment to PR if it's a pull request
+            if (context.eventName === 'pull_request') {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: summary
+              });
+            }
+
+            // Add to step summary
+            require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + '\n');

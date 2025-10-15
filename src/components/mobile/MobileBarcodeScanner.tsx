@@ -218,6 +218,7 @@ export const MobileBarcodeScanner: React.FC<MobileBarcodeScannerProps> = ({
       >
         <IconButton
           onClick={handleClose}
+          aria-label="Close scanner"
           sx={{
             position: 'absolute',
             top: 16,
@@ -301,7 +302,7 @@ export const MobileBarcodeScanner: React.FC<MobileBarcodeScannerProps> = ({
         <Typography variant="h6" color="white">
           Scan Barcode
         </Typography>
-        <IconButton onClick={handleClose} sx={{ color: 'white', minWidth: 44, minHeight: 44 }}>
+        <IconButton onClick={handleClose} aria-label="Close scanner" sx={{ color: 'white', minWidth: 44, minHeight: 44 }}>
           <CloseIcon />
         </IconButton>
       </Box>
@@ -408,6 +409,7 @@ export const MobileBarcodeScanner: React.FC<MobileBarcodeScannerProps> = ({
         {isScanning && hasPermission && (
           <IconButton
             onClick={toggleTorch}
+            aria-label={isTorchOn ? 'Turn off flash' : 'Turn on flash'}
             sx={{
               color: 'white',
               backgroundColor: isTorchOn ? 'primary.main' : 'rgba(255,255,255,0.2)',

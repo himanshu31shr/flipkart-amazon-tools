@@ -316,42 +316,50 @@ export const BarcodeScannerButton: React.FC<BarcodeScannerButtonProps> = ({
           // Disable tooltip on small screens to avoid covering content
           disableHoverListener={isSmallScreen}
           disableFocusListener={isSmallScreen}
-        >
-          <IconButton
-            color="inherit"
-            onClick={handleScannerOpen}
-            onKeyDown={handleKeyDown}
-            disabled={disabled || isProcessing}
-            className={className}
-            aria-label={
-              isProcessing 
-                ? "Processing barcode scan, please wait" 
-                : "Scan product barcode to open marketplace listing"
+          // Hide tooltip when button is disabled to prevent warnings
+          slotProps={{
+            tooltip: {
+              sx: (disabled || isProcessing) ? { display: 'none' } : {}
             }
-            aria-describedby={feedbackVisible ? "scanner-feedback" : undefined}
-            aria-expanded={scannerOpen}
-            aria-haspopup="dialog"
-            size={isMobile ? "medium" : "large"}
-            // Enhanced focus visibility for accessibility
-            sx={{
-              minWidth: isMobile ? 44 : 'auto',
-              minHeight: isMobile ? 44 : 'auto',
-              // Improved focus indicator
-              '&:focus-visible': {
-                outline: `2px solid ${theme.palette.primary.main}`,
-                outlineOffset: '2px',
-              },
-              // Add subtle visual feedback for touch
-              ...(isMobile && {
-                '&:active': {
-                  transform: 'scale(0.95)',
-                  transition: 'transform 0.1s',
+          }}
+        >
+          <span style={{ display: 'inline-block' }}>
+            <IconButton
+              color="inherit"
+              onClick={handleScannerOpen}
+              onKeyDown={handleKeyDown}
+              disabled={disabled || isProcessing}
+              className={className}
+              aria-label={
+                isProcessing 
+                  ? "Processing barcode scan, please wait" 
+                  : "Scan product barcode to open marketplace listing"
+              }
+              aria-describedby={feedbackVisible ? "scanner-feedback" : undefined}
+              aria-expanded={scannerOpen}
+              aria-haspopup="dialog"
+              size={isMobile ? "medium" : "large"}
+              // Enhanced focus visibility for accessibility
+              sx={{
+                minWidth: isMobile ? 44 : 'auto',
+                minHeight: isMobile ? 44 : 'auto',
+                // Improved focus indicator
+                '&:focus-visible': {
+                  outline: `2px solid ${theme.palette.primary.main}`,
+                  outlineOffset: '2px',
                 },
-              }),
-            }}
-          >
-            <ScannerIcon fontSize={isMobile ? "medium" : "large"} />
-          </IconButton>
+                // Add subtle visual feedback for touch
+                ...(isMobile && {
+                  '&:active': {
+                    transform: 'scale(0.95)',
+                    transition: 'transform 0.1s',
+                  },
+                }),
+              }}
+            >
+              <ScannerIcon fontSize={isMobile ? "medium" : "large"} />
+            </IconButton>
+          </span>
         </Tooltip>
 
         {/* Responsive feedback positioning */}

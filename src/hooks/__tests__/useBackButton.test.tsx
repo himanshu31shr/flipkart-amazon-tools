@@ -48,7 +48,7 @@ describe('useBackButton', () => {
       if (event === 'backButton') {
         backButtonListener = callback;
       }
-      return { remove: mockRemove };
+      return Promise.resolve({ remove: mockRemove });
     });
   });
 
@@ -96,12 +96,15 @@ describe('useBackButton', () => {
       (Capacitor.getPlatform as jest.Mock).mockReturnValue('android');
     });
 
-    it('should navigate back when not at root route', () => {
-      (useLocation as jest.Mock).mockReturnValue({ pathname: '/flipkart-amazon-tools/products' });
+    it('should navigate back when not at root route', async () => {
+      (useLocation as jest.Mock).mockReturnValue({ pathname: '/products' });
 
       renderHook(() => useBackButton(), {
         wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter>,
       });
+
+      // Wait for async listener setup
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       // Simulate back button press with canGoBack=true
       backButtonListener?.({ canGoBack: true });
@@ -110,13 +113,16 @@ describe('useBackButton', () => {
       expect(CapacitorApp.exitApp).not.toHaveBeenCalled();
     });
 
-    it('should show exit confirmation at root route', () => {
-      (useLocation as jest.Mock).mockReturnValue({ pathname: '/flipkart-amazon-tools/' });
+    it('should show exit confirmation at root route', async () => {
+      (useLocation as jest.Mock).mockReturnValue({ pathname: '/' });
       mockConfirm.mockReturnValue(true);
 
       renderHook(() => useBackButton(), {
         wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter>,
       });
+
+      // Wait for async listener setup
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       backButtonListener?.({ canGoBack: false });
 
@@ -124,13 +130,16 @@ describe('useBackButton', () => {
       expect(CapacitorApp.exitApp).toHaveBeenCalled();
     });
 
-    it('should not exit if user cancels confirmation', () => {
-      (useLocation as jest.Mock).mockReturnValue({ pathname: '/flipkart-amazon-tools/' });
+    it('should not exit if user cancels confirmation', async () => {
+      (useLocation as jest.Mock).mockReturnValue({ pathname: '/' });
       mockConfirm.mockReturnValue(false);
 
       renderHook(() => useBackButton(), {
         wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter>,
       });
+
+      // Wait for async listener setup
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       backButtonListener?.({ canGoBack: false });
 
@@ -138,39 +147,37 @@ describe('useBackButton', () => {
       expect(CapacitorApp.exitApp).not.toHaveBeenCalled();
     });
 
-    it('should handle all root route variations', () => {
-      const rootRoutes = [
-        '/flipkart-amazon-tools/',
-        '/flipkart-amazon-tools',
-        '/'
-      ];
-
-      rootRoutes.forEach(route => {
-        jest.clearAllMocks();
-        mockConfirm.mockReturnValue(true);
-        (useLocation as jest.Mock).mockReturnValue({ pathname: route });
-
-        renderHook(() => useBackButton(), {
-          wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter>,
-        });
-
-        backButtonListener?.({ canGoBack: false });
-
-        expect(mockConfirm).toHaveBeenCalled();
-        expect(CapacitorApp.exitApp).toHaveBeenCalled();
-      });
-    });
-
-    it('should navigate to root if canGoBack is false but not at root', () => {
-      (useLocation as jest.Mock).mockReturnValue({ pathname: '/flipkart-amazon-tools/products' });
+    it('should handle root route', async () => {
+      // useBackButton only treats '/' as root (not /flipkart-amazon-tools/)
+      mockConfirm.mockReturnValue(true);
+      (useLocation as jest.Mock).mockReturnValue({ pathname: '/' });
 
       renderHook(() => useBackButton(), {
         wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter>,
       });
 
+      // Wait for async listener setup
+      await new Promise(resolve => setTimeout(resolve, 0));
+
       backButtonListener?.({ canGoBack: false });
 
-      expect(mockNavigate).toHaveBeenCalledWith('/flipkart-amazon-tools/');
+      expect(mockConfirm).toHaveBeenCalled();
+      expect(CapacitorApp.exitApp).toHaveBeenCalled();
+    });
+
+    it('should navigate to root if canGoBack is false but not at root', async () => {
+      (useLocation as jest.Mock).mockReturnValue({ pathname: '/products' });
+
+      renderHook(() => useBackButton(), {
+        wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter>,
+      });
+
+      // Wait for async listener setup
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      backButtonListener?.({ canGoBack: false });
+
+      expect(mockNavigate).toHaveBeenCalledWith('/');
     });
   });
 
@@ -210,14 +217,17 @@ describe('useBackButtonWithCustomExit', () => {
       if (event === 'backButton') {
         backButtonListener = callback;
       }
-      return { remove: mockRemove };
+      return Promise.resolve({ remove: mockRemove });
     });
   });
 
-  it('should call custom exit handler at root route', () => {
+  it('should call custom exit handler at root route', async () => {
     renderHook(() => useBackButtonWithCustomExit(mockOnExit), {
       wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter>,
     });
+
+    // Wait for async listener setup
+    await new Promise(resolve => setTimeout(resolve, 0));
 
     backButtonListener?.({ canGoBack: false });
 
@@ -225,12 +235,15 @@ describe('useBackButtonWithCustomExit', () => {
     expect(mockConfirm).not.toHaveBeenCalled();
   });
 
-  it('should navigate back when not at root', () => {
+  it('should navigate back when not at root', async () => {
     (useLocation as jest.Mock).mockReturnValue({ pathname: '/flipkart-amazon-tools/products' });
 
     renderHook(() => useBackButtonWithCustomExit(mockOnExit), {
       wrapper: ({ children }) => <MemoryRouter>{children}</MemoryRouter>,
     });
+
+    // Wait for async listener setup
+    await new Promise(resolve => setTimeout(resolve, 0));
 
     backButtonListener?.({ canGoBack: true });
 

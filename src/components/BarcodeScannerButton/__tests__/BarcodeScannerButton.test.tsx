@@ -243,6 +243,8 @@ describe('BarcodeScannerButton', () => {
       
       await act(async () => {
         fireEvent.click(scanSuccessButton);
+        // Allow state updates to complete
+        await new Promise(resolve => setTimeout(resolve, 0));
       });
       
       // Wait for all async operations to complete
@@ -289,7 +291,12 @@ describe('BarcodeScannerButton', () => {
       });
       
       const scanSuccessButton = screen.getByTestId('mock-scan-success');
-      fireEvent.click(scanSuccessButton);
+      
+      await act(async () => {
+        fireEvent.click(scanSuccessButton);
+        // Allow state updates to complete
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
       
       await waitFor(() => {
         expect(onScanError).toHaveBeenCalledWith('Product not found for this barcode');
@@ -348,7 +355,12 @@ describe('BarcodeScannerButton', () => {
       
       // Trigger scan error
       const scanErrorButton = screen.getByTestId('mock-scan-error');
-      fireEvent.click(scanErrorButton);
+      
+      await act(async () => {
+        fireEvent.click(scanErrorButton);
+        // Allow state updates to complete
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
       
       await waitFor(() => {
         expect(onScanError).toHaveBeenCalledWith('Mock scan error');
@@ -369,7 +381,12 @@ describe('BarcodeScannerButton', () => {
       fireEvent.click(button);
       
       const scanSuccessButton = screen.getByTestId('mock-scan-success');
-      fireEvent.click(scanSuccessButton);
+      
+      await act(async () => {
+        fireEvent.click(scanSuccessButton);
+        // Allow processing state to be set
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
       
       // Button should be disabled during processing
       expect(button).toBeDisabled();

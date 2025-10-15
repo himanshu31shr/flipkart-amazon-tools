@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MobileBarcodeScanner } from '../MobileBarcodeScanner';
 import { BarcodeScanner, BarcodeFormat } from '@capacitor-mlkit/barcode-scanning';
 import { Capacitor } from '@capacitor/core';
@@ -309,11 +309,13 @@ describe('MobileBarcodeScanner', () => {
 
       // Simulate barcode scan
       if (barcodeScanHandler && typeof barcodeScanHandler === 'function') {
-        await (barcodeScanHandler as (event: { barcodes: Array<{ rawValue: string; format: string }> }) => Promise<void>)({
-          barcodes: [{
-            rawValue: '1234567890123',
-            format: 'EAN_13'
-          }]
+        await act(async () => {
+          await (barcodeScanHandler as (event: { barcodes: Array<{ rawValue: string; format: string }> }) => Promise<void>)({
+            barcodes: [{
+              rawValue: '1234567890123',
+              format: 'EAN_13'
+            }]
+          });
         });
       }
 
@@ -387,6 +389,8 @@ describe('MobileBarcodeScanner', () => {
     });
 
     it('should auto-focus input in web fallback', () => {
+      (Capacitor.isNativePlatform as jest.Mock).mockReturnValue(false);
+      
       render(
         <MobileBarcodeScanner
           isActive={true}
@@ -396,7 +400,7 @@ describe('MobileBarcodeScanner', () => {
       );
 
       const input = screen.getByPlaceholderText(/enter barcode number/i);
-      expect(input).toHaveAttribute('autoFocus');
+      expect(input).toHaveFocus();
     });
   });
 

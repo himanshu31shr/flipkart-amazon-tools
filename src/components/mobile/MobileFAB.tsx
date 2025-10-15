@@ -29,6 +29,11 @@ export function MobileFAB({
       position: 'fixed' as const,
       bottom: `calc(${bottomOffset}px + ${safeAreaInsets.bottom})`,
       zIndex: 1050, // Above bottom nav (1100), below modals
+      // Ensure minimum touch target size for accessibility
+      minWidth: 56, // Material Design FAB standard size
+      minHeight: 56,
+      width: 56,
+      height: 56,
     };
 
     switch (position) {
